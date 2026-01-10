@@ -16,6 +16,7 @@ const STEPS = [
 
 export interface FormData {
     // Basic Info (Step 1)
+    record_time: string;
     medical_record_number: string;
     admission_date: string;
     name: string;
@@ -65,6 +66,12 @@ export interface FormData {
 }
 
 const initialFormData: FormData = {
+    record_time: (() => {
+        const now = new Date();
+        const offset = now.getTimezoneOffset();
+        const local = new Date(now.getTime() - offset * 60 * 1000);
+        return local.toISOString().slice(0, 16);
+    })(),
     medical_record_number: '',
     admission_date: '',
     name: '',
@@ -97,6 +104,11 @@ const initialFormData: FormData = {
     remarks: '',
     data_status: 'incomplete'
 };
+
+export const HOSPITALS = [
+    '內湖總院', '松山分院', '澎湖分院', '桃園總院',
+    '台中總院', '高雄總院', '左營總院', '花蓮總院'
+];
 
 export default function FormPage() {
     const { id } = useParams();
@@ -141,6 +153,32 @@ export default function FormPage() {
         }
     };
 
+    // Set recorded_by and hospital for new forms
+    useEffect(() => {
+        if (!id && user) {
+            const updates: Partial<FormData> = {};
+
+            // Auto-fill recorded_by
+            if (!formData.recorded_by && user.username) {
+                updates.recorded_by = user.display_name
+                    ? `${user.username} (${user.display_name})`
+                    : user.username;
+            }
+
+            // Auto-fill hospital
+            if (!formData.hospital && user.hospital) {
+                // Check if user's hospital is in our list, if so use it
+                if (HOSPITALS.includes(user.hospital)) {
+                    updates.hospital = user.hospital;
+                }
+            }
+
+            if (Object.keys(updates).length > 0) {
+                updateFormData(updates);
+            }
+        }
+    }, [user, id]);
+
     // Fetch existing data by medical record number and admission date
     const handleFetchData = async () => {
         if (!formData.medical_record_number || !formData.admission_date) {
@@ -182,10 +220,40 @@ export default function FormPage() {
         setFormData(prev => ({ ...prev, ...updates }));
     };
 
-    const handleSave = async (isComplete: boolean = false) => {
+    const handleSave = async (isSubmit: boolean = false) => {
         if (!formData.medical_record_number || !formData.admission_date) {
             setError('請填寫病歷號和住院日期');
             return;
+        }
+
+        // Determine final status
+        let finalStatus = formData.data_status;
+
+        if (!isSubmit) {
+            // Save Draft: Always set to incomplete and stay on page
+            finalStatus = 'incomplete';
+            updateFormData({ data_status: 'incomplete' });
+            // Direct mutation for immediate effect in this closure if needed, though react state update is async
+            formData.data_status = 'incomplete';
+        } else {
+            // Complete & Submit: Respect the user's choice (formData.data_status)
+
+            // Only validate if status is 'complete'
+            if (finalStatus === 'complete') {
+                const requiredFields: (keyof FormData)[] = [
+                    'name', 'sex', 'hospital', 'pathogen', 'type_of_infection'
+                ];
+                const missingFields = requiredFields.filter(field => !formData[field]);
+                if (missingFields.length > 0) {
+                    if (!window.confirm('您已選擇將表單標記為「已完成」，但部分基本欄位尚未填寫。確定要繼續嗎？')) {
+                        return;
+                    }
+                }
+            } else { // finalStatus is 'incomplete' but user clicked "Complete and Submit"
+                if (!window.confirm('您已選擇將表單標記為「未填完」。確定要以「未填完」狀態提交嗎？')) {
+                    return;
+                }
+            }
         }
 
         setSaving(true);
@@ -195,8 +263,11 @@ export default function FormPage() {
         const payload = {
             medical_record_number: formData.medical_record_number,
             admission_date: formData.admission_date,
-            form_data: formData,
-            data_status: isComplete ? 'complete' : 'incomplete'
+            form_data: {
+                ...formData,
+                data_status: finalStatus
+            },
+            data_status: finalStatus
         };
 
         try {
@@ -229,9 +300,9 @@ export default function FormPage() {
                 setSubmissionId(result.id);
             }
 
-            setSuccess(isComplete ? '資料已完成並儲存' : '資料已儲存');
+            setSuccess('資料已儲存');
 
-            if (isComplete) {
+            if (isSubmit) {
                 setTimeout(() => navigate('/'), 1500);
             }
         } catch (err) {

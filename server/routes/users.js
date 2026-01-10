@@ -56,7 +56,7 @@ router.get('/profile', requireLogin, (req, res) => {
 // Update current user profile
 router.put('/profile', requireLogin, (req, res) => {
     try {
-        const { email, display_name, gender, phone, address, currentPassword, newPassword } = req.body;
+        const { email, display_name, gender, phone, address, line_id, currentPassword, newPassword } = req.body;
 
         // If changing password, verify current password
         if (newPassword) {
@@ -83,6 +83,7 @@ router.put('/profile', requireLogin, (req, res) => {
             gender || null,
             phone || null,
             address || null,
+            line_id || null,
             req.session.userId
         );
 
@@ -96,7 +97,7 @@ router.put('/profile', requireLogin, (req, res) => {
 // Create new user (admin only)
 router.post('/', requireAdmin, (req, res) => {
     try {
-        const { username, password, hospital, email, display_name, gender, phone, address } = req.body;
+        const { username, password, hospital, email, display_name, gender, phone, address, line_id } = req.body;
 
         if (!username || !password || !hospital) {
             return res.status(400).json({ error: '請填寫帳號、密碼和醫院' });
@@ -119,7 +120,7 @@ router.post('/', requireAdmin, (req, res) => {
         const hash = bcrypt.hashSync(password, 10);
         const result = userQueries.create.run(
             username, hash, hospital, 'user',
-            email || null, display_name || null, gender || null, phone || null, address || null
+            email || null, display_name || null, gender || null, phone || null, address || null, line_id || null
         );
 
         res.status(201).json({
@@ -135,7 +136,7 @@ router.post('/', requireAdmin, (req, res) => {
 // Update user (admin only)
 router.put('/:id', requireAdmin, (req, res) => {
     try {
-        const { username, hospital, email, display_name, gender, phone, address, newPassword } = req.body;
+        const { username, hospital, email, display_name, gender, phone, address, line_id, newPassword } = req.body;
 
         const user = userQueries.findById.get(req.params.id);
         if (!user) {
@@ -177,6 +178,7 @@ router.put('/:id', requireAdmin, (req, res) => {
             gender || null,
             phone || null,
             address || null,
+            line_id || null,
             req.params.id
         );
 

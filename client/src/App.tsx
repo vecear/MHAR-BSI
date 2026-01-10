@@ -15,6 +15,7 @@ interface User {
   hospital: string;
   role: 'user' | 'admin';
   display_name?: string;
+  line_id?: string;
 }
 
 interface AuthContextType {

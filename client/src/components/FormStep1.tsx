@@ -1,5 +1,5 @@
-import { Search } from 'lucide-react';
-import type { FormData } from '../pages/FormPage';
+import { Search, Clock } from 'lucide-react';
+import { type FormData, HOSPITALS } from '../pages/FormPage';
 
 interface Props {
     formData: FormData;
@@ -22,7 +22,7 @@ const CHRONIC_DISEASES = [
     'COPD', 'Connective tissue disease', 'PUD', 'None'
 ];
 
-export default function FormStep1({ formData, updateFormData, onFetch, loading, userHospital }: Props) {
+export default function FormStep1({ formData, updateFormData, onFetch, loading }: Props) {
     const handleCheckboxChange = (field: 'primary_source' | 'chronic_diseases', value: string) => {
         const current = formData[field] || [];
         if (current.includes(value)) {
@@ -34,7 +34,39 @@ export default function FormStep1({ formData, updateFormData, onFetch, loading, 
 
     return (
         <div>
-            {/* Header with Fetch */}
+            {/* Record Time */}
+            <div className="form-section">
+                <h3 className="form-section-title">紀錄資訊</h3>
+                <div className="form-grid-2">
+                    <div className="form-group">
+                        <label className="form-label required">紀錄時間</label>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <input
+                                type="datetime-local"
+                                className="form-input"
+                                value={formData.record_time}
+                                onChange={e => updateFormData({ record_time: e.target.value })}
+                            />
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => {
+                                    const now = new Date();
+                                    const offset = now.getTimezoneOffset();
+                                    const local = new Date(now.getTime() - offset * 60 * 1000);
+                                    updateFormData({ record_time: local.toISOString().slice(0, 16) });
+                                }}
+                                type="button"
+                                style={{ whiteSpace: 'nowrap' }}
+                            >
+                                <Clock size={16} />
+                                現在時間
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Patient Identification */}
             <div className="form-section">
                 <h3 className="form-section-title">病歷識別</h3>
                 <div className="form-grid-3">
@@ -91,6 +123,7 @@ export default function FormStep1({ formData, updateFormData, onFetch, loading, 
                             className="form-input"
                             value={formData.recorded_by}
                             onChange={e => updateFormData({ recorded_by: e.target.value })}
+                            disabled
                         />
                     </div>
                 </div>
@@ -138,11 +171,33 @@ export default function FormStep1({ formData, updateFormData, onFetch, loading, 
                 <h3 className="form-section-title">臨床資料</h3>
 
                 <div className="form-group">
-                    <label className="form-label">Hospital</label>
-                    <div className="hospital-readonly">
-                        <span className="badge badge-info" style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}>
-                            {userHospital}
-                        </span>
+                    <label className="form-label required">Hospital</label>
+                    <div className="radio-group" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        {HOSPITALS.map(h => (
+                            <label
+                                key={h}
+                                className={`radio-label ${formData.hospital === h ? 'selected' : ''}`}
+                                style={{
+                                    border: formData.hospital === h ? '2px solid var(--color-primary)' : '1px solid #ddd',
+                                    backgroundColor: formData.hospital === h ? '#f0f9ff' : 'white',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '20px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    color: '#1e293b' // Force dark text for visibility on white background
+                                }}
+                            >
+                                <input
+                                    type="radio"
+                                    name="hospital"
+                                    value={h}
+                                    checked={formData.hospital === h}
+                                    onChange={() => updateFormData({ hospital: h })}
+                                    style={{ display: 'none' }}
+                                />
+                                {h}
+                            </label>
+                        ))}
                     </div>
                 </div>
 

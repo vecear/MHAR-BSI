@@ -4,6 +4,7 @@ import { API_URL } from '../App';
 
 // CSV 欄位定義（對應表單欄位）- 不包含 hospital，因使用者醫院由系統帶入
 const CSV_HEADERS = [
+    'record_time',
     'medical_record_number',
     'admission_date',
     'name',
@@ -33,6 +34,7 @@ const CSV_HEADERS = [
 ];
 
 const CSV_HEADER_LABELS: Record<string, string> = {
+    'record_time': '紀錄時間(YYYY-MM-DDTHH:MM)',
     'medical_record_number': '病歷號',
     'admission_date': '住院日期(YYYY-MM-DD)',
     'name': '姓名',
@@ -63,6 +65,7 @@ const CSV_HEADER_LABELS: Record<string, string> = {
 
 // 範例資料 - 不包含 hospital
 const SAMPLE_DATA = [
+    '2026-01-15T09:30',
     'A123456789',
     '2026-01-15',
     '王小明',

@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     gender TEXT CHECK(gender IN ('male', 'female', 'other', NULL)),
     phone TEXT,
     address TEXT,
+    line_id TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

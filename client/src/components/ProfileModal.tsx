@@ -10,6 +10,7 @@ interface ProfileData {
     gender: string;
     phone: string;
     address: string;
+    line_id: string;
 }
 
 interface Props {
@@ -26,7 +27,8 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
         display_name: '',
         gender: '',
         phone: '',
-        address: ''
+        address: '',
+        line_id: ''
     });
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -58,7 +60,8 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
                 display_name: data.display_name || '',
                 gender: data.gender || '',
                 phone: data.phone || '',
-                address: data.address || ''
+                address: data.address || '',
+                line_id: data.line_id || ''
             });
         } catch (err) {
             setError(err instanceof Error ? err.message : '載入失敗');
@@ -96,6 +99,7 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
                     gender: profile.gender,
                     phone: profile.phone,
                     address: profile.address,
+                    line_id: profile.line_id,
                     currentPassword: newPassword ? currentPassword : undefined,
                     newPassword: newPassword || undefined
                 })
@@ -232,6 +236,16 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
                                             placeholder="0912-345-678"
                                         />
                                     </div>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Line ID</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        value={profile.line_id}
+                                        onChange={e => setProfile({ ...profile, line_id: e.target.value })}
+                                        placeholder="Line ID"
+                                    />
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">地址</label>
