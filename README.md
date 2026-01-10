@@ -46,9 +46,11 @@ npm run dev
 ## 功能特點
 
 - 🔐 **使用者認證** - Session-based 登入系統
-- 👥 **帳號管理** - 管理員可新增/刪除使用者、重設密碼
+- � **個人資料管理** - 使用者可編輯姓名、性別、E-mail、電話、地址，並修改密碼
+- �👥 **帳號管理** - 管理員可新增/編輯/刪除使用者、設定完整個人資料
 - 📝 **表單提交** - 支援草稿與完成狀態
-- 🏥 **多院區支援** - 8間國軍醫院分院
+- 📥 **CSV 批次匯入** - 下載範本、Excel 編輯後上傳批次匯入
+- 🏥 **多院區支援** - 8間國軍醫院分院，使用者自動帶入所屬醫院
 - 📊 **資料匯出** - 管理員可匯出 CSV
 
 ## 技術堆疊
@@ -57,6 +59,7 @@ npm run dev
 - React 18 + TypeScript
 - Vite
 - React Router DOM
+- Lucide React (Icons)
 
 **後端:**
 - Express.js
@@ -66,18 +69,52 @@ npm run dev
 
 ## API 端點
 
+### 認證
+
 | 方法 | 路徑 | 說明 |
 |------|------|------|
 | POST | `/api/auth/login` | 登入 |
 | POST | `/api/auth/logout` | 登出 |
 | GET | `/api/auth/me` | 取得當前使用者 |
+
+### 使用者管理
+
+| 方法 | 路徑 | 說明 |
+|------|------|------|
 | GET | `/api/users` | 取得使用者列表 (管理員) |
 | POST | `/api/users` | 新增使用者 (管理員) |
+| PUT | `/api/users/:id` | 編輯使用者 (管理員) |
 | DELETE | `/api/users/:id` | 刪除使用者 (管理員) |
-| GET | `/api/submissions` | 取得表單列表 |
-| POST | `/api/submissions` | 新增表單 |
-| PUT | `/api/submissions/:id` | 更新表單 |
-| DELETE | `/api/submissions/:id` | 刪除表單 |
+| GET | `/api/users/profile` | 取得個人資料 |
+| PUT | `/api/users/profile` | 更新個人資料 |
+
+### 表單管理
+
+| 方法 | 路徑 | 說明 |
+|------|------|------|
+| GET | `/api/forms` | 取得表單列表 |
+| POST | `/api/forms` | 新增表單 |
+| PUT | `/api/forms/:id` | 更新表單 |
+| DELETE | `/api/forms/:id` | 刪除表單 |
+
+### 資料匯出
+
+| 方法 | 路徑 | 說明 |
+|------|------|------|
+| GET | `/api/export/csv` | 匯出 CSV |
+
+## 使用者欄位
+
+| 欄位 | 說明 | 必填 |
+|------|------|------|
+| username | 帳號 | ✅ |
+| password | 密碼 | ✅ |
+| hospital | 所屬醫院 | ✅ |
+| display_name | 姓名 | ❌ |
+| gender | 性別 | ❌ |
+| email | E-mail | ❌ |
+| phone | 電話 | ❌ |
+| address | 地址 | ❌ |
 
 ## 支援院區
 
