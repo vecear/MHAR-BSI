@@ -1,5 +1,5 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
-import { LogOut, FileText, Users, Home } from 'lucide-react';
+import { LogOut, FileText, Home } from 'lucide-react';
 import { useAuth } from '../App';
 
 export default function Layout() {

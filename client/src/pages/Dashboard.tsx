@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, Download, Eye, Trash2, Plus, AlertCircle } from 'lucide-react';
-import { API_URL, useAuth } from '../App';
+import { API_URL } from '../App';
+import CsvUpload from '../components/CsvUpload';
 
 interface Submission {
     id: number;
@@ -16,11 +17,9 @@ interface Submission {
 }
 
 export default function Dashboard() {
-    const { user } = useAuth();
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [deleteId, setDeleteId] = useState<number | null>(null);
 
     useEffect(() => {
         fetchSubmissions();
@@ -107,6 +106,11 @@ export default function Dashboard() {
                     {error}
                 </div>
             )}
+
+            {/* CSV 批次匯入區塊 */}
+            <div className="card" style={{ marginBottom: 'var(--spacing-lg)' }}>
+                <CsvUpload onUploadComplete={fetchSubmissions} />
+            </div>
 
             {submissions.length === 0 ? (
                 <div className="card">

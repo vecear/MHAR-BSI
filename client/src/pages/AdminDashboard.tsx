@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Download, Eye, Trash2, Plus, Users, UserPlus, X, AlertCircle, RefreshCw } from 'lucide-react';
-import { API_URL, useAuth } from '../App';
+import { FileText, Download, Eye, Trash2, Plus, Users, UserPlus, X, AlertCircle } from 'lucide-react';
+import { API_URL } from '../App';
 
 interface Submission {
     id: number;
@@ -29,7 +29,6 @@ const HOSPITALS = [
 ];
 
 export default function AdminDashboard() {
-    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<'submissions' | 'users'>('submissions');
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [users, setUsers] = useState<User[]>([]);
