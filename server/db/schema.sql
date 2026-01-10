@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS submissions (
     data_status TEXT DEFAULT 'incomplete' CHECK(data_status IN ('complete', 'incomplete')),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_count INTEGER DEFAULT 1,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE(medical_record_number, admission_date)
 );

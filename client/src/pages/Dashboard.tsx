@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Download, Eye, Trash2, Plus, AlertCircle, Filter, X, ArrowUp, ArrowDown } from 'lucide-react';
+import { FileText, Download, Trash2, Plus, AlertCircle, Filter, X, ArrowUp, ArrowDown, Edit } from 'lucide-react';
 import { API_URL, useAuth } from '../App';
 import CsvUpload from '../components/CsvUpload';
 
@@ -262,44 +262,35 @@ export default function Dashboard() {
                         <table className="data-table">
                             <thead>
                                 <tr>
-                                    <th onClick={() => handleSort('medical_record_number')} style={{ cursor: 'pointer' }}>
+                                    <th style={{ minWidth: '80px', textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1.5rem' }}>修改</th>
+                                    <th onClick={() => handleSort('medical_record_number')} style={{ cursor: 'pointer', textAlign: 'center', verticalAlign: 'middle' }}>
                                         病歷號 {sortField === 'medical_record_number' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                     </th>
-                                    <th onClick={() => handleSort('admission_date')} style={{ cursor: 'pointer' }}>
+                                    <th onClick={() => handleSort('admission_date')} style={{ cursor: 'pointer', textAlign: 'center', verticalAlign: 'middle' }}>
                                         住院日期 {sortField === 'admission_date' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                     </th>
-                                    <th onClick={() => handleSort('positive_culture_date')} style={{ cursor: 'pointer' }}>
+                                    <th onClick={() => handleSort('positive_culture_date')} style={{ cursor: 'pointer', textAlign: 'center', verticalAlign: 'middle' }}>
                                         陽性日期 {sortField === 'positive_culture_date' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                     </th>
-                                    <th onClick={() => handleSort('data_status')} style={{ cursor: 'pointer' }}>
+                                    <th onClick={() => handleSort('data_status')} style={{ cursor: 'pointer', textAlign: 'center', verticalAlign: 'middle' }}>
                                         狀態 {sortField === 'data_status' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                     </th>
-                                    <th onClick={() => handleSort('updated_at')} style={{ cursor: 'pointer' }}>
+                                    <th onClick={() => handleSort('updated_at')} style={{ cursor: 'pointer', textAlign: 'center', verticalAlign: 'middle' }}>
                                         更新時間 {sortField === 'updated_at' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                     </th>
-                                    <th>操作</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredSubmissions.map(sub => (
                                     <tr key={sub.id}>
-                                        <td>{sub.medical_record_number}</td>
-                                        <td>{sub.admission_date}</td>
-                                        <td>{(sub.form_data?.positive_culture_date as string) || '-'}</td>
-                                        <td>
-                                            <span className={`badge ${sub.data_status === 'complete' ? 'badge-success' : 'badge-warning'}`}>
-                                                {sub.data_status === 'complete' ? '已完成' : '未完成'}
-                                            </span>
-                                        </td>
-                                        <td>{new Date(sub.updated_at).toLocaleString('zh-TW')}</td>
-                                        <td>
-                                            <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                        <td style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1rem' }}>
+                                            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-start', width: '100%' }}>
                                                 <Link
                                                     to={`/form/${sub.id}`}
                                                     className="btn btn-icon"
-                                                    title="檢視/編輯"
+                                                    title="修改"
                                                 >
-                                                    <Eye size={16} color="var(--color-primary)" />
+                                                    <Edit size={16} color="var(--color-primary)" />
                                                 </Link>
                                                 <button
                                                     className="btn btn-icon"
@@ -310,13 +301,23 @@ export default function Dashboard() {
                                                 </button>
                                             </div>
                                         </td>
+                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.medical_record_number}</td>
+                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.admission_date}</td>
+                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{(sub.form_data?.positive_culture_date as string) || '-'}</td>
+                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <span className={`badge ${sub.data_status === 'complete' ? 'badge-success' : 'badge-warning'}`}>
+                                                {sub.data_status === 'complete' ? '已完成' : '未完成'}
+                                            </span>
+                                        </td>
+                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{new Date(sub.updated_at).toLocaleString('zh-TW', { hour12: false })}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-                </div>
-            )}
-        </div>
+                </div >
+            )
+            }
+        </div >
     );
 }

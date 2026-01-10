@@ -12,6 +12,7 @@ interface Submission {
     data_status: string;
     created_at: string;
     updated_at: string;
+    update_count?: number;
     username: string;
     hospital: string;
 }
@@ -26,6 +27,7 @@ interface User {
     gender?: string;
     phone?: string;
     address?: string;
+    line_id?: string;
     created_at: string;
 }
 
@@ -37,7 +39,9 @@ interface UserFormData {
     display_name: string;
     gender: string;
     phone: string;
+
     address: string;
+    line_id: string;
 }
 
 const HOSPITALS = [
@@ -71,7 +75,8 @@ const initialUserForm: UserFormData = {
     display_name: '',
     gender: '',
     phone: '',
-    address: ''
+    address: '',
+    line_id: ''
 };
 
 export default function AdminDashboard() {
@@ -166,7 +171,9 @@ export default function AdminDashboard() {
                     case 'username': return a.username;
                     case 'hospital': return a.hospital;
                     case 'data_status': return a.data_status;
+                    case 'created_at': return a.created_at;
                     case 'updated_at': return a.updated_at;
+                    case 'update_count': return (a.update_count || 0).toString();
                     default: return '';
                 }
             })();
@@ -178,7 +185,9 @@ export default function AdminDashboard() {
                     case 'username': return b.username;
                     case 'hospital': return b.hospital;
                     case 'data_status': return b.data_status;
+                    case 'created_at': return b.created_at;
                     case 'updated_at': return b.updated_at;
+                    case 'update_count': return (b.update_count || 0).toString();
                     default: return '';
                 }
             })();
@@ -238,7 +247,8 @@ export default function AdminDashboard() {
             display_name: user.display_name || '',
             gender: user.gender || '',
             phone: user.phone || '',
-            address: user.address || ''
+            address: user.address || '',
+            line_id: user.line_id || ''
         });
         setShowUserModal(true);
     };
@@ -260,6 +270,7 @@ export default function AdminDashboard() {
                         gender: userForm.gender,
                         phone: userForm.phone,
                         address: userForm.address,
+                        line_id: userForm.line_id,
                         newPassword: userForm.password || undefined
                     })
                 });
@@ -450,55 +461,77 @@ export default function AdminDashboard() {
                                 <table className="data-table">
                                     <thead>
                                         <tr>
-                                            <th onClick={() => handleSort('medical_record_number')} style={{ cursor: 'pointer' }}>
+                                            <th style={{ minWidth: '80px', textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1.5rem' }}>修改</th>
+                                            <th onClick={() => handleSort('medical_record_number')} style={{ cursor: 'pointer', minWidth: '100px', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 病歷號 {sortField === 'medical_record_number' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
-                                            <th onClick={() => handleSort('admission_date')} style={{ cursor: 'pointer' }}>
+                                            <th onClick={() => handleSort('admission_date')} style={{ cursor: 'pointer', minWidth: '110px', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 住院日期 {sortField === 'admission_date' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
-                                            <th onClick={() => handleSort('positive_culture_date')} style={{ cursor: 'pointer' }}>
+                                            <th onClick={() => handleSort('positive_culture_date')} style={{ cursor: 'pointer', minWidth: '110px', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 陽性日期 {sortField === 'positive_culture_date' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
-                                            <th onClick={() => handleSort('username')} style={{ cursor: 'pointer' }}>
+                                            <th onClick={() => handleSort('username')} style={{ cursor: 'pointer', minWidth: '90px', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 填寫者 {sortField === 'username' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
-                                            <th onClick={() => handleSort('hospital')} style={{ cursor: 'pointer' }}>
+                                            <th onClick={() => handleSort('hospital')} style={{ cursor: 'pointer', minWidth: '120px', whiteSpace: 'nowrap', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 醫院 {sortField === 'hospital' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
-                                            <th onClick={() => handleSort('data_status')} style={{ cursor: 'pointer' }}>
+                                            <th onClick={() => handleSort('data_status')} style={{ cursor: 'pointer', minWidth: '100px', whiteSpace: 'nowrap', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 狀態 {sortField === 'data_status' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
-                                            <th onClick={() => handleSort('updated_at')} style={{ cursor: 'pointer' }}>
-                                                更新時間 {sortField === 'updated_at' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                            <th onClick={() => handleSort('created_at')} style={{ cursor: 'pointer', minWidth: '130px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                                建立時間 {sortField === 'created_at' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
-                                            <th>操作</th>
+                                            <th onClick={() => handleSort('updated_at')} style={{ cursor: 'pointer', minWidth: '130px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                                最後更新時間 {sortField === 'updated_at' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                            </th>
+                                            <th style={{ minWidth: '90px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                                更新次數 {sortField === 'update_count' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {filteredSubmissions.map(sub => (
                                             <tr key={sub.id}>
-                                                <td>{sub.medical_record_number}</td>
-                                                <td>{sub.admission_date}</td>
-                                                <td>{(sub.form_data?.positive_culture_date as string) || '-'}</td>
-                                                <td>{sub.username}</td>
-                                                <td>
-                                                    <span className="badge badge-info">{sub.hospital}</span>
-                                                </td>
-                                                <td>
-                                                    <span className={`badge ${sub.data_status === 'complete' ? 'badge-success' : 'badge-warning'}`}>
-                                                        {sub.data_status === 'complete' ? '已完成' : '未完成'}
-                                                    </span>
-                                                </td>
-                                                <td>{new Date(sub.updated_at).toLocaleString('zh-TW')}</td>
-                                                <td>
-                                                    <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                                        <Link to={`/form/${sub.id}`} className="btn btn-icon" title="檢視/編輯">
-                                                            <Eye size={16} color="var(--color-primary)" />
+                                                <td style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1rem' }}>
+                                                    <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-start', width: '100%' }}>
+                                                        <Link to={`/form/${sub.id}`} className="btn btn-icon" title="修改">
+                                                            <Edit size={16} color="var(--color-primary)" />
                                                         </Link>
                                                         <button className="btn btn-icon" onClick={() => handleDeleteSubmission(sub.id)} title="刪除">
                                                             <Trash2 size={16} color="var(--color-danger)" />
                                                         </button>
                                                     </div>
+                                                </td>
+                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.medical_record_number}</td>
+                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.admission_date}</td>
+                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{(sub.form_data?.positive_culture_date as string) || '-'}</td>
+                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.username}</td>
+                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                    <span className="badge badge-info">{sub.hospital}</span>
+                                                </td>
+                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                    <span className={`badge ${sub.data_status === 'complete' ? 'badge-success' : 'badge-warning'}`}>
+                                                        {sub.data_status === 'complete' ? '已完成' : '未完成'}
+                                                    </span>
+                                                </td>
+                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                    <div>{new Date(sub.created_at).toLocaleDateString('zh-TW')}</div>
+                                                    <div style={{ fontSize: '0.85em', color: 'var(--text-muted)' }}>
+                                                        {new Date(sub.created_at).toLocaleTimeString('zh-TW', { hour12: false })}
+                                                    </div>
+                                                </td>
+                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                    <div>{new Date(sub.updated_at).toLocaleDateString('zh-TW')}</div>
+                                                    <div style={{ fontSize: '0.85em', color: 'var(--text-muted)' }}>
+                                                        {new Date(sub.updated_at).toLocaleTimeString('zh-TW', { hour12: false })}
+                                                    </div>
+                                                </td>
+                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                    <span className="badge badge-secondary" style={{ backgroundColor: '#f0f0f0', color: '#666' }}>
+                                                        {sub.update_count || 1} 次
+                                                    </span>
                                                 </td>
                                             </tr>
                                         ))}
@@ -524,28 +557,20 @@ export default function AdminDashboard() {
                             <table className="data-table">
                                 <thead>
                                     <tr>
-                                        <th>帳號</th>
-                                        <th>姓名</th>
-                                        <th>醫院</th>
-                                        <th>E-mail</th>
-                                        <th>電話</th>
-                                        <th>建立時間</th>
-                                        <th>操作</th>
+                                        <th style={{ minWidth: '80px', textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1.5rem' }}>修改</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>帳號</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>姓名</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>醫院</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>E-mail</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>電話</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>建立時間</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {users.map(u => (
                                         <tr key={u.id}>
-                                            <td>{u.username}</td>
-                                            <td>{u.display_name || '-'}</td>
-                                            <td>
-                                                <span className="badge badge-info">{u.hospital}</span>
-                                            </td>
-                                            <td>{u.email || '-'}</td>
-                                            <td>{u.phone || '-'}</td>
-                                            <td>{new Date(u.created_at).toLocaleString('zh-TW')}</td>
-                                            <td>
-                                                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                            <td style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1rem' }}>
+                                                <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-start', width: '100%' }}>
                                                     <button className="btn btn-icon" onClick={() => openEditUser(u)} title="編輯">
                                                         <Edit size={16} color="var(--color-primary)" />
                                                     </button>
@@ -554,6 +579,14 @@ export default function AdminDashboard() {
                                                     </button>
                                                 </div>
                                             </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.username}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.display_name || '-'}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <span className="badge badge-info">{u.hospital}</span>
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.email || '-'}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.phone || '-'}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{new Date(u.created_at).toLocaleString('zh-TW', { hour12: false })}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -666,15 +699,27 @@ export default function AdminDashboard() {
                                     </div>
                                 </div>
 
-                                <div className="form-group">
-                                    <label className="form-label">地址</label>
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        value={userForm.address}
-                                        onChange={e => setUserForm({ ...userForm, address: e.target.value })}
-                                        placeholder="通訊地址"
-                                    />
+                                <div className="form-grid-2">
+                                    <div className="form-group">
+                                        <label className="form-label">地址</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={userForm.address}
+                                            onChange={e => setUserForm({ ...userForm, address: e.target.value })}
+                                            placeholder="通訊地址"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Line ID</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={userForm.line_id}
+                                            onChange={e => setUserForm({ ...userForm, line_id: e.target.value })}
+                                            placeholder="Line ID"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                             <div className="modal-footer">

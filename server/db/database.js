@@ -57,17 +57,17 @@ const userQueries = {
 // Submission queries
 const submissionQueries = {
     create: db.prepare(`
-        INSERT INTO submissions (user_id, medical_record_number, admission_date, form_data, data_status)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO submissions (user_id, medical_record_number, admission_date, form_data, data_status, update_count)
+        VALUES (?, ?, ?, ?, ?, 1)
     `),
     update: db.prepare(`
         UPDATE submissions 
-        SET form_data = ?, data_status = ?, updated_at = CURRENT_TIMESTAMP
+        SET form_data = ?, data_status = ?, updated_at = CURRENT_TIMESTAMP, update_count = update_count + 1
         WHERE id = ? AND user_id = ?
     `),
     updateAdmin: db.prepare(`
         UPDATE submissions 
-        SET form_data = ?, data_status = ?, updated_at = CURRENT_TIMESTAMP
+        SET form_data = ?, data_status = ?, updated_at = CURRENT_TIMESTAMP, update_count = update_count + 1
         WHERE id = ?
     `),
     findById: db.prepare('SELECT * FROM submissions WHERE id = ?'),

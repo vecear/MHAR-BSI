@@ -1,0 +1,14 @@
+feat: expand themes to 20, add Line ID, and refine UI
+
+- **Themes**: Expanded color themes from 10 to 20, adding Emerald, Violet, Amber, Fuchsia, Sky, Lime, Teal, Indigo, Stone, and Midnight.
+- **UI/UX**:
+  - Implemented dynamic header text color for better contrast (white on dark, dark on light).
+  - Updated status badges to use theme-aware colors.
+  - Refined form step styles with thinner borders and theme integration.
+  - Changed theme selection menu to a 4-column grid layout.
+  - Improved text contrast on primary buttons for light-colored themes.
+- **Feature**: Added `line_id` field to User Profile.
+  - Database: Added `line_id` column to `users` table.
+  - API: Updated profile endpoints (`GET`, `PUT`, `POST`) to handle `line_id`.
+  - Frontend: Added input field for Line ID in `ProfileModal`.
+- **Docs**: Updated README.md with new features and theme list.

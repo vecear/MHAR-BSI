@@ -373,6 +373,19 @@
   box-sizing: border-box;
 }
 
+/* Utilities */
+.text-center {
+  text-align: center !important;
+}
+
+.justify-center {
+  justify-content: center !important;
+}
+
+.align-middle {
+  vertical-align: middle !important;
+}
+
 body {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
