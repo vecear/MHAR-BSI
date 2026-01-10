@@ -32,7 +32,8 @@ router.post('/login', (req, res) => {
         id: user.id,
         username: user.username,
         hospital: user.hospital,
-        role: user.role
+        role: user.role,
+        display_name: user.display_name
     });
 });
 

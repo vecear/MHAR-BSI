@@ -5,6 +5,11 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     hospital TEXT NOT NULL,
     role TEXT DEFAULT 'user' CHECK(role IN ('user', 'admin')),
+    email TEXT,
+    display_name TEXT,
+    gender TEXT CHECK(gender IN ('male', 'female', 'other', NULL)),
+    phone TEXT,
+    address TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

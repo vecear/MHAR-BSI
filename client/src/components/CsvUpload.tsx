@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Download, Upload, FileSpreadsheet, AlertCircle, Check } from 'lucide-react';
 import { API_URL } from '../App';
 
-// CSV 欄位定義（對應表單欄位）
+// CSV 欄位定義（對應表單欄位）- 不包含 hospital，因使用者醫院由系統帶入
 const CSV_HEADERS = [
     'medical_record_number',
     'admission_date',
@@ -11,7 +11,6 @@ const CSV_HEADERS = [
     'sex',
     'age',
     'bw',
-    'hospital',
     'pathogen',
     'positive_culture_date',
     'primary_source',
@@ -41,7 +40,6 @@ const CSV_HEADER_LABELS: Record<string, string> = {
     'sex': '性別(M/F)',
     'age': '年齡',
     'bw': '體重(kg)',
-    'hospital': '醫院',
     'pathogen': '病原菌',
     'positive_culture_date': '陽性培養日期(YYYY-MM-DD)',
     'primary_source': '感染來源(多選用|分隔)',
@@ -63,7 +61,7 @@ const CSV_HEADER_LABELS: Record<string, string> = {
     'remarks': '備註'
 };
 
-// 範例資料
+// 範例資料 - 不包含 hospital
 const SAMPLE_DATA = [
     'A123456789',
     '2026-01-15',
@@ -72,7 +70,6 @@ const SAMPLE_DATA = [
     'M',
     '65',
     '70',
-    '內湖總院',
     'Escherichia coli',
     '2026-01-16',
     'Urinary tract',
@@ -100,7 +97,12 @@ interface UploadResult {
     errors: string[];
 }
 
-export default function CsvUpload({ onUploadComplete }: { onUploadComplete?: () => void }) {
+interface CsvUploadProps {
+    onUploadComplete?: () => void;
+    userHospital: string;
+}
+
+export default function CsvUpload({ onUploadComplete, userHospital }: CsvUploadProps) {
     const [uploading, setUploading] = useState(false);
     const [result, setResult] = useState<UploadResult | null>(null);
     const [error, setError] = useState('');
@@ -188,7 +190,9 @@ export default function CsvUpload({ onUploadComplete }: { onUploadComplete?: () 
                         }
                     });
 
-                    // 發送到後端
+                    // 發送到後端 - 強制使用使用者的醫院
+                    formData.hospital = userHospital;
+
                     const res = await fetch(`${API_URL}/forms`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Save, Check, AlertCircle } from 'lucide-react';
-import { API_URL } from '../App';
+import { API_URL, useAuth } from '../App';
 import FormStep1 from '../components/FormStep1';
 import FormStep2 from '../components/FormStep2';
 import FormStep3 from '../components/FormStep3';
@@ -101,6 +101,7 @@ const initialFormData: FormData = {
 export default function FormPage() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -296,6 +297,7 @@ export default function FormPage() {
                         updateFormData={updateFormData}
                         onFetch={handleFetchData}
                         loading={loading}
+                        userHospital={user?.hospital || ''}
                     />
                 )}
                 {currentStep === 2 && (

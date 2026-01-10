@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Download, Eye, Trash2, Plus, Users, UserPlus, X, AlertCircle } from 'lucide-react';
+import { FileText, Download, Eye, Trash2, Plus, Users, UserPlus, X, AlertCircle, Edit } from 'lucide-react';
 import { API_URL } from '../App';
 
 interface Submission {
@@ -20,13 +20,40 @@ interface User {
     username: string;
     hospital: string;
     role: string;
+    email?: string;
+    display_name?: string;
+    gender?: string;
+    phone?: string;
+    address?: string;
     created_at: string;
+}
+
+interface UserFormData {
+    username: string;
+    password: string;
+    hospital: string;
+    email: string;
+    display_name: string;
+    gender: string;
+    phone: string;
+    address: string;
 }
 
 const HOSPITALS = [
     '內湖總院', '松山分院', '澎湖分院', '桃園總院',
     '台中總院', '高雄總院', '左營總院', '花蓮總院'
 ];
+
+const initialUserForm: UserFormData = {
+    username: '',
+    password: '',
+    hospital: HOSPITALS[0],
+    email: '',
+    display_name: '',
+    gender: '',
+    phone: '',
+    address: ''
+};
 
 export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState<'submissions' | 'users'>('submissions');
@@ -36,9 +63,10 @@ export default function AdminDashboard() {
     const [error, setError] = useState('');
 
     // Modal states
-    const [showAddUser, setShowAddUser] = useState(false);
-    const [newUser, setNewUser] = useState({ username: '', password: '', hospital: HOSPITALS[0] });
-    const [addingUser, setAddingUser] = useState(false);
+    const [showUserModal, setShowUserModal] = useState(false);
+    const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [userForm, setUserForm] = useState<UserFormData>(initialUserForm);
+    const [savingUser, setSavingUser] = useState(false);
 
     useEffect(() => {
         if (activeTab === 'submissions') {
@@ -109,27 +137,75 @@ export default function AdminDashboard() {
         }
     };
 
-    const handleAddUser = async (e: React.FormEvent) => {
+    const openAddUser = () => {
+        setEditingUser(null);
+        setUserForm(initialUserForm);
+        setShowUserModal(true);
+    };
+
+    const openEditUser = (user: User) => {
+        setEditingUser(user);
+        setUserForm({
+            username: user.username,
+            password: '',
+            hospital: user.hospital,
+            email: user.email || '',
+            display_name: user.display_name || '',
+            gender: user.gender || '',
+            phone: user.phone || '',
+            address: user.address || ''
+        });
+        setShowUserModal(true);
+    };
+
+    const handleSaveUser = async (e: React.FormEvent) => {
         e.preventDefault();
-        setAddingUser(true);
+        setSavingUser(true);
         try {
-            const res = await fetch(`${API_URL}/users`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify(newUser)
-            });
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || '新增失敗');
+            if (editingUser) {
+                // Update existing user
+                const res = await fetch(`${API_URL}/users/${editingUser.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        username: userForm.username,
+                        hospital: userForm.hospital,
+                        email: userForm.email,
+                        display_name: userForm.display_name,
+                        gender: userForm.gender,
+                        phone: userForm.phone,
+                        address: userForm.address,
+                        newPassword: userForm.password || undefined
+                    })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || '更新失敗');
+                }
+            } else {
+                // Create new user
+                if (!userForm.password) {
+                    throw new Error('請輸入密碼');
+                }
+                const res = await fetch(`${API_URL}/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(userForm)
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || '新增失敗');
+                }
             }
-            setShowAddUser(false);
-            setNewUser({ username: '', password: '', hospital: HOSPITALS[0] });
+            setShowUserModal(false);
+            setUserForm(initialUserForm);
             fetchUsers();
         } catch (err) {
-            alert(err instanceof Error ? err.message : '新增失敗');
+            alert(err instanceof Error ? err.message : '儲存失敗');
         } finally {
-            setAddingUser(false);
+            setSavingUser(false);
         }
     };
 
@@ -159,7 +235,7 @@ export default function AdminDashboard() {
                         </button>
                     )}
                     {activeTab === 'users' && (
-                        <button className="btn btn-primary" onClick={() => setShowAddUser(true)}>
+                        <button className="btn btn-primary" onClick={openAddUser}>
                             <UserPlus size={18} />
                             新增使用者
                         </button>
@@ -271,7 +347,10 @@ export default function AdminDashboard() {
                                 <thead>
                                     <tr>
                                         <th>帳號</th>
+                                        <th>姓名</th>
                                         <th>醫院</th>
+                                        <th>E-mail</th>
+                                        <th>電話</th>
                                         <th>建立時間</th>
                                         <th>操作</th>
                                     </tr>
@@ -280,14 +359,22 @@ export default function AdminDashboard() {
                                     {users.map(u => (
                                         <tr key={u.id}>
                                             <td>{u.username}</td>
+                                            <td>{u.display_name || '-'}</td>
                                             <td>
                                                 <span className="badge badge-info">{u.hospital}</span>
                                             </td>
+                                            <td>{u.email || '-'}</td>
+                                            <td>{u.phone || '-'}</td>
                                             <td>{new Date(u.created_at).toLocaleString('zh-TW')}</td>
                                             <td>
-                                                <button className="btn btn-icon" onClick={() => handleDeleteUser(u.id)} title="刪除">
-                                                    <Trash2 size={16} color="var(--color-danger)" />
-                                                </button>
+                                                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                    <button className="btn btn-icon" onClick={() => openEditUser(u)} title="編輯">
+                                                        <Edit size={16} color="var(--color-primary)" />
+                                                    </button>
+                                                    <button className="btn btn-icon" onClick={() => handleDeleteUser(u.id)} title="刪除">
+                                                        <Trash2 size={16} color="var(--color-danger)" />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -298,59 +385,126 @@ export default function AdminDashboard() {
                 </div>
             )}
 
-            {/* Add User Modal */}
-            {showAddUser && (
-                <div className="modal-overlay" onClick={() => setShowAddUser(false)}>
-                    <div className="modal animate-slideUp" onClick={e => e.stopPropagation()}>
+            {/* User Modal (Add/Edit) */}
+            {showUserModal && (
+                <div className="modal-overlay" onClick={() => setShowUserModal(false)}>
+                    <div className="modal animate-slideUp" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>新增使用者</h3>
-                            <button className="btn btn-icon" onClick={() => setShowAddUser(false)}>
+                            <h3>{editingUser ? '編輯使用者' : '新增使用者'}</h3>
+                            <button className="btn btn-icon" onClick={() => setShowUserModal(false)}>
                                 <X size={18} />
                             </button>
                         </div>
-                        <form onSubmit={handleAddUser}>
+                        <form onSubmit={handleSaveUser}>
                             <div className="modal-body">
-                                <div className="form-group">
-                                    <label className="form-label required">帳號</label>
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        value={newUser.username}
-                                        onChange={e => setNewUser({ ...newUser, username: e.target.value })}
-                                        required
-                                    />
+                                <div className="form-grid-2">
+                                    <div className="form-group">
+                                        <label className="form-label required">帳號</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={userForm.username}
+                                            onChange={e => setUserForm({ ...userForm, username: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className={`form-label ${editingUser ? '' : 'required'}`}>
+                                            {editingUser ? '新密碼（留空不變更）' : '密碼'}
+                                        </label>
+                                        <input
+                                            type="password"
+                                            className="form-input"
+                                            value={userForm.password}
+                                            onChange={e => setUserForm({ ...userForm, password: e.target.value })}
+                                            minLength={6}
+                                            required={!editingUser}
+                                            placeholder={editingUser ? '留空保持原密碼' : '至少6個字元'}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="form-group">
-                                    <label className="form-label required">密碼</label>
-                                    <input
-                                        type="password"
-                                        className="form-input"
-                                        value={newUser.password}
-                                        onChange={e => setNewUser({ ...newUser, password: e.target.value })}
-                                        minLength={6}
-                                        required
-                                    />
-                                    <small style={{ color: 'var(--text-muted)' }}>至少6個字元</small>
-                                </div>
+
                                 <div className="form-group">
                                     <label className="form-label required">所屬醫院</label>
                                     <select
                                         className="form-select"
-                                        value={newUser.hospital}
-                                        onChange={e => setNewUser({ ...newUser, hospital: e.target.value })}
+                                        value={userForm.hospital}
+                                        onChange={e => setUserForm({ ...userForm, hospital: e.target.value })}
                                     >
                                         {HOSPITALS.map(h => (
                                             <option key={h} value={h}>{h}</option>
                                         ))}
                                     </select>
                                 </div>
+
+                                <hr style={{ margin: '1.5rem 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
+
+                                <div className="form-grid-2">
+                                    <div className="form-group">
+                                        <label className="form-label">姓名</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={userForm.display_name}
+                                            onChange={e => setUserForm({ ...userForm, display_name: e.target.value })}
+                                            placeholder="使用者姓名"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">性別</label>
+                                        <select
+                                            className="form-select"
+                                            value={userForm.gender}
+                                            onChange={e => setUserForm({ ...userForm, gender: e.target.value })}
+                                        >
+                                            <option value="">請選擇</option>
+                                            <option value="male">男</option>
+                                            <option value="female">女</option>
+                                            <option value="other">其他</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="form-grid-2">
+                                    <div className="form-group">
+                                        <label className="form-label">E-mail</label>
+                                        <input
+                                            type="email"
+                                            className="form-input"
+                                            value={userForm.email}
+                                            onChange={e => setUserForm({ ...userForm, email: e.target.value })}
+                                            placeholder="user@example.com"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">電話</label>
+                                        <input
+                                            type="tel"
+                                            className="form-input"
+                                            value={userForm.phone}
+                                            onChange={e => setUserForm({ ...userForm, phone: e.target.value })}
+                                            placeholder="0912-345-678"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label">地址</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        value={userForm.address}
+                                        onChange={e => setUserForm({ ...userForm, address: e.target.value })}
+                                        placeholder="通訊地址"
+                                    />
+                                </div>
                             </div>
                             <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowAddUser(false)}>
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowUserModal(false)}>
                                     取消
                                 </button>
-                                <button type="submit" className="btn btn-primary" disabled={addingUser}>
-                                    {addingUser ? <div className="spinner" style={{ width: '1rem', height: '1rem' }}></div> : '建立'}
+                                <button type="submit" className="btn btn-primary" disabled={savingUser}>
+                                    {savingUser ? <div className="spinner" style={{ width: '1rem', height: '1rem' }}></div> : (editingUser ? '儲存' : '建立')}
                                 </button>
                             </div>
                         </form>

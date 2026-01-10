@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
-import { LogOut, FileText, Home } from 'lucide-react';
+import { LogOut, FileText, Home, Settings } from 'lucide-react';
 import { useAuth } from '../App';
+import ProfileModal from './ProfileModal';
 
 export default function Layout() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const [showProfile, setShowProfile] = useState(false);
 
     const handleLogout = async () => {
         await logout();
@@ -33,13 +36,20 @@ export default function Layout() {
 
                 <div className="navbar-user">
                     <span>
-                        {user?.username} ({user?.hospital})
+                        {user?.username} ({user?.display_name || '未設定姓名'}|{user?.hospital})
                         {user?.role === 'admin' && (
                             <span className="badge badge-info" style={{ marginLeft: '8px' }}>
                                 管理員
                             </span>
                         )}
                     </span>
+                    <button
+                        className="btn btn-icon"
+                        onClick={() => setShowProfile(true)}
+                        title="個人資料設定"
+                    >
+                        <Settings size={18} color="white" />
+                    </button>
                     <button className="btn btn-icon" onClick={handleLogout} title="登出">
                         <LogOut size={18} color="white" />
                     </button>
@@ -51,6 +61,12 @@ export default function Layout() {
                     <Outlet />
                 </div>
             </main>
+
+            <ProfileModal
+                isOpen={showProfile}
+                onClose={() => setShowProfile(false)}
+            />
         </div>
     );
 }
+

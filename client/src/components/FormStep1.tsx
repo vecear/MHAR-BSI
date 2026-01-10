@@ -6,12 +6,8 @@ interface Props {
     updateFormData: (updates: Partial<FormData>) => void;
     onFetch: () => void;
     loading: boolean;
+    userHospital: string;
 }
-
-const HOSPITALS = [
-    '內湖總院', '松山分院', '澎湖分院', '桃園總院',
-    '台中總院', '高雄總院', '左營總院', '花蓮總院'
-];
 
 const PATHOGENS = ['CRKP', 'CRAB', 'CRECOLI', 'CRPA'];
 
@@ -26,7 +22,7 @@ const CHRONIC_DISEASES = [
     'COPD', 'Connective tissue disease', 'PUD', 'None'
 ];
 
-export default function FormStep1({ formData, updateFormData, onFetch, loading }: Props) {
+export default function FormStep1({ formData, updateFormData, onFetch, loading, userHospital }: Props) {
     const handleCheckboxChange = (field: 'primary_source' | 'chronic_diseases', value: string) => {
         const current = formData[field] || [];
         if (current.includes(value)) {
@@ -143,18 +139,10 @@ export default function FormStep1({ formData, updateFormData, onFetch, loading }
 
                 <div className="form-group">
                     <label className="form-label">Hospital</label>
-                    <div className="radio-group">
-                        {HOSPITALS.map(opt => (
-                            <label key={opt} className="radio-label">
-                                <input
-                                    type="radio"
-                                    name="hospital"
-                                    checked={formData.hospital === opt}
-                                    onChange={() => updateFormData({ hospital: opt })}
-                                />
-                                {opt}
-                            </label>
-                        ))}
+                    <div className="hospital-readonly">
+                        <span className="badge badge-info" style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}>
+                            {userHospital}
+                        </span>
                     </div>
                 </div>
 

@@ -14,6 +14,7 @@ interface User {
   username: string;
   hospital: string;
   role: 'user' | 'admin';
+  display_name?: string;
 }
 
 interface AuthContextType {

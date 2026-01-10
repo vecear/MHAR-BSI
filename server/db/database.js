@@ -45,11 +45,13 @@ initializeSchema();
 // User queries - NOW safe to prepare after schema is initialized
 const userQueries = {
     findByUsername: db.prepare('SELECT * FROM users WHERE username = ?'),
-    findById: db.prepare('SELECT id, username, hospital, role, created_at FROM users WHERE id = ?'),
-    getAll: db.prepare('SELECT id, username, hospital, role, created_at FROM users WHERE role != ?'),
-    create: db.prepare('INSERT INTO users (username, password_hash, hospital, role) VALUES (?, ?, ?, ?)'),
+    findById: db.prepare('SELECT id, username, hospital, role, email, display_name, gender, phone, address, created_at FROM users WHERE id = ?'),
+    getAll: db.prepare('SELECT id, username, hospital, role, email, display_name, gender, phone, address, created_at FROM users WHERE role != ?'),
+    create: db.prepare('INSERT INTO users (username, password_hash, hospital, role, email, display_name, gender, phone, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'),
     delete: db.prepare('DELETE FROM users WHERE id = ? AND role != ?'),
-    updatePassword: db.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+    updatePassword: db.prepare('UPDATE users SET password_hash = ? WHERE id = ?'),
+    updateProfile: db.prepare('UPDATE users SET email = ?, display_name = ?, gender = ?, phone = ?, address = ? WHERE id = ?'),
+    updateProfileAdmin: db.prepare('UPDATE users SET username = ?, hospital = ?, email = ?, display_name = ?, gender = ?, phone = ?, address = ? WHERE id = ?')
 };
 
 // Submission queries
