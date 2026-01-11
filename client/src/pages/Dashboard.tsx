@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Download, Trash2, Plus, AlertCircle, Filter, X, ArrowUp, ArrowDown, Edit } from 'lucide-react';
+import { FileText, Download, Upload, Trash2, Plus, AlertCircle, Filter, X, ArrowUp, ArrowDown, Edit } from 'lucide-react';
 import { API_URL, useAuth } from '../App';
 import CsvUpload from '../components/CsvUpload';
 
@@ -16,23 +16,7 @@ interface Submission {
     hospital: string;
 }
 
-// Generate years from 2020 to 2100
-const YEARS = Array.from({ length: 81 }, (_, i) => 2020 + i);
-const MONTHS = [
-    { value: '', label: '全部月份' },
-    { value: '01', label: '1月' },
-    { value: '02', label: '2月' },
-    { value: '03', label: '3月' },
-    { value: '04', label: '4月' },
-    { value: '05', label: '5月' },
-    { value: '06', label: '6月' },
-    { value: '07', label: '7月' },
-    { value: '08', label: '8月' },
-    { value: '09', label: '9月' },
-    { value: '10', label: '10月' },
-    { value: '11', label: '11月' },
-    { value: '12', label: '12月' }
-];
+
 
 export default function Dashboard() {
     const { user } = useAuth();
@@ -41,8 +25,8 @@ export default function Dashboard() {
     const [error, setError] = useState('');
 
     // Filter states
-    const [filterYear, setFilterYear] = useState<string>('');
-    const [filterMonth, setFilterMonth] = useState<string>('');
+    const [startDate, setStartDate] = useState<string>('');
+    const [endDate, setEndDate] = useState<string>('');
     const [sortField, setSortField] = useState<string>('updated_at');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -79,14 +63,11 @@ export default function Dashboard() {
         return submissions.filter(sub => {
             const cultureDate = (sub.form_data?.positive_culture_date as string) || ''; // Format: YYYY-MM-DD
 
-            if (filterYear && !cultureDate.startsWith(filterYear)) {
+            if (startDate && cultureDate < startDate) {
                 return false;
             }
-            if (filterMonth && filterYear) {
-                const monthPart = cultureDate.substring(5, 7);
-                if (monthPart !== filterMonth) {
-                    return false;
-                }
+            if (endDate && cultureDate > endDate) {
+                return false;
             }
             return true;
         }).sort((a, b) => {
@@ -115,7 +96,7 @@ export default function Dashboard() {
             if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [submissions, filterYear, filterMonth, sortField, sortDirection]);
+    }, [submissions, startDate, endDate, sortField, sortDirection]);
 
     const handleExportCSV = async () => {
         try {
@@ -125,10 +106,32 @@ export default function Dashboard() {
             if (!res.ok) throw new Error('匯出失敗');
 
             const blob = await res.blob();
+            const defaultFileName = `mhar-bsi-export-${new Date().toISOString().split('T')[0]}.csv`;
+
+            // 嘗試使用 File System Access API 顯示「另存為」對話框
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await (window as any).showSaveFilePicker({
+                        suggestedName: defaultFileName,
+                        types: [{
+                            description: 'CSV 檔案',
+                            accept: { 'text/csv': ['.csv'] }
+                        }]
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    return;
+                } catch (err) {
+                    if ((err as Error).name === 'AbortError') return;
+                }
+            }
+
+            // Fallback: 傳統下載方式
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `mhar-bsi-export-${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = defaultFileName;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -139,17 +142,25 @@ export default function Dashboard() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('確定要刪除此筆資料嗎？')) return;
+        if (!confirm('確定要申請刪除此筆資料嗎？此申請將送交管理員審核。')) return;
 
         try {
-            const res = await fetch(`${API_URL}/forms/${id}`, {
-                method: 'DELETE',
-                credentials: 'include'
+            const res = await fetch(`${API_URL}/delete-requests`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ submission_id: id })
             });
-            if (!res.ok) throw new Error('刪除失敗');
-            setSubmissions(submissions.filter(s => s.id !== id));
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || '申請失敗');
+            }
+
+            alert('刪除申請已送出，待管理員審核');
         } catch (err) {
-            alert(err instanceof Error ? err.message : '刪除失敗');
+            alert(err instanceof Error ? err.message : '申請失敗');
         }
     };
 
@@ -166,9 +177,10 @@ export default function Dashboard() {
             <div className="page-header">
                 <h1>我的表單記錄</h1>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <CsvUpload variant="buttons" onUploadComplete={fetchSubmissions} userHospital={user?.hospital || ''} onError={setError} />
                     <button className="btn btn-secondary" onClick={handleExportCSV}>
-                        <Download size={18} />
-                        匯出 CSV
+                        <Upload size={18} />
+                        匯出
                     </button>
                     <Link to="/form" className="btn btn-primary">
                         <Plus size={18} />
@@ -184,10 +196,7 @@ export default function Dashboard() {
                 </div>
             )}
 
-            {/* CSV 批次匯入區塊 */}
-            <div className="card" style={{ marginBottom: 'var(--spacing-lg)' }}>
-                <CsvUpload onUploadComplete={fetchSubmissions} userHospital={user?.hospital || ''} />
-            </div>
+
 
             {/* Filter Section */}
             <div className="card" style={{ marginBottom: 'var(--spacing-lg)', padding: 'var(--spacing-md)' }}>
@@ -197,42 +206,31 @@ export default function Dashboard() {
                         <span style={{ fontWeight: 500 }}>篩選條件 (陽性日期)：</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <label style={{ color: 'var(--text-secondary)' }}>年份：</label>
-                        <select
-                            className="form-select"
-                            value={filterYear}
-                            onChange={e => {
-                                setFilterYear(e.target.value);
-                                if (!e.target.value) setFilterMonth('');
-                            }}
-                            style={{ width: 'auto', minWidth: '100px' }}
-                        >
-                            <option value="">全部年份</option>
-                            {YEARS.map(year => (
-                                <option key={year} value={year}>{year}年</option>
-                            ))}
-                        </select>
+                        <label style={{ color: 'var(--text-secondary)' }}>起：</label>
+                        <input
+                            type="date"
+                            className="form-input"
+                            value={startDate}
+                            onChange={e => setStartDate(e.target.value)}
+                            style={{ width: 'auto' }}
+                        />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <label style={{ color: 'var(--text-secondary)' }}>月份：</label>
-                        <select
-                            className="form-select"
-                            value={filterMonth}
-                            onChange={e => setFilterMonth(e.target.value)}
-                            disabled={!filterYear}
-                            style={{ width: 'auto', minWidth: '100px' }}
-                        >
-                            {MONTHS.map(m => (
-                                <option key={m.value} value={m.value}>{m.label}</option>
-                            ))}
-                        </select>
+                        <label style={{ color: 'var(--text-secondary)' }}>迄：</label>
+                        <input
+                            type="date"
+                            className="form-input"
+                            value={endDate}
+                            onChange={e => setEndDate(e.target.value)}
+                            style={{ width: 'auto' }}
+                        />
                     </div>
-                    {(filterYear || filterMonth) && (
+                    {(startDate || endDate) && (
                         <button
                             className="btn btn-secondary"
                             onClick={() => {
-                                setFilterYear('');
-                                setFilterMonth('');
+                                setStartDate('');
+                                setEndDate('');
                             }}
                             style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
                         >

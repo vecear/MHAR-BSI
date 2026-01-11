@@ -188,18 +188,21 @@ router.put('/:id', requireAuth, (req, res) => {
     }
 });
 
-// Delete submission
+// Delete submission (admin only - non-admins must use delete request)
 router.delete('/:id', requireAuth, (req, res) => {
     try {
-        let result;
-        if (req.session.role === 'admin') {
-            result = submissionQueries.deleteAdmin.run(req.params.id);
-        } else {
-            result = submissionQueries.delete.run(req.params.id, req.session.userId);
+        // Non-admin users cannot directly delete - they must use delete request
+        if (req.session.role !== 'admin') {
+            return res.status(403).json({
+                error: '非管理員無法直接刪除，請使用刪除申請功能',
+                requireDeleteRequest: true
+            });
         }
 
+        const result = submissionQueries.deleteAdmin.run(req.params.id);
+
         if (result.changes === 0) {
-            return res.status(404).json({ error: '找不到資料或權限不足' });
+            return res.status(404).json({ error: '找不到資料' });
         }
 
         res.json({ message: '資料已刪除' });

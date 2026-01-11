@@ -230,31 +230,28 @@ export default function FormPage() {
         let finalStatus = formData.data_status;
 
         if (!isSubmit) {
-            // Save Draft: Always set to incomplete and stay on page
+            // "Save Draft": Always mark as incomplete
             finalStatus = 'incomplete';
-            updateFormData({ data_status: 'incomplete' });
-            // Direct mutation for immediate effect in this closure if needed, though react state update is async
-            formData.data_status = 'incomplete';
         } else {
-            // Complete & Submit: Respect the user's choice (formData.data_status)
+            // "Submit" or "Modify": Ask the user if it's complete
+            const isComplete = window.confirm('該筆資料是否已完成？\n\n按下「確定」標記為「已完成」\n按下「取消」標記為「未完成」');
+            finalStatus = isComplete ? 'complete' : 'incomplete';
 
-            // Only validate if status is 'complete'
+            // Basic validation if marking as complete
             if (finalStatus === 'complete') {
-                const requiredFields: (keyof FormData)[] = [
-                    'name', 'sex', 'hospital', 'pathogen', 'type_of_infection'
-                ];
+                const requiredFields: (keyof FormData)[] = ['name', 'sex', 'hospital', 'pathogen', 'type_of_infection'];
                 const missingFields = requiredFields.filter(field => !formData[field]);
                 if (missingFields.length > 0) {
-                    if (!window.confirm('您已選擇將表單標記為「已完成」，但部分基本欄位尚未填寫。確定要繼續嗎？')) {
+                    if (!window.confirm('您已選擇標記為「已完成」，但部分基本欄位尚未填寫。確定要繼續嗎？')) {
                         return;
                     }
                 }
-            } else { // finalStatus is 'incomplete' but user clicked "Complete and Submit"
-                if (!window.confirm('您已選擇將表單標記為「未填完」。確定要以「未填完」狀態提交嗎？')) {
-                    return;
-                }
             }
         }
+
+        // Update local state and prepare for save
+        const updatedFormData = { ...formData, data_status: finalStatus };
+        setFormData(updatedFormData);
 
         setSaving(true);
         setError('');
@@ -263,10 +260,7 @@ export default function FormPage() {
         const payload = {
             medical_record_number: formData.medical_record_number,
             admission_date: formData.admission_date,
-            form_data: {
-                ...formData,
-                data_status: finalStatus
-            },
+            form_data: updatedFormData,
             data_status: finalStatus
         };
 
@@ -393,29 +387,50 @@ export default function FormPage() {
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button
-                            className="btn btn-secondary"
-                            onClick={() => handleSave(false)}
-                            disabled={saving}
-                        >
-                            {saving ? <div className="spinner" style={{ width: '1rem', height: '1rem' }}></div> : <Save size={18} />}
-                            儲存草稿
-                        </button>
-
-                        {currentStep < 4 ? (
-                            <button className="btn btn-primary" onClick={() => goToStep(currentStep + 1)}>
-                                下一步
-                                <ChevronRight size={18} />
-                            </button>
+                        {id ? (
+                            // Edit mode
+                            <>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => handleSave(true)}
+                                    disabled={saving}
+                                >
+                                    {saving ? <div className="spinner" style={{ width: '1rem', height: '1rem' }}></div> : <Save size={18} />}
+                                    {currentStep === 4 ? '完成修改' : '修改紀錄'}
+                                </button>
+                                {currentStep < 4 && (
+                                    <button className="btn btn-primary" onClick={() => goToStep(currentStep + 1)}>
+                                        下一步
+                                        <ChevronRight size={18} />
+                                    </button>
+                                )}
+                            </>
                         ) : (
-                            <button
-                                className="btn btn-success"
-                                onClick={() => handleSave(true)}
-                                disabled={saving}
-                            >
-                                {saving ? <div className="spinner" style={{ width: '1rem', height: '1rem' }}></div> : <Check size={18} />}
-                                完成並提交
-                            </button>
+                            // New record mode
+                            <>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => handleSave(false)}
+                                    disabled={saving}
+                                >
+                                    儲存草稿
+                                </button>
+
+                                <button
+                                    className="btn btn-success"
+                                    onClick={() => handleSave(true)}
+                                    disabled={saving}
+                                >
+                                    {currentStep === 4 ? '完成並提交' : '直接提交'}
+                                </button>
+
+                                {currentStep < 4 && (
+                                    <button className="btn btn-primary" onClick={() => goToStep(currentStep + 1)}>
+                                        下一步
+                                        <ChevronRight size={18} />
+                                    </button>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Download, Upload, FileSpreadsheet, AlertCircle, Check } from 'lucide-react';
+import { Download, Upload, FileSpreadsheet, AlertCircle, Check, ClipboardList } from 'lucide-react';
 import { API_URL } from '../App';
 
 // CSV 欄位定義（對應表單欄位）- 不包含 hospital，因使用者醫院由系統帶入
@@ -102,17 +102,19 @@ interface UploadResult {
 
 interface CsvUploadProps {
     onUploadComplete?: () => void;
+    onError?: (message: string) => void;
     userHospital: string;
+    variant?: 'card' | 'buttons';
 }
 
-export default function CsvUpload({ onUploadComplete, userHospital }: CsvUploadProps) {
+export default function CsvUpload({ onUploadComplete, onError, userHospital, variant = 'card' }: CsvUploadProps) {
     const [uploading, setUploading] = useState(false);
     const [result, setResult] = useState<UploadResult | null>(null);
     const [error, setError] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // 下載 CSV 範本
-    const downloadTemplate = () => {
+    const downloadTemplate = async () => {
         // 使用 BOM 讓 Excel 正確識別 UTF-8
         const BOM = '\uFEFF';
         const headerRow = CSV_HEADERS.map(h => CSV_HEADER_LABELS[h] || h).join(',');
@@ -120,10 +122,33 @@ export default function CsvUpload({ onUploadComplete, userHospital }: CsvUploadP
         const csvContent = BOM + headerRow + '\n' + sampleRow;
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+        const defaultFileName = 'MHAR-BSI_範本.csv';
+
+        // 嘗試使用 File System Access API 顯示「另存為」對話框
+        if ('showSaveFilePicker' in window) {
+            try {
+                const handle = await (window as any).showSaveFilePicker({
+                    suggestedName: defaultFileName,
+                    types: [{
+                        description: 'CSV 檔案',
+                        accept: { 'text/csv': ['.csv'] }
+                    }]
+                });
+                const writable = await handle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                return;
+            } catch (err) {
+                // 使用者取消或 API 失敗，fallback 到傳統方式
+                if ((err as Error).name === 'AbortError') return;
+            }
+        }
+
+        // Fallback: 傳統下載方式
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'MHAR-BSI_範本.csv';
+        a.download = defaultFileName;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -225,7 +250,9 @@ export default function CsvUpload({ onUploadComplete, userHospital }: CsvUploadP
                 onUploadComplete();
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : '上傳失敗');
+            const msg = err instanceof Error ? err.message : '上傳失敗';
+            setError(msg);
+            if (onError) onError(msg);
         } finally {
             setUploading(false);
             // 重設 input 以允許重複上傳同一檔案
@@ -234,6 +261,29 @@ export default function CsvUpload({ onUploadComplete, userHospital }: CsvUploadP
             }
         }
     };
+
+    if (variant === 'buttons') {
+        return (
+            <>
+                <button className="btn btn-secondary" onClick={downloadTemplate} title="下載 CSV 範本">
+                    <ClipboardList size={18} />
+                    下載範本
+                </button>
+                <label className="btn btn-primary" style={{ cursor: 'pointer' }} title="上傳 CSV">
+                    <Download size={18} />
+                    {uploading ? '...' : '匯入'}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv"
+                        onChange={handleUpload}
+                        disabled={uploading}
+                        style={{ display: 'none' }}
+                    />
+                </label>
+            </>
+        );
+    }
 
     return (
         <div className="csv-upload-section">

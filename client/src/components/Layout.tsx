@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
-import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight } from 'lucide-react';
-import { useAuth } from '../App';
+import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight, Trash2, AlertTriangle } from 'lucide-react';
+import { useAuth, API_URL } from '../App';
 import { useTheme, THEMES } from '../context/ThemeContext';
 import ProfileModal from './ProfileModal';
 
@@ -12,6 +12,7 @@ export default function Layout() {
     const [showProfile, setShowProfile] = useState(false);
     const [showSettingsMenu, setShowSettingsMenu] = useState(false);
     const [showThemeMenu, setShowThemeMenu] = useState(false);
+    const [pendingDeleteCount, setPendingDeleteCount] = useState(0);
     const settingsRef = useRef<HTMLDivElement>(null);
 
     // Close menu when clicking outside
@@ -25,6 +26,29 @@ export default function Layout() {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Fetch pending delete requests count for admin
+    useEffect(() => {
+        if (user?.role === 'admin') {
+            fetchPendingDeleteCount();
+            // Refresh every 30 seconds
+            const interval = setInterval(fetchPendingDeleteCount, 30000);
+            return () => clearInterval(interval);
+        }
+    }, [user?.role]);
+
+    const fetchPendingDeleteCount = async () => {
+        try {
+            const res = await fetch(`${API_URL}/delete-requests`, { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                const pendingCount = data.filter((r: { status: string }) => r.status === 'pending').length;
+                setPendingDeleteCount(pendingCount);
+            }
+        } catch {
+            // Silently fail
+        }
+    };
 
     const handleLogout = async () => {
         await logout();
@@ -49,6 +73,25 @@ export default function Layout() {
                         <FileText size={18} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
                         新增表單
                     </Link>
+                    {user?.role !== 'admin' && (
+                        <Link to="/delete-requests" className="navbar-link">
+                            <Trash2 size={18} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                            刪除申請
+                        </Link>
+                    )}
+                    {user?.role === 'admin' && pendingDeleteCount > 0 && (
+                        <span className="badge badge-danger" style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            animation: 'pulse 2s infinite',
+                            cursor: 'pointer'
+                        }} onClick={() => navigate('/')}
+                        >
+                            <AlertTriangle size={14} />
+                            申請刪除 ({pendingDeleteCount})
+                        </span>
+                    )}
                 </div>
 
                 <div className="navbar-user">

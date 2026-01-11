@@ -96,6 +96,46 @@ const submissionQueries = {
     deleteAdmin: db.prepare('DELETE FROM submissions WHERE id = ?')
 };
 
+// Delete request queries
+const deleteRequestQueries = {
+    create: db.prepare(`
+        INSERT INTO delete_requests (submission_id, requester_id, medical_record_number, admission_date)
+        VALUES (?, ?, ?, ?)
+    `),
+    findById: db.prepare('SELECT * FROM delete_requests WHERE id = ?'),
+    findBySubmission: db.prepare('SELECT * FROM delete_requests WHERE submission_id = ? AND status = ?'),
+    findPendingBySubmission: db.prepare('SELECT * FROM delete_requests WHERE submission_id = ? AND status = ?'),
+    getByRequester: db.prepare(`
+        SELECT dr.*, 
+               COALESCE(dr.medical_record_number, s.medical_record_number) as medical_record_number,
+               COALESCE(dr.admission_date, s.admission_date) as admission_date
+        FROM delete_requests dr
+        LEFT JOIN submissions s ON dr.submission_id = s.id
+        WHERE dr.requester_id = ?
+        ORDER BY dr.created_at DESC
+    `),
+    getAll: db.prepare(`
+        SELECT dr.*, 
+               COALESCE(dr.medical_record_number, s.medical_record_number) as medical_record_number,
+               COALESCE(dr.admission_date, s.admission_date) as admission_date,
+               u.username as requester_username, u.hospital as requester_hospital
+        FROM delete_requests dr
+        LEFT JOIN submissions s ON dr.submission_id = s.id
+        JOIN users u ON dr.requester_id = u.id
+        ORDER BY dr.created_at DESC
+    `),
+    approve: db.prepare(`
+        UPDATE delete_requests
+        SET status = 'approved', resolved_at = CURRENT_TIMESTAMP, resolved_by = ?
+        WHERE id = ?
+    `),
+    reject: db.prepare(`
+        UPDATE delete_requests
+        SET status = 'rejected', resolved_at = CURRENT_TIMESTAMP, resolved_by = ?, reject_reason = ?
+        WHERE id = ?
+    `)
+};
+
 // Export a no-op initializeDatabase for backwards compatibility
 function initializeDatabase() {
     // Schema already initialized at module load
@@ -106,5 +146,6 @@ module.exports = {
     db,
     initializeDatabase,
     userQueries,
-    submissionQueries
+    submissionQueries,
+    deleteRequestQueries
 };

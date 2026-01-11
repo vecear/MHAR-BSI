@@ -13,6 +13,10 @@
   /* Ensure button text is white */
   --text-on-header: #ffffff;
   /* Default header text to white */
+  --color-success: #22c55e;
+  --color-success-hover: #16a34a;
+  --color-danger: #ef4444;
+  --color-danger-hover: #dc2626;
   --border-color: #e2e8f0;
   --border-radius: 8px;
   --border-radius: 8px;
@@ -478,6 +482,12 @@ h3 {
   color: var(--text-on-primary);
 }
 
+.btn-success:hover:not(:disabled) {
+  background: var(--color-success-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
 .btn-icon {
   padding: var(--spacing-sm);
   background: transparent;
@@ -692,7 +702,7 @@ h3 {
 
 .data-table th,
 .data-table td {
-  padding: var(--spacing-md);
+  padding: 0.25rem 0.125rem;
   text-align: left;
   border-bottom: 1px solid var(--border-color);
 }
