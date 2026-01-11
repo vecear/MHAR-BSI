@@ -48,11 +48,22 @@ router.post('/', requireAuth, (req, res) => {
             return res.status(409).json({ error: '此筆資料已有待審核的刪除申請' });
         }
 
+        let record_time = null;
+        if (submission.form_data) {
+            try {
+                const formData = JSON.parse(submission.form_data);
+                record_time = formData.record_time;
+            } catch (e) {
+                console.error('Error parsing form_data:', e);
+            }
+        }
+
         const result = deleteRequestQueries.create.run(
             submission_id,
             req.session.userId,
             submission.medical_record_number,
-            submission.admission_date
+            submission.admission_date,
+            record_time
         );
 
         res.status(201).json({

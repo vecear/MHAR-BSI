@@ -15,6 +15,7 @@ interface Submission {
     update_count?: number;
     username: string;
     hospital: string;
+    has_pending_delete?: number;
 }
 
 interface DeleteRequest {
@@ -205,6 +206,15 @@ export default function Dashboard() {
         } catch (err) {
             alert(err instanceof Error ? err.message : '申請失敗');
         }
+    };
+
+    const getStatusBadge = (status: string) => {
+        const isComplete = status === 'complete';
+        return (
+            <span className={`badge ${isComplete ? 'badge-success' : 'badge-warning'}`}>
+                {isComplete ? '已完成' : '未完成'}
+            </span>
+        );
     };
 
     if (loading) {
@@ -458,9 +468,14 @@ export default function Dashboard() {
                                                 <span className="badge badge-info">{sub.hospital}</span>
                                             </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                <span className={`badge ${sub.data_status === 'complete' ? 'badge-success' : 'badge-warning'}`}>
-                                                    {sub.data_status === 'complete' ? '已完成' : '未完成'}
-                                                </span>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+                                                    {getStatusBadge(sub.data_status)}
+                                                    {sub.has_pending_delete === 1 && (
+                                                        <span className="badge badge-danger" style={{ fontSize: '0.7em', padding: '2px 6px' }}>
+                                                            刪除申請中
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 <div>{new Date(sub.updated_at + (sub.updated_at.includes('Z') ? '' : 'Z')).toLocaleDateString('zh-TW')}</div>

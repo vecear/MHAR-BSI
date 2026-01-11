@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { FileText, AlertCircle, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { API_URL } from '../App';
 
@@ -11,6 +12,7 @@ interface DeleteRequest {
     reject_reason: string | null;
     created_at: string;
     resolved_at: string | null;
+    record_time?: string;
 }
 
 export default function DeleteRequests() {
@@ -109,7 +111,8 @@ export default function DeleteRequests() {
                         <table className="data-table">
                             <thead>
                                 <tr>
-                                    <th style={{ textAlign: 'center' }}>病歷號</th>
+                                    <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>紀錄編號</th>
+                                    <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>病歷號</th>
                                     <th style={{ textAlign: 'center' }}>住院日期</th>
                                     <th style={{ textAlign: 'center' }}>狀態</th>
                                     <th style={{ textAlign: 'center' }}>申請時間</th>
@@ -120,7 +123,16 @@ export default function DeleteRequests() {
                             <tbody>
                                 {requests.map(req => (
                                     <tr key={req.id}>
-                                        <td style={{ textAlign: 'center' }}>{req.medical_record_number}</td>
+                                        <td style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.85em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                                            {req.status === 'approved' ? (
+                                                req.record_time?.replace(/[-T:]/g, '') || '-'
+                                            ) : (
+                                                <Link to={`/form/${req.submission_id}`} style={{ textDecoration: 'none', color: 'var(--color-primary)' }}>
+                                                    {req.record_time?.replace(/[-T:]/g, '') || '-'}
+                                                </Link>
+                                            )}
+                                        </td>
+                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.medical_record_number}</td>
                                         <td style={{ textAlign: 'center' }}>{req.admission_date}</td>
                                         <td style={{ textAlign: 'center' }}>{getStatusBadge(req.status)}</td>
                                         <td style={{ textAlign: 'center' }}>{formatDateTime(req.created_at)}</td>

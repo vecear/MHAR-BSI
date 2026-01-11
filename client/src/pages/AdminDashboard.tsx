@@ -720,6 +720,7 @@ export default function AdminDashboard() {
                             <table className="data-table">
                                 <thead>
                                     <tr>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>紀錄編號</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>病歷號</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>住院日期</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>申請者</th>
@@ -732,6 +733,15 @@ export default function AdminDashboard() {
                                 <tbody>
                                     {deleteRequests.map(req => (
                                         <tr key={req.id}>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.85em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                                                {req.status === 'approved' ? (
+                                                    ((req as any).record_time as string)?.replace(/[-T:]/g, '') || '-'
+                                                ) : (
+                                                    <Link to={`/form/${req.submission_id}`} style={{ textDecoration: 'none', color: 'var(--color-primary)' }}>
+                                                        {((req as any).record_time as string)?.replace(/[-T:]/g, '') || '-'}
+                                                    </Link>
+                                                )}
+                                            </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.medical_record_number}</td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.admission_date}</td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.requester_username}</td>
