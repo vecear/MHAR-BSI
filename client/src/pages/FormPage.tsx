@@ -387,50 +387,28 @@ export default function FormPage() {
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        {id ? (
-                            // Edit mode
-                            <>
-                                <button
-                                    className="btn btn-secondary"
-                                    onClick={() => handleSave(true)}
-                                    disabled={saving}
-                                >
-                                    {saving ? <div className="spinner" style={{ width: '1rem', height: '1rem' }}></div> : <Save size={18} />}
-                                    {currentStep === 4 ? '完成修改' : '修改紀錄'}
-                                </button>
-                                {currentStep < 4 && (
-                                    <button className="btn btn-primary" onClick={() => goToStep(currentStep + 1)}>
-                                        下一步
-                                        <ChevronRight size={18} />
-                                    </button>
-                                )}
-                            </>
-                        ) : (
-                            // New record mode
-                            <>
-                                <button
-                                    className="btn btn-secondary"
-                                    onClick={() => handleSave(false)}
-                                    disabled={saving}
-                                >
-                                    儲存草稿
-                                </button>
+                        <button
+                            className="btn btn-secondary"
+                            onClick={() => handleSave(false)}
+                            disabled={saving}
+                        >
+                            {saving ? <div className="spinner" style={{ width: '1rem', height: '1rem' }}></div> : <Save size={18} />}
+                            儲存草稿
+                        </button>
 
-                                <button
-                                    className="btn btn-success"
-                                    onClick={() => handleSave(true)}
-                                    disabled={saving}
-                                >
-                                    {currentStep === 4 ? '完成並提交' : '直接提交'}
-                                </button>
+                        <button
+                            className="btn btn-success"
+                            onClick={() => handleSave(true)}
+                            disabled={saving}
+                        >
+                            {id ? (currentStep === 4 ? '完成修改' : '完成修改') : (currentStep === 4 ? '完成並提交' : '直接提交')}
+                        </button>
 
-                                {currentStep < 4 && (
-                                    <button className="btn btn-primary" onClick={() => goToStep(currentStep + 1)}>
-                                        下一步
-                                        <ChevronRight size={18} />
-                                    </button>
-                                )}
-                            </>
+                        {currentStep < 4 && (
+                            <button className="btn btn-primary" onClick={() => goToStep(currentStep + 1)}>
+                                下一步
+                                <ChevronRight size={18} />
+                            </button>
                         )}
                     </div>
                 </div>

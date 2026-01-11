@@ -12,17 +12,28 @@ interface Submission {
     data_status: string;
     created_at: string;
     updated_at: string;
+    update_count?: number;
     username: string;
     hospital: string;
 }
-
-
 
 interface DeleteRequest {
     id: number;
     submission_id: number;
     status: 'pending' | 'approved' | 'rejected';
 }
+
+const HOSPITALS = [
+    '內湖總院', '松山分院', '澎湖分院', '桃園總院',
+    '台中總院', '高雄總院', '左營總院', '花蓮總院'
+];
+
+const PATHOGEN_CONFIG = [
+    { id: 'CRKP', label: 'CRKP', bg: '#fee2e2', text: '#dc2626' },
+    { id: 'CRAB', label: 'CRAB', bg: '#f3e8ff', text: '#9333ea' },
+    { id: 'CRECOLI', label: 'CRECOLI', bg: '#dbeafe', text: '#2563eb' },
+    { id: 'CRPA', label: 'CRPA', bg: '#ffedd5', text: '#ea580c' }
+];
 
 export default function Dashboard() {
     const { user } = useAuth();
@@ -34,6 +45,8 @@ export default function Dashboard() {
     // Filter states
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
+    const [filterHospital, setFilterHospital] = useState('');
+    const [filterPathogen, setFilterPathogen] = useState('');
     const [sortField, setSortField] = useState<string>('updated_at');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -82,13 +95,18 @@ export default function Dashboard() {
         }
     };
 
-    // Filter submissions by year and month
+    // Filter submissions
     const filteredSubmissions = useMemo(() => {
         return submissions.filter(sub => {
             const cultureDate = (sub.form_data?.positive_culture_date as string) || ''; // Format: YYYY-MM-DD
 
             if (startDate && cultureDate < startDate) return false;
             if (endDate && cultureDate > endDate) return false;
+            if (filterHospital && sub.hospital !== filterHospital) return false;
+
+            const pathogen = (sub.form_data?.pathogen as string) || '';
+            if (filterPathogen && pathogen !== filterPathogen) return false;
+
             return true;
         }).sort((a, b) => {
             const getValue = (item: Submission) => {
@@ -96,8 +114,12 @@ export default function Dashboard() {
                     case 'medical_record_number': return item.medical_record_number;
                     case 'admission_date': return item.admission_date;
                     case 'positive_culture_date': return (item.form_data?.positive_culture_date as string) || '';
+                    case 'username': return item.username;
+                    case 'hospital': return item.hospital;
                     case 'data_status': return item.data_status;
+                    case 'created_at': return item.created_at;
                     case 'updated_at': return item.updated_at;
+                    case 'update_count': return (item.update_count || 0);
                     default: return '';
                 }
             };
@@ -109,7 +131,7 @@ export default function Dashboard() {
             if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [submissions, startDate, endDate, sortField, sortDirection]);
+    }, [submissions, startDate, endDate, filterHospital, filterPathogen, sortField, sortDirection]);
 
     const handleExportCSV = async () => {
         try {
@@ -210,50 +232,114 @@ export default function Dashboard() {
                 </div>
             )}
 
-
-
             {/* Filter Section */}
             <div className="card" style={{ marginBottom: 'var(--spacing-lg)', padding: 'var(--spacing-md)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Filter size={18} color="var(--text-muted)" />
-                        <span style={{ fontWeight: 500 }}>篩選條件 (陽性日期)：</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                    {/* Line 1: Basic Filters */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Filter size={18} color="var(--text-muted)" />
+                            <span style={{ fontWeight: 500 }}>篩選條件 (陽性日期)：</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <label style={{ color: 'var(--text-secondary)' }}>起：</label>
+                            <input
+                                type="date"
+                                className="form-input"
+                                value={startDate}
+                                onChange={e => setStartDate(e.target.value)}
+                                style={{ width: 'auto' }}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <label style={{ color: 'var(--text-secondary)' }}>迄：</label>
+                            <input
+                                type="date"
+                                className="form-input"
+                                value={endDate}
+                                onChange={e => setEndDate(e.target.value)}
+                                style={{ width: 'auto' }}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <label style={{ color: 'var(--text-secondary)' }}>醫院：</label>
+                            <select
+                                className="form-select"
+                                value={filterHospital}
+                                onChange={e => setFilterHospital(e.target.value)}
+                                style={{ width: 'auto', minWidth: '120px' }}
+                            >
+                                <option value="">全部醫院</option>
+                                {HOSPITALS.map(h => (
+                                    <option key={h} value={h}>{h}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            {(startDate || endDate || filterHospital || filterPathogen) && (
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => {
+                                        setStartDate('');
+                                        setEndDate('');
+                                        setFilterHospital('');
+                                        setFilterPathogen('');
+                                    }}
+                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
+                                >
+                                    <X size={14} style={{ marginRight: '4px' }} />
+                                    清除篩選
+                                </button>
+                            )}
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                顯示 {filteredSubmissions.length} / {submissions.length} 筆
+                            </div>
+                        </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <label style={{ color: 'var(--text-secondary)' }}>起：</label>
-                        <input
-                            type="date"
-                            className="form-input"
-                            value={startDate}
-                            onChange={e => setStartDate(e.target.value)}
-                            style={{ width: 'auto' }}
-                        />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <label style={{ color: 'var(--text-secondary)' }}>迄：</label>
-                        <input
-                            type="date"
-                            className="form-input"
-                            value={endDate}
-                            onChange={e => setEndDate(e.target.value)}
-                            style={{ width: 'auto' }}
-                        />
-                    </div>
-                    {(startDate || endDate) && (
-                        <button
-                            className="btn btn-secondary"
-                            onClick={() => {
-                                setStartDate('');
-                                setEndDate('');
-                            }}
-                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
-                        >
-                            <X size={14} style={{ marginRight: '4px' }} />
-                            清除篩選
-                        </button>
-                    )}
-                    <div style={{ marginLeft: 'auto', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                        顯示 {filteredSubmissions.length} / {submissions.length} 筆
+
+                    {/* Line 2: Pathogen Tags */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '2rem' }}>
+                        <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>菌種：</label>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <button
+                                onClick={() => setFilterPathogen('')}
+                                style={{
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '9999px',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 500,
+                                    cursor: 'pointer',
+                                    border: filterPathogen === '' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                                    backgroundColor: 'var(--bg-primary)',
+                                    color: 'var(--text-primary)',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: filterPathogen === '' ? 'var(--shadow-sm)' : 'none'
+                                }}
+                            >
+                                全部
+                            </button>
+                            {PATHOGEN_CONFIG.map(p => (
+                                <button
+                                    key={p.id}
+                                    onClick={() => setFilterPathogen(p.id)}
+                                    style={{
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: '9999px',
+                                        fontSize: '0.85rem',
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                        border: filterPathogen === p.id ? `2px solid ${p.text}` : '2px solid transparent',
+                                        backgroundColor: p.bg,
+                                        color: p.text,
+                                        transition: 'all 0.2s ease',
+                                        boxShadow: filterPathogen === p.id ? 'var(--shadow-sm)' : 'none',
+                                        opacity: filterPathogen && filterPathogen !== p.id ? 0.6 : 1
+                                    }}
+                                >
+                                    {p.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -275,6 +361,11 @@ export default function Dashboard() {
                             <thead>
                                 <tr>
                                     <th style={{ minWidth: '80px', textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1.5rem' }}>修改</th>
+                                    <th style={{ minWidth: '60px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                        <div>紀錄編號</div>
+                                        <div style={{ fontSize: '0.75em', fontWeight: 'normal' }}>(建立時間)</div>
+                                    </th>
+                                    <th style={{ minWidth: '50px', textAlign: 'center', verticalAlign: 'middle' }}>菌種</th>
                                     <th onClick={() => handleSort('medical_record_number')} style={{ cursor: 'pointer', textAlign: 'center', verticalAlign: 'middle' }}>
                                         病歷號 {sortField === 'medical_record_number' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                     </th>
@@ -284,11 +375,20 @@ export default function Dashboard() {
                                     <th onClick={() => handleSort('positive_culture_date')} style={{ cursor: 'pointer', textAlign: 'center', verticalAlign: 'middle' }}>
                                         陽性日期 {sortField === 'positive_culture_date' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                     </th>
+                                    <th onClick={() => handleSort('username')} style={{ cursor: 'pointer', minWidth: '45px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                        填寫者 {sortField === 'username' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                    </th>
+                                    <th onClick={() => handleSort('hospital')} style={{ cursor: 'pointer', minWidth: '60px', whiteSpace: 'nowrap', textAlign: 'center', verticalAlign: 'middle' }}>
+                                        醫院 {sortField === 'hospital' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                    </th>
                                     <th onClick={() => handleSort('data_status')} style={{ cursor: 'pointer', textAlign: 'center', verticalAlign: 'middle' }}>
                                         狀態 {sortField === 'data_status' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                     </th>
                                     <th onClick={() => handleSort('updated_at')} style={{ cursor: 'pointer', textAlign: 'center', verticalAlign: 'middle' }}>
-                                        更新時間 {sortField === 'updated_at' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                        最後更新時間 {sortField === 'updated_at' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                    </th>
+                                    <th style={{ minWidth: '45px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                        更新次數 {sortField === 'update_count' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                     </th>
                                 </tr>
                             </thead>
@@ -322,21 +422,50 @@ export default function Dashboard() {
                                                     )}
                                                 </div>
                                             </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.8em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                                                {(sub.form_data?.record_time as string)?.replace(/[-T:]/g, '') || '-'}
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                {(() => {
+                                                    const pathogen = (sub.form_data?.pathogen as string) || '';
+                                                    const config = PATHOGEN_CONFIG.find(p => p.id === pathogen);
+
+                                                    return pathogen ? (
+                                                        <span className="badge" style={{ backgroundColor: config?.bg || '#f0f0f0', color: config?.text || '#666' }}>
+                                                            {pathogen}
+                                                        </span>
+                                                    ) : '-';
+                                                })()}
+                                            </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.medical_record_number}</td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.admission_date}</td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{(sub.form_data?.positive_culture_date as string) || '-'}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.username}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <span className="badge badge-info">{sub.hospital}</span>
+                                            </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 <span className={`badge ${sub.data_status === 'complete' ? 'badge-success' : 'badge-warning'}`}>
                                                     {sub.data_status === 'complete' ? '已完成' : '未完成'}
                                                 </span>
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{new Date(sub.updated_at).toLocaleString('zh-TW', { hour12: false })}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <div>{new Date(sub.updated_at).toLocaleDateString('zh-TW')}</div>
+                                                <div style={{ fontSize: '0.85em', color: 'var(--text-muted)' }}>
+                                                    {new Date(sub.updated_at).toLocaleTimeString('zh-TW', { hour12: false })}
+                                                </div>
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <span className="badge badge-secondary" style={{ backgroundColor: '#f0f0f0', color: '#666' }}>
+                                                    {sub.update_count || 1} 次
+                                                </span>
+                                            </td>
                                         </tr>
                                     );
                                 })}
                             </tbody>
                         </table>
-                    </div>
+                    </div >
                 </div >
             )
             }
