@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Download, Upload, Trash2, Plus, AlertCircle, Filter, X, ArrowUp, ArrowDown, Edit } from 'lucide-react';
+import { FileText, Upload, Trash2, Plus, AlertCircle, Filter, X, ArrowUp, ArrowDown, Edit, Clock } from 'lucide-react';
 import { API_URL, useAuth } from '../App';
 import CsvUpload from '../components/CsvUpload';
 
@@ -18,9 +18,16 @@ interface Submission {
 
 
 
+interface DeleteRequest {
+    id: number;
+    submission_id: number;
+    status: 'pending' | 'approved' | 'rejected';
+}
+
 export default function Dashboard() {
     const { user } = useAuth();
     const [submissions, setSubmissions] = useState<Submission[]>([]);
+    const [deleteRequests, setDeleteRequests] = useState<DeleteRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -40,7 +47,12 @@ export default function Dashboard() {
     };
 
     useEffect(() => {
-        fetchSubmissions();
+        const loadData = async () => {
+            setLoading(true);
+            await Promise.all([fetchSubmissions(), fetchDeleteRequests()]);
+            setLoading(false);
+        };
+        loadData();
     }, []);
 
     const fetchSubmissions = async () => {
@@ -53,8 +65,20 @@ export default function Dashboard() {
             setSubmissions(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : '發生錯誤');
-        } finally {
-            setLoading(false);
+        }
+    };
+
+    const fetchDeleteRequests = async () => {
+        try {
+            const res = await fetch(`${API_URL}/delete-requests`, {
+                credentials: 'include'
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setDeleteRequests(data);
+            }
+        } catch (err) {
+            console.error('Error fetching delete requests', err);
         }
     };
 
@@ -63,34 +87,23 @@ export default function Dashboard() {
         return submissions.filter(sub => {
             const cultureDate = (sub.form_data?.positive_culture_date as string) || ''; // Format: YYYY-MM-DD
 
-            if (startDate && cultureDate < startDate) {
-                return false;
-            }
-            if (endDate && cultureDate > endDate) {
-                return false;
-            }
+            if (startDate && cultureDate < startDate) return false;
+            if (endDate && cultureDate > endDate) return false;
             return true;
         }).sort((a, b) => {
-            const aValue = (() => {
+            const getValue = (item: Submission) => {
                 switch (sortField) {
-                    case 'medical_record_number': return a.medical_record_number;
-                    case 'admission_date': return a.admission_date;
-                    case 'positive_culture_date': return (a.form_data?.positive_culture_date as string) || '';
-                    case 'data_status': return a.data_status;
-                    case 'updated_at': return a.updated_at;
+                    case 'medical_record_number': return item.medical_record_number;
+                    case 'admission_date': return item.admission_date;
+                    case 'positive_culture_date': return (item.form_data?.positive_culture_date as string) || '';
+                    case 'data_status': return item.data_status;
+                    case 'updated_at': return item.updated_at;
                     default: return '';
                 }
-            })();
-            const bValue = (() => {
-                switch (sortField) {
-                    case 'medical_record_number': return b.medical_record_number;
-                    case 'admission_date': return b.admission_date;
-                    case 'positive_culture_date': return (b.form_data?.positive_culture_date as string) || '';
-                    case 'data_status': return b.data_status;
-                    case 'updated_at': return b.updated_at;
-                    default: return '';
-                }
-            })();
+            };
+
+            const aValue = getValue(a);
+            const bValue = getValue(b);
 
             if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
             if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
@@ -159,6 +172,7 @@ export default function Dashboard() {
             }
 
             alert('刪除申請已送出，待管理員審核');
+            fetchDeleteRequests(); // Refresh status
         } catch (err) {
             alert(err instanceof Error ? err.message : '申請失敗');
         }
@@ -279,37 +293,47 @@ export default function Dashboard() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredSubmissions.map(sub => (
-                                    <tr key={sub.id}>
-                                        <td style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1rem' }}>
-                                            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-start', width: '100%' }}>
-                                                <Link
-                                                    to={`/form/${sub.id}`}
-                                                    className="btn btn-icon"
-                                                    title="修改"
-                                                >
-                                                    <Edit size={16} color="var(--color-primary)" />
-                                                </Link>
-                                                <button
-                                                    className="btn btn-icon"
-                                                    onClick={() => handleDelete(sub.id)}
-                                                    title="刪除"
-                                                >
-                                                    <Trash2 size={16} color="var(--color-danger)" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.medical_record_number}</td>
-                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.admission_date}</td>
-                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{(sub.form_data?.positive_culture_date as string) || '-'}</td>
-                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                            <span className={`badge ${sub.data_status === 'complete' ? 'badge-success' : 'badge-warning'}`}>
-                                                {sub.data_status === 'complete' ? '已完成' : '未完成'}
-                                            </span>
-                                        </td>
-                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{new Date(sub.updated_at).toLocaleString('zh-TW', { hour12: false })}</td>
-                                    </tr>
-                                ))}
+                                {filteredSubmissions.map(sub => {
+                                    const pendingDelete = deleteRequests.some(r => r.submission_id === sub.id && r.status === 'pending');
+                                    return (
+                                        <tr key={sub.id}>
+                                            <td style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1rem' }}>
+                                                <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-start', width: '100%' }}>
+                                                    <Link
+                                                        to={`/form/${sub.id}`}
+                                                        className="btn btn-icon"
+                                                        title="修改"
+                                                        style={{ opacity: pendingDelete ? 0.5 : 1, pointerEvents: pendingDelete ? 'none' : 'auto' }}
+                                                    >
+                                                        <Edit size={16} color="var(--color-primary)" />
+                                                    </Link>
+                                                    {pendingDelete ? (
+                                                        <div className="btn btn-icon" title="刪除申請審核中" style={{ cursor: 'help' }}>
+                                                            <Clock size={16} color="var(--color-warning)" />
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            className="btn btn-icon"
+                                                            onClick={() => handleDelete(sub.id)}
+                                                            title="刪除"
+                                                        >
+                                                            <Trash2 size={16} color="var(--color-danger)" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.medical_record_number}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.admission_date}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{(sub.form_data?.positive_culture_date as string) || '-'}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <span className={`badge ${sub.data_status === 'complete' ? 'badge-success' : 'badge-warning'}`}>
+                                                    {sub.data_status === 'complete' ? '已完成' : '未完成'}
+                                                </span>
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{new Date(sub.updated_at).toLocaleString('zh-TW', { hour12: false })}</td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

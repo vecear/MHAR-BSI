@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Download, Eye, Trash2, Edit, AlertCircle, Users, X, Filter, ArrowUp, ArrowDown, UserPlus, Plus, Clock, Check, XCircle } from 'lucide-react';
+import { FileText, Download, Trash2, Edit, AlertCircle, Users, X, Filter, ArrowUp, ArrowDown, UserPlus, Plus, Check, XCircle } from 'lucide-react';
 import { API_URL } from '../App';
 
 interface Submission {
@@ -74,6 +74,13 @@ interface DeleteRequest {
     created_at: string;
 }
 
+const PATHOGEN_CONFIG = [
+    { id: 'CRKP', label: 'CRKP', bg: '#fee2e2', text: '#dc2626' },
+    { id: 'CRAB', label: 'CRAB', bg: '#f3e8ff', text: '#9333ea' },
+    { id: 'CRECOLI', label: 'CRECOLI', bg: '#dbeafe', text: '#2563eb' },
+    { id: 'CRPA', label: 'CRPA', bg: '#ffedd5', text: '#ea580c' }
+];
+
 export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState<'submissions' | 'users' | 'delete-requests'>('submissions');
     const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -107,13 +114,15 @@ export default function AdminDashboard() {
     const [savingUser, setSavingUser] = useState(false);
 
     useEffect(() => {
-        if (activeTab === 'submissions') {
-            fetchSubmissions();
-        } else if (activeTab === 'users') {
-            fetchUsers();
-        } else if (activeTab === 'delete-requests') {
-            fetchDeleteRequests();
-        }
+        // Reset specific states when tab changes if needed
+        setError('');
+
+        const fetchData = async () => {
+            if (activeTab === 'submissions') await fetchSubmissions();
+            else if (activeTab === 'users') await fetchUsers();
+            else if (activeTab === 'delete-requests') await fetchDeleteRequests();
+        };
+        fetchData();
     }, [activeTab]);
 
     // Fetch delete requests count on mount (to show correct tab badge)
@@ -183,8 +192,10 @@ export default function AdminDashboard() {
                 credentials: 'include'
             });
             if (!res.ok) throw new Error('操作失敗');
+
+            // Refresh counts and current view
             fetchDeleteRequests();
-            fetchSubmissions();
+            if (activeTab === 'submissions') fetchSubmissions();
         } catch (err) {
             alert(err instanceof Error ? err.message : '操作失敗');
         }
@@ -212,49 +223,32 @@ export default function AdminDashboard() {
         return submissions.filter(sub => {
             const cultureDate = (sub.form_data?.positive_culture_date as string) || '';
 
-            if (startDate && cultureDate < startDate) {
-                return false;
-            }
-            if (endDate && cultureDate > endDate) {
-                return false;
-            }
-            if (filterHospital && sub.hospital !== filterHospital) {
-                return false;
-            }
+            if (startDate && cultureDate < startDate) return false;
+            if (endDate && cultureDate > endDate) return false;
+            if (filterHospital && sub.hospital !== filterHospital) return false;
+
             const pathogen = (sub.form_data?.pathogen as string) || '';
-            if (filterPathogen && pathogen !== filterPathogen) {
-                return false;
-            }
+            if (filterPathogen && pathogen !== filterPathogen) return false;
+
             return true;
         }).sort((a, b) => {
-            const aValue = (() => {
+            const getValue = (item: Submission) => {
                 switch (sortField) {
-                    case 'medical_record_number': return a.medical_record_number;
-                    case 'admission_date': return a.admission_date;
-                    case 'positive_culture_date': return (a.form_data?.positive_culture_date as string) || '';
-                    case 'username': return a.username;
-                    case 'hospital': return a.hospital;
-                    case 'data_status': return a.data_status;
-                    case 'created_at': return a.created_at;
-                    case 'updated_at': return a.updated_at;
-                    case 'update_count': return (a.update_count || 0).toString();
+                    case 'medical_record_number': return item.medical_record_number;
+                    case 'admission_date': return item.admission_date;
+                    case 'positive_culture_date': return (item.form_data?.positive_culture_date as string) || '';
+                    case 'username': return item.username;
+                    case 'hospital': return item.hospital;
+                    case 'data_status': return item.data_status;
+                    case 'created_at': return item.created_at;
+                    case 'updated_at': return item.updated_at;
+                    case 'update_count': return (item.update_count || 0); // numeric comparison works with < >
                     default: return '';
                 }
-            })();
-            const bValue = (() => {
-                switch (sortField) {
-                    case 'medical_record_number': return b.medical_record_number;
-                    case 'admission_date': return b.admission_date;
-                    case 'positive_culture_date': return (b.form_data?.positive_culture_date as string) || '';
-                    case 'username': return b.username;
-                    case 'hospital': return b.hospital;
-                    case 'data_status': return b.data_status;
-                    case 'created_at': return b.created_at;
-                    case 'updated_at': return b.updated_at;
-                    case 'update_count': return (b.update_count || 0).toString();
-                    default: return '';
-                }
-            })();
+            };
+
+            const aValue = getValue(a);
+            const bValue = getValue(b);
 
             if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
             if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
@@ -289,7 +283,7 @@ export default function AdminDashboard() {
                 credentials: 'include'
             });
             if (!res.ok) throw new Error('刪除失敗');
-            setSubmissions(submissions.filter(s => s.id !== id));
+            setSubmissions(prev => prev.filter(s => s.id !== id));
             setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
         } catch (err) {
             alert(err instanceof Error ? err.message : '刪除失敗');
@@ -304,7 +298,7 @@ export default function AdminDashboard() {
             await Promise.all(ids.map(id =>
                 fetch(`${API_URL}/forms/${id}`, { method: 'DELETE', credentials: 'include' })
             ));
-            setSubmissions(submissions.filter(s => !selectedIds.has(s.id)));
+            setSubmissions(prev => prev.filter(s => !selectedIds.has(s.id)));
             setSelectedIds(new Set());
         } catch (err) {
             alert(err instanceof Error ? err.message : '刪除失敗');
@@ -360,14 +354,7 @@ export default function AdminDashboard() {
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({
-                        username: userForm.username,
-                        hospital: userForm.hospital,
-                        email: userForm.email,
-                        display_name: userForm.display_name,
-                        gender: userForm.gender,
-                        phone: userForm.phone,
-                        address: userForm.address,
-                        line_id: userForm.line_id,
+                        ...userForm,
                         newPassword: userForm.password || undefined
                     })
                 });
@@ -376,9 +363,7 @@ export default function AdminDashboard() {
                     throw new Error(err.error || '更新失敗');
                 }
             } else {
-                if (!userForm.password) {
-                    throw new Error('請輸入密碼');
-                }
+                if (!userForm.password) throw new Error('請輸入密碼');
                 const res = await fetch(`${API_URL}/users`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -408,7 +393,7 @@ export default function AdminDashboard() {
                 credentials: 'include'
             });
             if (!res.ok) throw new Error('刪除失敗');
-            setUsers(users.filter(u => u.id !== id));
+            setUsers(prev => prev.filter(u => u.id !== id));
         } catch (err) {
             alert(err instanceof Error ? err.message : '刪除失敗');
         }
@@ -553,13 +538,24 @@ export default function AdminDashboard() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '2rem' }}>
                                 <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>菌種：</label>
                                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                    {[
-                                        { id: '', label: '全部' },
-                                        { id: 'CRKP', label: 'CRKP', bg: '#fee2e2', text: '#dc2626' },
-                                        { id: 'CRAB', label: 'CRAB', bg: '#f3e8ff', text: '#9333ea' },
-                                        { id: 'CRECOLI', label: 'CRECOLI', bg: '#dbeafe', text: '#2563eb' },
-                                        { id: 'CRPA', label: 'CRPA', bg: '#ffedd5', text: '#ea580c' }
-                                    ].map(p => (
+                                    <button
+                                        onClick={() => setFilterPathogen('')}
+                                        style={{
+                                            padding: '0.25rem 0.75rem',
+                                            borderRadius: '9999px',
+                                            fontSize: '0.85rem',
+                                            fontWeight: 500,
+                                            cursor: 'pointer',
+                                            border: filterPathogen === '' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                                            backgroundColor: 'var(--bg-primary)',
+                                            color: 'var(--text-primary)',
+                                            transition: 'all 0.2s ease',
+                                            boxShadow: filterPathogen === '' ? 'var(--shadow-sm)' : 'none'
+                                        }}
+                                    >
+                                        全部
+                                    </button>
+                                    {PATHOGEN_CONFIG.map(p => (
                                         <button
                                             key={p.id}
                                             onClick={() => setFilterPathogen(p.id)}
@@ -569,9 +565,9 @@ export default function AdminDashboard() {
                                                 fontSize: '0.85rem',
                                                 fontWeight: 500,
                                                 cursor: 'pointer',
-                                                border: filterPathogen === p.id ? `2px solid ${p.text || 'var(--color-primary)'}` : '2px solid transparent',
-                                                backgroundColor: p.bg || 'var(--bg-primary)',
-                                                color: p.text || 'var(--text-primary)',
+                                                border: filterPathogen === p.id ? `2px solid ${p.text}` : '2px solid transparent',
+                                                backgroundColor: p.bg,
+                                                color: p.text,
                                                 transition: 'all 0.2s ease',
                                                 boxShadow: filterPathogen === p.id ? 'var(--shadow-sm)' : 'none',
                                                 opacity: filterPathogen && filterPathogen !== p.id ? 0.6 : 1
@@ -600,6 +596,7 @@ export default function AdminDashboard() {
                         ) : (
                             <div className="table-container">
                                 <table className="data-table">
+
                                     <thead>
                                         <tr>
                                             <th style={{ width: '30px', textAlign: 'center', verticalAlign: 'middle' }}>
@@ -667,15 +664,10 @@ export default function AdminDashboard() {
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                     {(() => {
                                                         const pathogen = (sub.form_data?.pathogen as string) || '';
-                                                        const colors: Record<string, { bg: string; text: string }> = {
-                                                            'CRKP': { bg: '#fee2e2', text: '#dc2626' },
-                                                            'CRAB': { bg: '#f3e8ff', text: '#9333ea' },
-                                                            'CRECOLI': { bg: '#dbeafe', text: '#2563eb' },
-                                                            'CRPA': { bg: '#ffedd5', text: '#ea580c' }
-                                                        };
-                                                        const color = colors[pathogen] || { bg: '#f0f0f0', text: '#666' };
+                                                        const config = PATHOGEN_CONFIG.find(p => p.id === pathogen);
+
                                                         return pathogen ? (
-                                                            <span className="badge" style={{ backgroundColor: color.bg, color: color.text }}>
+                                                            <span className="badge" style={{ backgroundColor: config?.bg || '#f0f0f0', color: config?.text || '#666' }}>
                                                                 {pathogen}
                                                             </span>
                                                         ) : '-';
