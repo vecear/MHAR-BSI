@@ -739,7 +739,7 @@ export default function AdminDashboard() {
                                                 <span className="badge badge-info">{req.requester_hospital}</span>
                                             </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                {new Date(req.created_at).toLocaleString('zh-TW', { hour12: false })}
+                                                {new Date(req.created_at + (req.created_at.includes('Z') ? '' : 'Z')).toLocaleString('zh-TW', { hour12: false })}
                                             </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 {req.status === 'pending' && (
@@ -830,7 +830,7 @@ export default function AdminDashboard() {
                                             </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.email || '-'}</td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.phone || '-'}</td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{new Date(u.created_at).toLocaleString('zh-TW', { hour12: false })}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{new Date(u.created_at + (u.created_at.includes('Z') ? '' : 'Z')).toLocaleString('zh-TW', { hour12: false })}</td>
                                         </tr>
                                     ))}
                                 </tbody>

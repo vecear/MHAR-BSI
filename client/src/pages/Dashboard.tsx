@@ -68,6 +68,13 @@ export default function Dashboard() {
         loadData();
     }, []);
 
+    // Lock hospital filter if user has a hospital
+    useEffect(() => {
+        if (user?.hospital) {
+            setFilterHospital(user.hospital);
+        }
+    }, [user]);
+
     const fetchSubmissions = async () => {
         try {
             const res = await fetch(`${API_URL}/forms`, {
@@ -263,26 +270,32 @@ export default function Dashboard() {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <label style={{ color: 'var(--text-secondary)' }}>醫院：</label>
-                            <select
-                                className="form-select"
-                                value={filterHospital}
-                                onChange={e => setFilterHospital(e.target.value)}
-                                style={{ width: 'auto', minWidth: '120px' }}
-                            >
-                                <option value="">全部醫院</option>
-                                {HOSPITALS.map(h => (
-                                    <option key={h} value={h}>{h}</option>
-                                ))}
-                            </select>
+                            {user?.hospital ? (
+                                <span className="badge badge-info" style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}>
+                                    {user.hospital}
+                                </span>
+                            ) : (
+                                <select
+                                    className="form-select"
+                                    value={filterHospital}
+                                    onChange={e => setFilterHospital(e.target.value)}
+                                    style={{ width: 'auto', minWidth: '120px' }}
+                                >
+                                    <option value="">全部醫院</option>
+                                    {HOSPITALS.map(h => (
+                                        <option key={h} value={h}>{h}</option>
+                                    ))}
+                                </select>
+                            )}
                         </div>
                         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                            {(startDate || endDate || filterHospital || filterPathogen) && (
+                            {(startDate || endDate || (!user?.hospital && filterHospital) || filterPathogen) && (
                                 <button
                                     className="btn btn-secondary"
                                     onClick={() => {
                                         setStartDate('');
                                         setEndDate('');
-                                        setFilterHospital('');
+                                        if (!user?.hospital) setFilterHospital('');
                                         setFilterPathogen('');
                                     }}
                                     style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
@@ -422,7 +435,7 @@ export default function Dashboard() {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.8em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.85em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
                                                 {(sub.form_data?.record_time as string)?.replace(/[-T:]/g, '') || '-'}
                                             </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
@@ -450,9 +463,9 @@ export default function Dashboard() {
                                                 </span>
                                             </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                <div>{new Date(sub.updated_at).toLocaleDateString('zh-TW')}</div>
+                                                <div>{new Date(sub.updated_at + (sub.updated_at.includes('Z') ? '' : 'Z')).toLocaleDateString('zh-TW')}</div>
                                                 <div style={{ fontSize: '0.85em', color: 'var(--text-muted)' }}>
-                                                    {new Date(sub.updated_at).toLocaleTimeString('zh-TW', { hour12: false })}
+                                                    {new Date(sub.updated_at + (sub.updated_at.includes('Z') ? '' : 'Z')).toLocaleTimeString('zh-TW', { hour12: false })}
                                                 </div>
                                             </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>

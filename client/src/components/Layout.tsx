@@ -15,6 +15,14 @@ export default function Layout() {
     const [pendingDeleteCount, setPendingDeleteCount] = useState(0);
     const settingsRef = useRef<HTMLDivElement>(null);
 
+    // Clock state
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
     // Close menu when clicking outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -95,6 +103,17 @@ export default function Layout() {
                 </div>
 
                 <div className="navbar-user">
+                    <div style={{ marginRight: '1.5rem', fontSize: '0.95rem', fontWeight: 500, opacity: 0.9 }}>
+                        {currentTime.toLocaleString('zh-TW', {
+                            hour12: false,
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        })}
+                    </div>
                     <span>
                         {user?.username} ({user?.display_name || '未設定姓名'}|{user?.hospital})
                         {user?.role === 'admin' && (
