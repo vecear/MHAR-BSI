@@ -1,11 +1,9 @@
-import { Search, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { type FormData, HOSPITALS } from '../pages/FormPage';
 
 interface Props {
     formData: FormData;
     updateFormData: (updates: Partial<FormData>) => void;
-    onFetch: () => void;
-    loading: boolean;
     userHospital: string;
 }
 
@@ -22,7 +20,7 @@ const CHRONIC_DISEASES = [
     'COPD', 'Connective tissue disease', 'PUD', 'None'
 ];
 
-export default function FormStep1({ formData, updateFormData, onFetch, loading }: Props) {
+export default function FormStep1({ formData, updateFormData }: Props) {
     const handleCheckboxChange = (field: 'primary_source' | 'chronic_diseases', value: string) => {
         const current = formData[field] || [];
         if (current.includes(value)) {
@@ -114,7 +112,7 @@ export default function FormStep1({ formData, updateFormData, onFetch, loading }
             {/* Patient Identification */}
             <div className="form-section">
                 <h3 className="form-section-title">病歷識別</h3>
-                <div className="form-grid-3">
+                <div className="form-grid-2">
                     <div className="form-group">
                         <label className="form-label required">病歷號</label>
                         <input
@@ -133,17 +131,6 @@ export default function FormStep1({ formData, updateFormData, onFetch, loading }
                             value={formData.admission_date}
                             onChange={e => updateFormData({ admission_date: e.target.value })}
                         />
-                    </div>
-                    <div className="form-group" style={{ display: 'flex', alignItems: 'flex-end' }}>
-                        <button
-                            className="btn btn-secondary"
-                            onClick={onFetch}
-                            disabled={loading}
-                            style={{ width: '100%' }}
-                        >
-                            {loading ? <div className="spinner" style={{ width: '1rem', height: '1rem' }}></div> : <Search size={18} />}
-                            更新資料
-                        </button>
                     </div>
                 </div>
             </div>

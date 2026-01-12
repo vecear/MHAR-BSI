@@ -179,41 +179,6 @@ export default function FormPage() {
         }
     }, [user, id]);
 
-    // Fetch existing data by medical record number and admission date
-    const handleFetchData = async () => {
-        if (!formData.medical_record_number || !formData.admission_date) {
-            showError('請先輸入病歷號和住院日期');
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const res = await fetch(
-                `${API_URL}/forms/check/${encodeURIComponent(formData.medical_record_number)}/${formData.admission_date}`,
-                { credentials: 'include' }
-            );
-            if (!res.ok) throw new Error('查詢失敗');
-            const data = await res.json();
-
-            if (data.exists) {
-                setFormData({
-                    ...initialFormData,
-                    ...data.submission.form_data,
-                    medical_record_number: data.submission.medical_record_number,
-                    admission_date: data.submission.admission_date,
-                    data_status: data.submission.data_status
-                });
-                setSubmissionId(data.submission.id);
-                showSuccess('已載入現有資料');
-            } else {
-                showError('找不到符合的資料');
-            }
-        } catch (err) {
-            showError(err instanceof Error ? err.message : '查詢失敗');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const updateFormData = (updates: Partial<FormData>) => {
         setFormData(prev => ({ ...prev, ...updates }));
@@ -341,8 +306,6 @@ export default function FormPage() {
                     <FormStep1
                         formData={formData}
                         updateFormData={updateFormData}
-                        onFetch={handleFetchData}
-                        loading={loading}
                         userHospital={user?.hospital || ''}
                     />
                 )}
