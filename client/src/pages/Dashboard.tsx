@@ -44,10 +44,13 @@ export default function Dashboard() {
     const [error, setError] = useState('');
 
     // Filter states
-    const [startDate, setStartDate] = useState<string>('');
-    const [endDate, setEndDate] = useState<string>('');
+    const [admissionStartDate, setAdmissionStartDate] = useState<string>('');
+    const [admissionEndDate, setAdmissionEndDate] = useState<string>('');
+    const [cultureStartDate, setCultureStartDate] = useState<string>('');
+    const [cultureEndDate, setCultureEndDate] = useState<string>('');
     const [filterHospital, setFilterHospital] = useState('');
     const [filterPathogen, setFilterPathogen] = useState('');
+    const [filterMRN, setFilterMRN] = useState('');
     const [sortField, setSortField] = useState<string>('updated_at');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -106,14 +109,24 @@ export default function Dashboard() {
     // Filter submissions
     const filteredSubmissions = useMemo(() => {
         return submissions.filter(sub => {
-            const cultureDate = (sub.form_data?.positive_culture_date as string) || ''; // Format: YYYY-MM-DD
+            const cultureDate = (sub.form_data?.positive_culture_date as string) || '';
+            const admissionDate = sub.admission_date || '';
 
-            if (startDate && cultureDate < startDate) return false;
-            if (endDate && cultureDate > endDate) return false;
+            // Admission date filter
+            if (admissionStartDate && admissionDate < admissionStartDate) return false;
+            if (admissionEndDate && admissionDate > admissionEndDate) return false;
+
+            // Positive culture date filter
+            if (cultureStartDate && cultureDate < cultureStartDate) return false;
+            if (cultureEndDate && cultureDate > cultureEndDate) return false;
+
             if (filterHospital && sub.hospital !== filterHospital) return false;
 
             const pathogen = (sub.form_data?.pathogen as string) || '';
             if (filterPathogen && pathogen !== filterPathogen) return false;
+
+            // Medical record number search (case-insensitive partial match)
+            if (filterMRN && !sub.medical_record_number.toLowerCase().includes(filterMRN.toLowerCase())) return false;
 
             return true;
         }).sort((a, b) => {
@@ -139,7 +152,22 @@ export default function Dashboard() {
             if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [submissions, startDate, endDate, filterHospital, filterPathogen, sortField, sortDirection]);
+    }, [submissions, admissionStartDate, admissionEndDate, cultureStartDate, cultureEndDate, filterHospital, filterPathogen, filterMRN, sortField, sortDirection]);
+
+    // Check if any filter is active
+    const hasActiveFilters = admissionStartDate || admissionEndDate || cultureStartDate || cultureEndDate ||
+        (!user?.hospital && filterHospital) || filterPathogen || filterMRN;
+
+    // Clear all filters
+    const clearAllFilters = () => {
+        setAdmissionStartDate('');
+        setAdmissionEndDate('');
+        setCultureStartDate('');
+        setCultureEndDate('');
+        if (!user?.hospital) setFilterHospital('');
+        setFilterPathogen('');
+        setFilterMRN('');
+    };
 
     const handleExportCSV = async () => {
         try {
@@ -252,78 +280,109 @@ export default function Dashboard() {
             {/* Filter Section */}
             <div className="card" style={{ marginBottom: 'var(--spacing-lg)', padding: 'var(--spacing-md)' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
-                    {/* Line 1: Basic Filters */}
+                    {/* Line 1: Hospital, MRN, Clear button */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 'fit-content' }}>
                             <Filter size={18} color="var(--text-muted)" />
                             <span style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>篩選條件:</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', flex: '1 1 auto', minWidth: '200px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>起：</label>
-                                <input
-                                    type="date"
-                                    className="form-input"
-                                    value={startDate}
-                                    onChange={e => setStartDate(e.target.value)}
-                                    style={{ width: 'auto', minWidth: '130px' }}
-                                />
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>迄：</label>
-                                <input
-                                    type="date"
-                                    className="form-input"
-                                    value={endDate}
-                                    onChange={e => setEndDate(e.target.value)}
-                                    style={{ width: 'auto', minWidth: '130px' }}
-                                />
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>醫院：</label>
-                                {user?.hospital ? (
-                                    <span className="badge badge-info" style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}>
-                                        {user.hospital}
-                                    </span>
-                                ) : (
-                                    <select
-                                        className="form-select"
-                                        value={filterHospital}
-                                        onChange={e => setFilterHospital(e.target.value)}
-                                        style={{ width: 'auto', minWidth: '100px' }}
-                                    >
-                                        <option value="">全部</option>
-                                        {HOSPITALS.map(h => (
-                                            <option key={h} value={h}>{h}</option>
-                                        ))}
-                                    </select>
-                                )}
-                            </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>醫院：</label>
+                            {user?.hospital ? (
+                                <span className="badge badge-info" style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}>
+                                    {user.hospital}
+                                </span>
+                            ) : (
+                                <select
+                                    className="form-select"
+                                    value={filterHospital}
+                                    onChange={e => setFilterHospital(e.target.value)}
+                                    style={{ width: 'auto', minWidth: '100px' }}
+                                >
+                                    <option value="">全部</option>
+                                    {HOSPITALS.map(h => (
+                                        <option key={h} value={h}>{h}</option>
+                                    ))}
+                                </select>
+                            )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>病歷號：</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                value={filterMRN}
+                                onChange={e => setFilterMRN(e.target.value)}
+                                placeholder="搜尋..."
+                                style={{ width: 'auto', minWidth: '100px', maxWidth: '150px' }}
+                            />
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: 'auto', flexWrap: 'wrap' }}>
-                            {(startDate || endDate || (!user?.hospital && filterHospital) || filterPathogen) && (
-                                <button
-                                    className="btn btn-secondary"
-                                    onClick={() => {
-                                        setStartDate('');
-                                        setEndDate('');
-                                        if (!user?.hospital) setFilterHospital('');
-                                        setFilterPathogen('');
-                                    }}
-                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
-                                >
-                                    <X size={14} style={{ marginRight: '4px' }} />
-                                    清除
-                                </button>
-                            )}
+                            <button
+                                className={`btn ${hasActiveFilters ? 'btn-danger' : 'btn-secondary'}`}
+                                onClick={clearAllFilters}
+                                disabled={!hasActiveFilters}
+                                style={{
+                                    padding: '0.4rem 0.8rem',
+                                    fontSize: '0.9rem',
+                                    opacity: hasActiveFilters ? 1 : 0.5,
+                                    cursor: hasActiveFilters ? 'pointer' : 'not-allowed'
+                                }}
+                            >
+                                <X size={14} style={{ marginRight: '4px' }} />
+                                清除篩選條件
+                            </button>
                             <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                                 {filteredSubmissions.length} / {submissions.length} 筆
                             </div>
                         </div>
                     </div>
 
-                    {/* Line 2: Pathogen Tags */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '2rem' }}>
+                    {/* Line 2: Date Filters */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', paddingLeft: '1.5rem' }}>
+                        {/* Admission Date */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap' }}>
+                            <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontWeight: 500 }}>住院日期</label>
+                            <input
+                                type="date"
+                                className="form-input"
+                                value={admissionStartDate}
+                                onChange={e => setAdmissionStartDate(e.target.value)}
+                                style={{ width: 'auto', minWidth: '130px' }}
+                            />
+                            <span style={{ color: 'var(--text-muted)' }}>~</span>
+                            <input
+                                type="date"
+                                className="form-input"
+                                value={admissionEndDate}
+                                onChange={e => setAdmissionEndDate(e.target.value)}
+                                style={{ width: 'auto', minWidth: '130px' }}
+                            />
+                        </div>
+
+                        {/* Positive Culture Date */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap' }}>
+                            <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontWeight: 500 }}>陽性日期</label>
+                            <input
+                                type="date"
+                                className="form-input"
+                                value={cultureStartDate}
+                                onChange={e => setCultureStartDate(e.target.value)}
+                                style={{ width: 'auto', minWidth: '130px' }}
+                            />
+                            <span style={{ color: 'var(--text-muted)' }}>~</span>
+                            <input
+                                type="date"
+                                className="form-input"
+                                value={cultureEndDate}
+                                onChange={e => setCultureEndDate(e.target.value)}
+                                style={{ width: 'auto', minWidth: '130px' }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Line 3: Pathogen Tags */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '1.5rem' }}>
                         <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>菌種：</label>
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                             <button
