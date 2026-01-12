@@ -56,7 +56,7 @@ router.get('/profile', requireLogin, (req, res) => {
 // Update current user profile
 router.put('/profile', requireLogin, (req, res) => {
     try {
-        const { email, display_name, gender, phone, address, line_id, currentPassword, newPassword } = req.body;
+        const { email, display_name, gender, phone, address, line_id, security_question, security_answer, currentPassword, newPassword } = req.body;
 
         // If changing password, verify current password
         if (newPassword) {
@@ -76,7 +76,7 @@ router.put('/profile', requireLogin, (req, res) => {
             userQueries.updatePassword.run(hash, req.session.userId);
         }
 
-        // Update profile fields
+        // Update profile fields (including security question/answer)
         userQueries.updateProfile.run(
             email || null,
             display_name || null,
@@ -84,6 +84,8 @@ router.put('/profile', requireLogin, (req, res) => {
             phone || null,
             address || null,
             line_id || null,
+            security_question || null,
+            security_answer || null,
             req.session.userId
         );
 

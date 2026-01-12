@@ -45,14 +45,18 @@ initializeSchema();
 // User queries - NOW safe to prepare after schema is initialized
 const userQueries = {
     findByUsername: db.prepare('SELECT * FROM users WHERE username = ?'),
-    findById: db.prepare('SELECT id, username, hospital, role, email, display_name, gender, phone, address, line_id, created_at FROM users WHERE id = ?'),
+    findById: db.prepare('SELECT id, username, hospital, role, email, display_name, gender, phone, address, line_id, security_question, security_answer, created_at FROM users WHERE id = ?'),
     getAll: db.prepare('SELECT id, username, hospital, role, email, display_name, gender, phone, address, line_id, created_at FROM users WHERE role != ?'),
-    create: db.prepare('INSERT INTO users (username, password_hash, hospital, role, email, display_name, gender, phone, address, line_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
+    create: db.prepare('INSERT INTO users (username, password_hash, hospital, role, email, display_name, gender, phone, address, line_id, security_question, security_answer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
     delete: db.prepare('DELETE FROM users WHERE id = ? AND role != ?'),
     updatePassword: db.prepare('UPDATE users SET password_hash = ? WHERE id = ?'),
-    updateProfile: db.prepare('UPDATE users SET email = ?, display_name = ?, gender = ?, phone = ?, address = ?, line_id = ? WHERE id = ?'),
-    updateProfileAdmin: db.prepare('UPDATE users SET username = ?, hospital = ?, email = ?, display_name = ?, gender = ?, phone = ?, address = ?, line_id = ? WHERE id = ?')
+    updatePasswordByUsername: db.prepare('UPDATE users SET password_hash = ? WHERE username = ?'),
+    updateProfile: db.prepare('UPDATE users SET email = ?, display_name = ?, gender = ?, phone = ?, address = ?, line_id = ?, security_question = ?, security_answer = ? WHERE id = ?'),
+    updateProfileAdmin: db.prepare('UPDATE users SET username = ?, hospital = ?, email = ?, display_name = ?, gender = ?, phone = ?, address = ?, line_id = ? WHERE id = ?'),
+    getSecurityQuestion: db.prepare('SELECT security_question FROM users WHERE username = ?'),
+    getSecurityAnswer: db.prepare('SELECT security_answer FROM users WHERE username = ?')
 };
+
 
 // Submission queries
 const submissionQueries = {

@@ -11,6 +11,8 @@ interface ProfileData {
     phone: string;
     address: string;
     line_id: string;
+    security_question: string;
+    security_answer: string;
 }
 
 interface Props {
@@ -28,7 +30,9 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
         gender: '',
         phone: '',
         address: '',
-        line_id: ''
+        line_id: '',
+        security_question: '',
+        security_answer: ''
     });
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -61,7 +65,9 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
                 gender: data.gender || '',
                 phone: data.phone || '',
                 address: data.address || '',
-                line_id: data.line_id || ''
+                line_id: data.line_id || '',
+                security_question: data.security_question || '',
+                security_answer: data.security_answer || ''
             });
         } catch (err) {
             setError(err instanceof Error ? err.message : '載入失敗');
@@ -100,6 +106,8 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
                     phone: profile.phone,
                     address: profile.address,
                     line_id: profile.line_id,
+                    security_question: profile.security_question || undefined,
+                    security_answer: profile.security_answer || undefined,
                     currentPassword: newPassword ? currentPassword : undefined,
                     newPassword: newPassword || undefined
                 })
@@ -292,6 +300,46 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
                                             placeholder="再次輸入新密碼"
                                         />
                                     </div>
+                                </div>
+                            </div>
+
+                            <div className="form-section">
+                                <h4 style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>忘記密碼設定</h4>
+                                <div className="form-group">
+                                    <label className="form-label">安全問題</label>
+                                    <select
+                                        className="form-select"
+                                        value={profile.security_question}
+                                        onChange={e => setProfile({ ...profile, security_question: e.target.value })}
+                                    >
+                                        <option value="">請選擇安全提問</option>
+                                        <option value="生日">生日</option>
+                                        <option value="身分證">身分證</option>
+                                        <option value="畢業國小">畢業國小</option>
+                                        <option value="爸爸姓名">爸爸姓名</option>
+                                        <option value="媽媽姓名">媽媽姓名</option>
+                                        <option value="結婚紀念日">結婚紀念日</option>
+                                        <option value="寵物名字">寵物名字</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">安全問題答案</label>
+                                    {profile.security_question === '生日' || profile.security_question === '結婚紀念日' ? (
+                                        <input
+                                            type="date"
+                                            className="form-input"
+                                            value={profile.security_answer}
+                                            onChange={e => setProfile({ ...profile, security_answer: e.target.value })}
+                                        />
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={profile.security_answer}
+                                            onChange={e => setProfile({ ...profile, security_answer: e.target.value })}
+                                            placeholder="請輸入答案"
+                                        />
+                                    )}
                                 </div>
                             </div>
                         </div>

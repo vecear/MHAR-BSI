@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Save, Check, AlertCircle } from 'lucide-react';
 import { API_URL, useAuth } from '../App';
+import { useToast } from '../components/Toast';
 import FormStep1 from '../components/FormStep1';
 import FormStep2 from '../components/FormStep2';
 import FormStep3 from '../components/FormStep3';
@@ -119,9 +120,8 @@ export default function FormPage() {
     const [formData, setFormData] = useState<FormData>(initialFormData);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
     const [submissionId, setSubmissionId] = useState<number | null>(id ? parseInt(id) : null);
+    const { showError, showSuccess } = useToast();
 
     // Load existing data if editing
     useEffect(() => {
@@ -147,7 +147,7 @@ export default function FormPage() {
             });
             setSubmissionId(data.id);
         } catch (err) {
-            setError(err instanceof Error ? err.message : '發生錯誤');
+            showError(err instanceof Error ? err.message : '發生錯誤');
         } finally {
             setLoading(false);
         }
@@ -182,12 +182,11 @@ export default function FormPage() {
     // Fetch existing data by medical record number and admission date
     const handleFetchData = async () => {
         if (!formData.medical_record_number || !formData.admission_date) {
-            setError('請先輸入病歷號和住院日期');
+            showError('請先輸入病歷號和住院日期');
             return;
         }
 
         setLoading(true);
-        setError('');
         try {
             const res = await fetch(
                 `${API_URL}/forms/check/${encodeURIComponent(formData.medical_record_number)}/${formData.admission_date}`,
@@ -205,12 +204,12 @@ export default function FormPage() {
                     data_status: data.submission.data_status
                 });
                 setSubmissionId(data.submission.id);
-                setSuccess('已載入現有資料');
+                showSuccess('已載入現有資料');
             } else {
-                setError('找不到符合的資料');
+                showError('找不到符合的資料');
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : '查詢失敗');
+            showError(err instanceof Error ? err.message : '查詢失敗');
         } finally {
             setLoading(false);
         }
@@ -222,7 +221,7 @@ export default function FormPage() {
 
     const handleSave = async (isSubmit: boolean = false) => {
         if (!formData.medical_record_number || !formData.admission_date) {
-            setError('請填寫病歷號和住院日期');
+            showError('請填寫病歷號和住院日期');
             return;
         }
 
@@ -254,8 +253,6 @@ export default function FormPage() {
         setFormData(updatedFormData);
 
         setSaving(true);
-        setError('');
-        setSuccess('');
 
         const payload = {
             medical_record_number: formData.medical_record_number,
@@ -294,13 +291,13 @@ export default function FormPage() {
                 setSubmissionId(result.id);
             }
 
-            setSuccess('資料已儲存');
+            showSuccess('資料已儲存');
 
             if (isSubmit) {
                 setTimeout(() => navigate('/'), 1500);
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : '儲存失敗');
+            showError(err instanceof Error ? err.message : '儲存失敗');
         } finally {
             setSaving(false);
         }
@@ -309,8 +306,6 @@ export default function FormPage() {
     const goToStep = (step: number) => {
         if (step >= 1 && step <= 4) {
             setCurrentStep(step);
-            setError('');
-            setSuccess('');
         }
     };
 
@@ -339,20 +334,6 @@ export default function FormPage() {
                     </button>
                 ))}
             </div>
-
-            {/* Alerts */}
-            {error && (
-                <div className="alert alert-error">
-                    <AlertCircle size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-                    {error}
-                </div>
-            )}
-            {success && (
-                <div className="alert alert-success">
-                    <Check size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-                    {success}
-                </div>
-            )}
 
             {/* Form Card */}
             <div className="card">

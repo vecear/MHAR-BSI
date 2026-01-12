@@ -3,11 +3,15 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import './index.css';
 
 import Login from './pages/Login';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ForgotUsername from './pages/ForgotUsername';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import FormPage from './pages/FormPage';
 import DeleteRequests from './pages/DeleteRequests';
 import Layout from './components/Layout';
+import { ToastProvider } from './components/Toast';
 
 // Types
 interface User {
@@ -102,28 +106,39 @@ function App() {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={
-            user ? <Navigate to="/" replace /> : <Login />
-          } />
-
-          <Route path="/" element={
-            user ? <Layout /> : <Navigate to="/login" replace />
-          }>
-            <Route index element={
-              user?.role === 'admin' ? <AdminDashboard /> : <Dashboard />
+    <ToastProvider>
+      <AuthContext.Provider value={{ user, login, logout, loading }}>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={
+              user ? <Navigate to="/" replace /> : <Login />
             } />
-            <Route path="form" element={<FormPage />} />
-            <Route path="form/:id" element={<FormPage />} />
-            <Route path="delete-requests" element={<DeleteRequests />} />
-          </Route>
+            <Route path="/register" element={
+              user ? <Navigate to="/" replace /> : <Register />
+            } />
+            <Route path="/forgot-password" element={
+              user ? <Navigate to="/" replace /> : <ForgotPassword />
+            } />
+            <Route path="/forgot-username" element={
+              user ? <Navigate to="/" replace /> : <ForgotUsername />
+            } />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthContext.Provider>
+            <Route path="/" element={
+              user ? <Layout /> : <Navigate to="/login" replace />
+            }>
+              <Route index element={
+                user?.role === 'admin' ? <AdminDashboard /> : <Dashboard />
+              } />
+              <Route path="form" element={<FormPage />} />
+              <Route path="form/:id" element={<FormPage />} />
+              <Route path="delete-requests" element={<DeleteRequests />} />
+            </Route>
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthContext.Provider>
+    </ToastProvider>
   );
 }
 
