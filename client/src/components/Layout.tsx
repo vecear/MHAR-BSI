@@ -201,17 +201,18 @@ export default function Layout() {
                                     {showThemeMenu && (
                                         <div className="dropdown-submenu" style={{
                                             position: 'absolute',
-                                            top: 0,
-                                            right: '100%',
-                                            marginRight: '0.5rem',
+                                            top: window.innerWidth <= 768 ? '100%' : 0,
+                                            right: window.innerWidth <= 768 ? 0 : '100%',
+                                            marginRight: window.innerWidth <= 768 ? 0 : '0.5rem',
+                                            marginTop: window.innerWidth <= 768 ? '0.25rem' : 0,
                                             backgroundColor: 'var(--bg-card)',
                                             border: '1px solid var(--border-color)',
                                             borderRadius: 'var(--border-radius)',
                                             boxShadow: 'var(--shadow-lg)',
-
-                                            width: '640px', // Fixed width for 4 columns
+                                            width: window.innerWidth <= 480 ? '280px' : window.innerWidth <= 768 ? '400px' : '640px',
+                                            maxWidth: '90vw',
                                             display: 'grid',
-                                            gridTemplateColumns: 'repeat(4, 1fr)',
+                                            gridTemplateColumns: window.innerWidth <= 480 ? 'repeat(2, 1fr)' : window.innerWidth <= 768 ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)',
                                             gap: '0.5rem',
                                             padding: '0.5rem'
                                         }}>

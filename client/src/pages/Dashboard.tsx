@@ -253,52 +253,54 @@ export default function Dashboard() {
             <div className="card" style={{ marginBottom: 'var(--spacing-lg)', padding: 'var(--spacing-md)' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
                     {/* Line 1: Basic Filters */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 'fit-content' }}>
                             <Filter size={18} color="var(--text-muted)" />
-                            <span style={{ fontWeight: 500 }}>篩選條件 (陽性日期)：</span>
+                            <span style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>篩選條件:</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <label style={{ color: 'var(--text-secondary)' }}>起：</label>
-                            <input
-                                type="date"
-                                className="form-input"
-                                value={startDate}
-                                onChange={e => setStartDate(e.target.value)}
-                                style={{ width: 'auto' }}
-                            />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', flex: '1 1 auto', minWidth: '200px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>起：</label>
+                                <input
+                                    type="date"
+                                    className="form-input"
+                                    value={startDate}
+                                    onChange={e => setStartDate(e.target.value)}
+                                    style={{ width: 'auto', minWidth: '130px' }}
+                                />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>迄：</label>
+                                <input
+                                    type="date"
+                                    className="form-input"
+                                    value={endDate}
+                                    onChange={e => setEndDate(e.target.value)}
+                                    style={{ width: 'auto', minWidth: '130px' }}
+                                />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>醫院：</label>
+                                {user?.hospital ? (
+                                    <span className="badge badge-info" style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}>
+                                        {user.hospital}
+                                    </span>
+                                ) : (
+                                    <select
+                                        className="form-select"
+                                        value={filterHospital}
+                                        onChange={e => setFilterHospital(e.target.value)}
+                                        style={{ width: 'auto', minWidth: '100px' }}
+                                    >
+                                        <option value="">全部</option>
+                                        {HOSPITALS.map(h => (
+                                            <option key={h} value={h}>{h}</option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <label style={{ color: 'var(--text-secondary)' }}>迄：</label>
-                            <input
-                                type="date"
-                                className="form-input"
-                                value={endDate}
-                                onChange={e => setEndDate(e.target.value)}
-                                style={{ width: 'auto' }}
-                            />
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <label style={{ color: 'var(--text-secondary)' }}>醫院：</label>
-                            {user?.hospital ? (
-                                <span className="badge badge-info" style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}>
-                                    {user.hospital}
-                                </span>
-                            ) : (
-                                <select
-                                    className="form-select"
-                                    value={filterHospital}
-                                    onChange={e => setFilterHospital(e.target.value)}
-                                    style={{ width: 'auto', minWidth: '120px' }}
-                                >
-                                    <option value="">全部醫院</option>
-                                    {HOSPITALS.map(h => (
-                                        <option key={h} value={h}>{h}</option>
-                                    ))}
-                                </select>
-                            )}
-                        </div>
-                        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: 'auto', flexWrap: 'wrap' }}>
                             {(startDate || endDate || (!user?.hospital && filterHospital) || filterPathogen) && (
                                 <button
                                     className="btn btn-secondary"
@@ -311,11 +313,11 @@ export default function Dashboard() {
                                     style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
                                 >
                                     <X size={14} style={{ marginRight: '4px' }} />
-                                    清除篩選
+                                    清除
                                 </button>
                             )}
-                            <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                顯示 {filteredSubmissions.length} / {submissions.length} 筆
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                                {filteredSubmissions.length} / {submissions.length} 筆
                             </div>
                         </div>
                     </div>
