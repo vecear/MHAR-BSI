@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Download, Eye, Trash2, Edit, AlertCircle, Users, X, Filter, ArrowUp, ArrowDown, UserPlus, Plus } from 'lucide-react';
+import { FileText, Download, Trash2, Edit, AlertCircle, Users, X, Filter, ArrowUp, ArrowDown, UserPlus, Plus, Check, XCircle } from 'lucide-react';
 import { API_URL } from '../App';
 
 interface Submission {
@@ -49,23 +49,7 @@ const HOSPITALS = [
     '台中總院', '高雄總院', '左營總院', '花蓮總院'
 ];
 
-// Generate years from 2020 to 2100
-const YEARS = Array.from({ length: 81 }, (_, i) => 2020 + i);
-const MONTHS = [
-    { value: '', label: '全部月份' },
-    { value: '01', label: '1月' },
-    { value: '02', label: '2月' },
-    { value: '03', label: '3月' },
-    { value: '04', label: '4月' },
-    { value: '05', label: '5月' },
-    { value: '06', label: '6月' },
-    { value: '07', label: '7月' },
-    { value: '08', label: '8月' },
-    { value: '09', label: '9月' },
-    { value: '10', label: '10月' },
-    { value: '11', label: '11月' },
-    { value: '12', label: '12月' }
-];
+
 
 const initialUserForm: UserFormData = {
     username: '',
@@ -79,19 +63,43 @@ const initialUserForm: UserFormData = {
     line_id: ''
 };
 
+interface DeleteRequest {
+    id: number;
+    submission_id: number;
+    medical_record_number: string;
+    admission_date: string;
+    requester_username: string;
+    requester_hospital: string;
+    status: 'pending' | 'approved' | 'rejected';
+    created_at: string;
+}
+
+const PATHOGEN_CONFIG = [
+    { id: 'CRKP', label: 'CRKP', bg: '#fee2e2', text: '#dc2626' },
+    { id: 'CRAB', label: 'CRAB', bg: '#f3e8ff', text: '#9333ea' },
+    { id: 'CRECOLI', label: 'CRECOLI', bg: '#dbeafe', text: '#2563eb' },
+    { id: 'CRPA', label: 'CRPA', bg: '#ffedd5', text: '#ea580c' }
+];
+
 export default function AdminDashboard() {
-    const [activeTab, setActiveTab] = useState<'submissions' | 'users'>('submissions');
+    const [activeTab, setActiveTab] = useState<'submissions' | 'users' | 'delete-requests'>('submissions');
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [users, setUsers] = useState<User[]>([]);
+    const [deleteRequests, setDeleteRequests] = useState<DeleteRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
     // Filter states
-    const [filterYear, setFilterYear] = useState('');
-    const [filterMonth, setFilterMonth] = useState('');
+    const [admissionStartDate, setAdmissionStartDate] = useState('');
+    const [admissionEndDate, setAdmissionEndDate] = useState('');
+    const [cultureStartDate, setCultureStartDate] = useState('');
+    const [cultureEndDate, setCultureEndDate] = useState('');
     const [filterHospital, setFilterHospital] = useState('');
+    const [filterPathogen, setFilterPathogen] = useState('');
+    const [filterMRN, setFilterMRN] = useState('');
     const [sortField, setSortField] = useState<string>('updated_at');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
     const handleSort = (field: string) => {
         if (sortField === field) {
@@ -109,12 +117,33 @@ export default function AdminDashboard() {
     const [savingUser, setSavingUser] = useState(false);
 
     useEffect(() => {
-        if (activeTab === 'submissions') {
-            fetchSubmissions();
-        } else {
-            fetchUsers();
-        }
+        // Reset specific states when tab changes if needed
+        setError('');
+
+        const fetchData = async () => {
+            if (activeTab === 'submissions') await fetchSubmissions();
+            else if (activeTab === 'users') await fetchUsers();
+            else if (activeTab === 'delete-requests') await fetchDeleteRequests();
+        };
+        fetchData();
     }, [activeTab]);
+
+    // Fetch delete requests count on mount (to show correct tab badge)
+    useEffect(() => {
+        fetchDeleteRequestsCount();
+    }, []);
+
+    const fetchDeleteRequestsCount = async () => {
+        try {
+            const res = await fetch(`${API_URL}/delete-requests`, { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setDeleteRequests(data);
+            }
+        } catch {
+            // Silently fail - just for count display
+        }
+    };
 
     const fetchSubmissions = async () => {
         setLoading(true);
@@ -144,59 +173,116 @@ export default function AdminDashboard() {
         }
     };
 
+    const fetchDeleteRequests = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_URL}/delete-requests`, { credentials: 'include' });
+            if (!res.ok) throw new Error('取得删除申請失敗');
+            const data = await res.json();
+            setDeleteRequests(data);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : '發生錯誤');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleApproveDelete = async (id: number) => {
+        if (!confirm('確定要核准此删除申請？資料將永久删除。')) return;
+        try {
+            const res = await fetch(`${API_URL}/delete-requests/${id}/approve`, {
+                method: 'PUT',
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error('操作失敗');
+
+            // Refresh counts and current view
+            fetchDeleteRequests();
+            if (activeTab === 'submissions') fetchSubmissions();
+        } catch (err) {
+            alert(err instanceof Error ? err.message : '操作失敗');
+        }
+    };
+
+    const handleRejectDelete = async (id: number) => {
+        const reason = prompt('請輸入拒絕理由（可留空）：');
+        if (reason === null) return; // User cancelled
+        try {
+            const res = await fetch(`${API_URL}/delete-requests/${id}/reject`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ reason })
+            });
+            if (!res.ok) throw new Error('操作失敗');
+            fetchDeleteRequests();
+        } catch (err) {
+            alert(err instanceof Error ? err.message : '操作失敗');
+        }
+    };
+
     // Filter submissions
     const filteredSubmissions = useMemo(() => {
         return submissions.filter(sub => {
             const cultureDate = (sub.form_data?.positive_culture_date as string) || '';
+            const admissionDate = sub.admission_date || '';
 
-            if (filterYear && !cultureDate.startsWith(filterYear)) {
-                return false;
-            }
-            if (filterMonth && filterYear) {
-                const monthPart = cultureDate.substring(5, 7);
-                if (monthPart !== filterMonth) {
-                    return false;
-                }
-            }
-            if (filterHospital && sub.hospital !== filterHospital) {
-                return false;
-            }
+            // Admission date filter
+            if (admissionStartDate && admissionDate < admissionStartDate) return false;
+            if (admissionEndDate && admissionDate > admissionEndDate) return false;
+
+            // Positive culture date filter
+            if (cultureStartDate && cultureDate < cultureStartDate) return false;
+            if (cultureEndDate && cultureDate > cultureEndDate) return false;
+
+            if (filterHospital && sub.hospital !== filterHospital) return false;
+
+            const pathogen = (sub.form_data?.pathogen as string) || '';
+            if (filterPathogen && pathogen !== filterPathogen) return false;
+
+            // Medical record number search (case-insensitive partial match)
+            if (filterMRN && !sub.medical_record_number.toLowerCase().includes(filterMRN.toLowerCase())) return false;
+
             return true;
         }).sort((a, b) => {
-            const aValue = (() => {
+            const getValue = (item: Submission) => {
                 switch (sortField) {
-                    case 'medical_record_number': return a.medical_record_number;
-                    case 'admission_date': return a.admission_date;
-                    case 'positive_culture_date': return (a.form_data?.positive_culture_date as string) || '';
-                    case 'username': return a.username;
-                    case 'hospital': return a.hospital;
-                    case 'data_status': return a.data_status;
-                    case 'created_at': return a.created_at;
-                    case 'updated_at': return a.updated_at;
-                    case 'update_count': return (a.update_count || 0).toString();
+                    case 'medical_record_number': return item.medical_record_number;
+                    case 'admission_date': return item.admission_date;
+                    case 'positive_culture_date': return (item.form_data?.positive_culture_date as string) || '';
+                    case 'username': return item.username;
+                    case 'hospital': return item.hospital;
+                    case 'data_status': return item.data_status;
+                    case 'created_at': return item.created_at;
+                    case 'updated_at': return item.updated_at;
+                    case 'update_count': return (item.update_count || 0); // numeric comparison works with < >
                     default: return '';
                 }
-            })();
-            const bValue = (() => {
-                switch (sortField) {
-                    case 'medical_record_number': return b.medical_record_number;
-                    case 'admission_date': return b.admission_date;
-                    case 'positive_culture_date': return (b.form_data?.positive_culture_date as string) || '';
-                    case 'username': return b.username;
-                    case 'hospital': return b.hospital;
-                    case 'data_status': return b.data_status;
-                    case 'created_at': return b.created_at;
-                    case 'updated_at': return b.updated_at;
-                    case 'update_count': return (b.update_count || 0).toString();
-                    default: return '';
-                }
-            })();
+            };
+
+            const aValue = getValue(a);
+            const bValue = getValue(b);
 
             if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
             if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [submissions, filterYear, filterMonth, filterHospital, sortField, sortDirection]);
+    }, [submissions, admissionStartDate, admissionEndDate, cultureStartDate, cultureEndDate, filterHospital, filterPathogen, filterMRN, sortField, sortDirection]);
+
+    // Check if any filter is active
+    const hasActiveFilters = admissionStartDate || admissionEndDate || cultureStartDate || cultureEndDate ||
+        filterHospital || filterPathogen || filterMRN;
+
+    // Clear all filters
+    const clearAllFilters = () => {
+        setAdmissionStartDate('');
+        setAdmissionEndDate('');
+        setCultureStartDate('');
+        setCultureEndDate('');
+        setFilterHospital('');
+        setFilterPathogen('');
+        setFilterMRN('');
+    };
 
     const handleExportCSV = async () => {
         try {
@@ -225,9 +311,42 @@ export default function AdminDashboard() {
                 credentials: 'include'
             });
             if (!res.ok) throw new Error('刪除失敗');
-            setSubmissions(submissions.filter(s => s.id !== id));
+            setSubmissions(prev => prev.filter(s => s.id !== id));
+            setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
         } catch (err) {
             alert(err instanceof Error ? err.message : '刪除失敗');
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return;
+        if (!confirm(`確定要刪除這 ${selectedIds.size} 筆資料嗎？`)) return;
+        try {
+            const ids = Array.from(selectedIds);
+            await Promise.all(ids.map(id =>
+                fetch(`${API_URL}/forms/${id}`, { method: 'DELETE', credentials: 'include' })
+            ));
+            setSubmissions(prev => prev.filter(s => !selectedIds.has(s.id)));
+            setSelectedIds(new Set());
+        } catch (err) {
+            alert(err instanceof Error ? err.message : '刪除失敗');
+        }
+    };
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev => {
+            const n = new Set(prev);
+            if (n.has(id)) n.delete(id);
+            else n.add(id);
+            return n;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.size === filteredSubmissions.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filteredSubmissions.map(s => s.id)));
         }
     };
 
@@ -263,14 +382,7 @@ export default function AdminDashboard() {
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({
-                        username: userForm.username,
-                        hospital: userForm.hospital,
-                        email: userForm.email,
-                        display_name: userForm.display_name,
-                        gender: userForm.gender,
-                        phone: userForm.phone,
-                        address: userForm.address,
-                        line_id: userForm.line_id,
+                        ...userForm,
                         newPassword: userForm.password || undefined
                     })
                 });
@@ -279,9 +391,7 @@ export default function AdminDashboard() {
                     throw new Error(err.error || '更新失敗');
                 }
             } else {
-                if (!userForm.password) {
-                    throw new Error('請輸入密碼');
-                }
+                if (!userForm.password) throw new Error('請輸入密碼');
                 const res = await fetch(`${API_URL}/users`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -311,7 +421,7 @@ export default function AdminDashboard() {
                 credentials: 'include'
             });
             if (!res.ok) throw new Error('刪除失敗');
-            setUsers(users.filter(u => u.id !== id));
+            setUsers(prev => prev.filter(u => u.id !== id));
         } catch (err) {
             alert(err instanceof Error ? err.message : '刪除失敗');
         }
@@ -323,10 +433,18 @@ export default function AdminDashboard() {
                 <h1>管理員儀表板</h1>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     {activeTab === 'submissions' && (
-                        <button className="btn btn-secondary" onClick={handleExportCSV}>
-                            <Download size={18} />
-                            匯出全部 CSV
-                        </button>
+                        <>
+                            {selectedIds.size > 0 && (
+                                <button className="btn btn-danger" onClick={handleBulkDelete}>
+                                    <Trash2 size={18} />
+                                    多筆一次刪除 ({selectedIds.size})
+                                </button>
+                            )}
+                            <button className="btn btn-secondary" onClick={handleExportCSV}>
+                                <Download size={18} />
+                                匯出全部 CSV
+                            </button>
+                        </>
                     )}
                     {activeTab === 'users' && (
                         <button className="btn btn-primary" onClick={openAddUser}>
@@ -341,7 +459,6 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            {/* Tabs */}
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
                 <button
                     className={`btn ${activeTab === 'submissions' ? 'btn-primary' : 'btn-secondary'}`}
@@ -356,6 +473,13 @@ export default function AdminDashboard() {
                 >
                     <Users size={18} />
                     使用者管理 ({users.length})
+                </button>
+                <button
+                    className={`btn ${activeTab === 'delete-requests' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setActiveTab('delete-requests')}
+                >
+                    <Trash2 size={18} />
+                    刪除表單 ({deleteRequests.length})
                 </button>
             </div>
 
@@ -374,72 +498,147 @@ export default function AdminDashboard() {
                 <>
                     {/* Filter Section */}
                     <div className="card" style={{ marginBottom: 'var(--spacing-lg)', padding: 'var(--spacing-md)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Filter size={18} color="var(--text-muted)" />
-                                <span style={{ fontWeight: 500 }}>篩選條件 (陽性日期)：</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                            {/* Line 1: Hospital, MRN, Clear button */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Filter size={18} color="var(--text-muted)" />
+                                    <span style={{ fontWeight: 500 }}>篩選條件:</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <label style={{ color: 'var(--text-secondary)' }}>醫院：</label>
+                                    <select
+                                        className="form-select"
+                                        value={filterHospital}
+                                        onChange={e => setFilterHospital(e.target.value)}
+                                        style={{ width: 'auto', minWidth: '120px' }}
+                                    >
+                                        <option value="">全部醫院</option>
+                                        {HOSPITALS.map(h => (
+                                            <option key={h} value={h}>{h}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <label style={{ color: 'var(--text-secondary)' }}>病歷號：</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        value={filterMRN}
+                                        onChange={e => setFilterMRN(e.target.value)}
+                                        placeholder="搜尋..."
+                                        style={{ width: 'auto', minWidth: '100px', maxWidth: '150px' }}
+                                    />
+                                </div>
+
+                                <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    <button
+                                        className={`btn ${hasActiveFilters ? 'btn-danger' : 'btn-secondary'}`}
+                                        onClick={clearAllFilters}
+                                        disabled={!hasActiveFilters}
+                                        style={{
+                                            padding: '0.4rem 0.8rem',
+                                            fontSize: '0.9rem',
+                                            opacity: hasActiveFilters ? 1 : 0.5,
+                                            cursor: hasActiveFilters ? 'pointer' : 'not-allowed'
+                                        }}
+                                    >
+                                        <X size={14} style={{ marginRight: '4px' }} />
+                                        清除篩選條件
+                                    </button>
+                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                        顯示 {filteredSubmissions.length} / {submissions.length} 筆
+                                    </div>
+                                </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <label style={{ color: 'var(--text-secondary)' }}>年份：</label>
-                                <select
-                                    className="form-select"
-                                    value={filterYear}
-                                    onChange={e => {
-                                        setFilterYear(e.target.value);
-                                        if (!e.target.value) setFilterMonth('');
-                                    }}
-                                    style={{ width: 'auto', minWidth: '100px' }}
-                                >
-                                    <option value="">全部年份</option>
-                                    {YEARS.map(year => (
-                                        <option key={year} value={year}>{year}年</option>
+
+                            {/* Line 2: Date Filters */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', paddingLeft: '1.5rem' }}>
+                                {/* Admission Date */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap' }}>
+                                    <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontWeight: 500 }}>住院日期</label>
+                                    <input
+                                        type="date"
+                                        className="form-input"
+                                        value={admissionStartDate}
+                                        onChange={e => setAdmissionStartDate(e.target.value)}
+                                        style={{ width: 'auto', minWidth: '130px' }}
+                                    />
+                                    <span style={{ color: 'var(--text-muted)' }}>~</span>
+                                    <input
+                                        type="date"
+                                        className="form-input"
+                                        value={admissionEndDate}
+                                        onChange={e => setAdmissionEndDate(e.target.value)}
+                                        style={{ width: 'auto', minWidth: '130px' }}
+                                    />
+                                </div>
+
+                                {/* Positive Culture Date */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap' }}>
+                                    <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontWeight: 500 }}>陽性日期</label>
+                                    <input
+                                        type="date"
+                                        className="form-input"
+                                        value={cultureStartDate}
+                                        onChange={e => setCultureStartDate(e.target.value)}
+                                        style={{ width: 'auto', minWidth: '130px' }}
+                                    />
+                                    <span style={{ color: 'var(--text-muted)' }}>~</span>
+                                    <input
+                                        type="date"
+                                        className="form-input"
+                                        value={cultureEndDate}
+                                        onChange={e => setCultureEndDate(e.target.value)}
+                                        style={{ width: 'auto', minWidth: '130px' }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Line 3: Pathogen Tags */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '1.5rem' }}>
+                                <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>菌種：</label>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    <button
+                                        onClick={() => setFilterPathogen('')}
+                                        style={{
+                                            padding: '0.25rem 0.75rem',
+                                            borderRadius: '9999px',
+                                            fontSize: '0.85rem',
+                                            fontWeight: 500,
+                                            cursor: 'pointer',
+                                            border: filterPathogen === '' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                                            backgroundColor: 'var(--bg-primary)',
+                                            color: 'var(--text-primary)',
+                                            transition: 'all 0.2s ease',
+                                            boxShadow: filterPathogen === '' ? 'var(--shadow-sm)' : 'none'
+                                        }}
+                                    >
+                                        全部
+                                    </button>
+                                    {PATHOGEN_CONFIG.map(p => (
+                                        <button
+                                            key={p.id}
+                                            onClick={() => setFilterPathogen(p.id)}
+                                            style={{
+                                                padding: '0.25rem 0.75rem',
+                                                borderRadius: '9999px',
+                                                fontSize: '0.85rem',
+                                                fontWeight: 500,
+                                                cursor: 'pointer',
+                                                border: filterPathogen === p.id ? `2px solid ${p.text}` : '2px solid transparent',
+                                                backgroundColor: p.bg,
+                                                color: p.text,
+                                                transition: 'all 0.2s ease',
+                                                boxShadow: filterPathogen === p.id ? 'var(--shadow-sm)' : 'none',
+                                                opacity: filterPathogen && filterPathogen !== p.id ? 0.6 : 1
+                                            }}
+                                        >
+                                            {p.label}
+                                        </button>
                                     ))}
-                                </select>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <label style={{ color: 'var(--text-secondary)' }}>月份：</label>
-                                <select
-                                    className="form-select"
-                                    value={filterMonth}
-                                    onChange={e => setFilterMonth(e.target.value)}
-                                    disabled={!filterYear}
-                                    style={{ width: 'auto', minWidth: '100px' }}
-                                >
-                                    {MONTHS.map(m => (
-                                        <option key={m.value} value={m.value}>{m.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <label style={{ color: 'var(--text-secondary)' }}>醫院：</label>
-                                <select
-                                    className="form-select"
-                                    value={filterHospital}
-                                    onChange={e => setFilterHospital(e.target.value)}
-                                    style={{ width: 'auto', minWidth: '120px' }}
-                                >
-                                    <option value="">全部醫院</option>
-                                    {HOSPITALS.map(h => (
-                                        <option key={h} value={h}>{h}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            {(filterYear || filterMonth || filterHospital) && (
-                                <button
-                                    className="btn btn-secondary"
-                                    onClick={() => {
-                                        setFilterYear('');
-                                        setFilterMonth('');
-                                        setFilterHospital('');
-                                    }}
-                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
-                                >
-                                    <X size={14} style={{ marginRight: '4px' }} />
-                                    清除篩選
-                                </button>
-                            )}
-                            <div style={{ marginLeft: 'auto', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                顯示 {filteredSubmissions.length} / {submissions.length} 筆
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -459,34 +658,44 @@ export default function AdminDashboard() {
                         ) : (
                             <div className="table-container">
                                 <table className="data-table">
+
                                     <thead>
                                         <tr>
-                                            <th style={{ minWidth: '80px', textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1.5rem' }}>修改</th>
-                                            <th onClick={() => handleSort('medical_record_number')} style={{ cursor: 'pointer', minWidth: '100px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <th style={{ width: '30px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedIds.size === filteredSubmissions.length && filteredSubmissions.length > 0}
+                                                    onChange={toggleSelectAll}
+                                                />
+                                            </th>
+                                            <th style={{ minWidth: '50px', textAlign: 'left', verticalAlign: 'middle', paddingLeft: '0.5rem' }}>修改</th>
+                                            <th style={{ minWidth: '60px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <div>紀錄編號</div>
+                                                <div style={{ fontSize: '0.75em', fontWeight: 'normal' }}>(建立時間)</div>
+                                            </th>
+                                            <th style={{ minWidth: '50px', textAlign: 'center', verticalAlign: 'middle' }}>菌種</th>
+                                            <th onClick={() => handleSort('medical_record_number')} style={{ cursor: 'pointer', minWidth: '50px', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 病歷號 {sortField === 'medical_record_number' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
-                                            <th onClick={() => handleSort('admission_date')} style={{ cursor: 'pointer', minWidth: '110px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <th onClick={() => handleSort('admission_date')} style={{ cursor: 'pointer', minWidth: '55px', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 住院日期 {sortField === 'admission_date' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
-                                            <th onClick={() => handleSort('positive_culture_date')} style={{ cursor: 'pointer', minWidth: '110px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <th onClick={() => handleSort('positive_culture_date')} style={{ cursor: 'pointer', minWidth: '55px', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 陽性日期 {sortField === 'positive_culture_date' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
-                                            <th onClick={() => handleSort('username')} style={{ cursor: 'pointer', minWidth: '90px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <th onClick={() => handleSort('username')} style={{ cursor: 'pointer', minWidth: '45px', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 填寫者 {sortField === 'username' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
-                                            <th onClick={() => handleSort('hospital')} style={{ cursor: 'pointer', minWidth: '120px', whiteSpace: 'nowrap', textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <th onClick={() => handleSort('hospital')} style={{ cursor: 'pointer', minWidth: '60px', whiteSpace: 'nowrap', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 醫院 {sortField === 'hospital' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
-                                            <th onClick={() => handleSort('data_status')} style={{ cursor: 'pointer', minWidth: '100px', whiteSpace: 'nowrap', textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <th onClick={() => handleSort('data_status')} style={{ cursor: 'pointer', minWidth: '50px', whiteSpace: 'nowrap', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 狀態 {sortField === 'data_status' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
-                                            <th onClick={() => handleSort('created_at')} style={{ cursor: 'pointer', minWidth: '130px', textAlign: 'center', verticalAlign: 'middle' }}>
-                                                建立時間 {sortField === 'created_at' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                                            </th>
-                                            <th onClick={() => handleSort('updated_at')} style={{ cursor: 'pointer', minWidth: '130px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <th onClick={() => handleSort('updated_at')} style={{ cursor: 'pointer', minWidth: '65px', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 最後更新時間 {sortField === 'updated_at' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
-                                            <th style={{ minWidth: '90px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <th style={{ minWidth: '45px', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 更新次數 {sortField === 'update_count' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
                                         </tr>
@@ -494,7 +703,14 @@ export default function AdminDashboard() {
                                     <tbody>
                                         {filteredSubmissions.map(sub => (
                                             <tr key={sub.id}>
-                                                <td style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1rem' }}>
+                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.has(sub.id)}
+                                                        onChange={() => toggleSelect(sub.id)}
+                                                    />
+                                                </td>
+                                                <td style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '0.5rem' }}>
                                                     <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-start', width: '100%' }}>
                                                         <Link to={`/form/${sub.id}`} className="btn btn-icon" title="修改">
                                                             <Edit size={16} color="var(--color-primary)" />
@@ -503,6 +719,21 @@ export default function AdminDashboard() {
                                                             <Trash2 size={16} color="var(--color-danger)" />
                                                         </button>
                                                     </div>
+                                                </td>
+                                                <td style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.8em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                                                    {(sub.form_data?.record_time as string)?.replace(/[-T:]/g, '') || '-'}
+                                                </td>
+                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                    {(() => {
+                                                        const pathogen = (sub.form_data?.pathogen as string) || '';
+                                                        const config = PATHOGEN_CONFIG.find(p => p.id === pathogen);
+
+                                                        return pathogen ? (
+                                                            <span className="badge" style={{ backgroundColor: config?.bg || '#f0f0f0', color: config?.text || '#666' }}>
+                                                                {pathogen}
+                                                            </span>
+                                                        ) : '-';
+                                                    })()}
                                                 </td>
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.medical_record_number}</td>
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.admission_date}</td>
@@ -515,12 +746,6 @@ export default function AdminDashboard() {
                                                     <span className={`badge ${sub.data_status === 'complete' ? 'badge-success' : 'badge-warning'}`}>
                                                         {sub.data_status === 'complete' ? '已完成' : '未完成'}
                                                     </span>
-                                                </td>
-                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                    <div>{new Date(sub.created_at).toLocaleDateString('zh-TW')}</div>
-                                                    <div style={{ fontSize: '0.85em', color: 'var(--text-muted)' }}>
-                                                        {new Date(sub.created_at).toLocaleTimeString('zh-TW', { hour12: false })}
-                                                    </div>
                                                 </td>
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                     <div>{new Date(sub.updated_at).toLocaleDateString('zh-TW')}</div>
@@ -541,6 +766,97 @@ export default function AdminDashboard() {
                         )}
                     </div>
                 </>
+            ) : activeTab === 'delete-requests' ? (
+                // Delete Requests Table
+                <div className="card">
+                    {deleteRequests.length === 0 ? (
+                        <div className="empty-state">
+                            <Trash2 className="empty-state-icon" />
+                            <h3>暫無待審核的刪除申請</h3>
+                            <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>
+                                當使用者申請刪除資料時，會顯示在這裡
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="table-container">
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>紀錄編號</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>病歷號</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>住院日期</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>申請者</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>醫院</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>申請時間</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>狀態</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>動作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {deleteRequests.map(req => (
+                                        <tr key={req.id}>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.85em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                                                {req.status === 'approved' ? (
+                                                    ((req as any).record_time as string)?.replace(/[-T:]/g, '') || '-'
+                                                ) : (
+                                                    <Link to={`/form/${req.submission_id}`} style={{ textDecoration: 'none', color: 'var(--color-primary)' }}>
+                                                        {((req as any).record_time as string)?.replace(/[-T:]/g, '') || '-'}
+                                                    </Link>
+                                                )}
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.medical_record_number}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.admission_date}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.requester_username}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <span className="badge badge-info">{req.requester_hospital}</span>
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                {new Date(req.created_at + (req.created_at.includes('Z') ? '' : 'Z')).toLocaleString('zh-TW', { hour12: false })}
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                {req.status === 'pending' && (
+                                                    <span className="badge badge-warning">待審核</span>
+                                                )}
+                                                {req.status === 'approved' && (
+                                                    <span className="badge badge-success">已核准</span>
+                                                )}
+                                                {req.status === 'rejected' && (
+                                                    <span className="badge badge-danger">已拒絕</span>
+                                                )}
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                {req.status === 'pending' ? (
+                                                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                                        <button
+                                                            className="btn btn-success"
+                                                            onClick={() => handleApproveDelete(req.id)}
+                                                            title="核准刪除"
+                                                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
+                                                        >
+                                                            <Check size={14} />
+                                                            核准
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-secondary"
+                                                            onClick={() => handleRejectDelete(req.id)}
+                                                            title="拒絕"
+                                                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
+                                                        >
+                                                            <XCircle size={14} />
+                                                            拒絕
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <span style={{ color: 'var(--text-muted)' }}>-</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
             ) : (
                 // Users Table
                 <div className="card">
@@ -586,7 +902,7 @@ export default function AdminDashboard() {
                                             </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.email || '-'}</td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.phone || '-'}</td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{new Date(u.created_at).toLocaleString('zh-TW', { hour12: false })}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{new Date(u.created_at + (u.created_at.includes('Z') ? '' : 'Z')).toLocaleString('zh-TW', { hour12: false })}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -594,146 +910,149 @@ export default function AdminDashboard() {
                         </div>
                     )}
                 </div>
-            )}
+            )
+            }
 
             {/* User Modal (Add/Edit) */}
-            {showUserModal && (
-                <div className="modal-overlay" onClick={() => setShowUserModal(false)}>
-                    <div className="modal animate-slideUp" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3>{editingUser ? '編輯使用者' : '新增使用者'}</h3>
-                            <button className="btn btn-icon" onClick={() => setShowUserModal(false)}>
-                                <X size={18} />
-                            </button>
-                        </div>
-                        <form onSubmit={handleSaveUser}>
-                            <div className="modal-body">
-                                <div className="form-grid-2">
-                                    <div className="form-group">
-                                        <label className="form-label required">帳號</label>
-                                        <input
-                                            type="text"
-                                            className="form-input"
-                                            value={userForm.username}
-                                            onChange={e => setUserForm({ ...userForm, username: e.target.value })}
-                                            required
-                                        />
+            {
+                showUserModal && (
+                    <div className="modal-overlay" onClick={() => setShowUserModal(false)}>
+                        <div className="modal animate-slideUp" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h3>{editingUser ? '編輯使用者' : '新增使用者'}</h3>
+                                <button className="btn btn-icon" onClick={() => setShowUserModal(false)}>
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <form onSubmit={handleSaveUser}>
+                                <div className="modal-body">
+                                    <div className="form-grid-2">
+                                        <div className="form-group">
+                                            <label className="form-label required">帳號</label>
+                                            <input
+                                                type="text"
+                                                className="form-input"
+                                                value={userForm.username}
+                                                onChange={e => setUserForm({ ...userForm, username: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className={`form-label ${editingUser ? '' : 'required'}`}>
+                                                {editingUser ? '新密碼（留空不變更）' : '密碼'}
+                                            </label>
+                                            <input
+                                                type="password"
+                                                className="form-input"
+                                                value={userForm.password}
+                                                onChange={e => setUserForm({ ...userForm, password: e.target.value })}
+                                                minLength={6}
+                                                required={!editingUser}
+                                                placeholder={editingUser ? '留空保持原密碼' : '至少6個字元'}
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="form-group">
-                                        <label className={`form-label ${editingUser ? '' : 'required'}`}>
-                                            {editingUser ? '新密碼（留空不變更）' : '密碼'}
-                                        </label>
-                                        <input
-                                            type="password"
-                                            className="form-input"
-                                            value={userForm.password}
-                                            onChange={e => setUserForm({ ...userForm, password: e.target.value })}
-                                            minLength={6}
-                                            required={!editingUser}
-                                            placeholder={editingUser ? '留空保持原密碼' : '至少6個字元'}
-                                        />
-                                    </div>
-                                </div>
 
-                                <div className="form-group">
-                                    <label className="form-label required">所屬醫院</label>
-                                    <select
-                                        className="form-select"
-                                        value={userForm.hospital}
-                                        onChange={e => setUserForm({ ...userForm, hospital: e.target.value })}
-                                    >
-                                        {HOSPITALS.map(h => (
-                                            <option key={h} value={h}>{h}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <hr style={{ margin: '1.5rem 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
-
-                                <div className="form-grid-2">
                                     <div className="form-group">
-                                        <label className="form-label">姓名</label>
-                                        <input
-                                            type="text"
-                                            className="form-input"
-                                            value={userForm.display_name}
-                                            onChange={e => setUserForm({ ...userForm, display_name: e.target.value })}
-                                            placeholder="使用者姓名"
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">性別</label>
+                                        <label className="form-label required">所屬醫院</label>
                                         <select
                                             className="form-select"
-                                            value={userForm.gender}
-                                            onChange={e => setUserForm({ ...userForm, gender: e.target.value })}
+                                            value={userForm.hospital}
+                                            onChange={e => setUserForm({ ...userForm, hospital: e.target.value })}
                                         >
-                                            <option value="">請選擇</option>
-                                            <option value="male">男</option>
-                                            <option value="female">女</option>
-                                            <option value="other">其他</option>
+                                            {HOSPITALS.map(h => (
+                                                <option key={h} value={h}>{h}</option>
+                                            ))}
                                         </select>
                                     </div>
-                                </div>
 
-                                <div className="form-grid-2">
-                                    <div className="form-group">
-                                        <label className="form-label">E-mail</label>
-                                        <input
-                                            type="email"
-                                            className="form-input"
-                                            value={userForm.email}
-                                            onChange={e => setUserForm({ ...userForm, email: e.target.value })}
-                                            placeholder="user@example.com"
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">電話</label>
-                                        <input
-                                            type="tel"
-                                            className="form-input"
-                                            value={userForm.phone}
-                                            onChange={e => setUserForm({ ...userForm, phone: e.target.value })}
-                                            placeholder="0912-345-678"
-                                        />
-                                    </div>
-                                </div>
+                                    <hr style={{ margin: '1.5rem 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
 
-                                <div className="form-grid-2">
-                                    <div className="form-group">
-                                        <label className="form-label">地址</label>
-                                        <input
-                                            type="text"
-                                            className="form-input"
-                                            value={userForm.address}
-                                            onChange={e => setUserForm({ ...userForm, address: e.target.value })}
-                                            placeholder="通訊地址"
-                                        />
+                                    <div className="form-grid-2">
+                                        <div className="form-group">
+                                            <label className="form-label">姓名</label>
+                                            <input
+                                                type="text"
+                                                className="form-input"
+                                                value={userForm.display_name}
+                                                onChange={e => setUserForm({ ...userForm, display_name: e.target.value })}
+                                                placeholder="使用者姓名"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">性別</label>
+                                            <select
+                                                className="form-select"
+                                                value={userForm.gender}
+                                                onChange={e => setUserForm({ ...userForm, gender: e.target.value })}
+                                            >
+                                                <option value="">請選擇</option>
+                                                <option value="male">男</option>
+                                                <option value="female">女</option>
+                                                <option value="other">其他</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Line ID</label>
-                                        <input
-                                            type="text"
-                                            className="form-input"
-                                            value={userForm.line_id}
-                                            onChange={e => setUserForm({ ...userForm, line_id: e.target.value })}
-                                            placeholder="Line ID"
-                                        />
+
+                                    <div className="form-grid-2">
+                                        <div className="form-group">
+                                            <label className="form-label">E-mail</label>
+                                            <input
+                                                type="email"
+                                                className="form-input"
+                                                value={userForm.email}
+                                                onChange={e => setUserForm({ ...userForm, email: e.target.value })}
+                                                placeholder="user@example.com"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">電話</label>
+                                            <input
+                                                type="tel"
+                                                className="form-input"
+                                                value={userForm.phone}
+                                                onChange={e => setUserForm({ ...userForm, phone: e.target.value })}
+                                                placeholder="0912-345-678"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-grid-2">
+                                        <div className="form-group">
+                                            <label className="form-label">地址</label>
+                                            <input
+                                                type="text"
+                                                className="form-input"
+                                                value={userForm.address}
+                                                onChange={e => setUserForm({ ...userForm, address: e.target.value })}
+                                                placeholder="通訊地址"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Line ID</label>
+                                            <input
+                                                type="text"
+                                                className="form-input"
+                                                value={userForm.line_id}
+                                                onChange={e => setUserForm({ ...userForm, line_id: e.target.value })}
+                                                placeholder="Line ID"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowUserModal(false)}>
-                                    取消
-                                </button>
-                                <button type="submit" className="btn btn-primary" disabled={savingUser}>
-                                    {savingUser ? <div className="spinner" style={{ width: '1rem', height: '1rem' }}></div> : (editingUser ? '儲存' : '建立')}
-                                </button>
-                            </div>
-                        </form>
+                                <div className="modal-footer">
+                                    <button type="button" className="btn btn-secondary" onClick={() => setShowUserModal(false)}>
+                                        取消
+                                    </button>
+                                    <button type="submit" className="btn btn-primary" disabled={savingUser}>
+                                        {savingUser ? <div className="spinner" style={{ width: '1rem', height: '1rem' }}></div> : (editingUser ? '儲存' : '建立')}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }

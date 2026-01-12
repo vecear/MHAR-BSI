@@ -79,21 +79,81 @@ const submissionQueries = {
         SELECT * FROM submissions 
         WHERE medical_record_number = ? AND admission_date = ?
     `),
+    findByUser: db.prepare(`
+        SELECT s.*, u.username, u.hospital,
+        CASE WHEN EXISTS (SELECT 1 FROM delete_requests dr WHERE dr.submission_id = s.id AND dr.status = 'pending') THEN 1 ELSE 0 END as has_pending_delete
+        FROM submissions s
+        JOIN users u ON s.user_id = u.id
+        WHERE s.user_id = ?
+        ORDER BY s.updated_at DESC
+    `),
+    findByHospital: db.prepare(`
+        SELECT s.*, u.username, u.hospital,
+        CASE WHEN EXISTS (SELECT 1 FROM delete_requests dr WHERE dr.submission_id = s.id AND dr.status = 'pending') THEN 1 ELSE 0 END as has_pending_delete
+        FROM submissions s
+        JOIN users u ON s.user_id = u.id
+        WHERE u.hospital = ?
+        ORDER BY s.updated_at DESC
+    `),
     getAllByUser: db.prepare(`
-        SELECT s.*, u.username, u.hospital 
+        SELECT s.*, u.username, u.hospital,
+        CASE WHEN EXISTS (SELECT 1 FROM delete_requests dr WHERE dr.submission_id = s.id AND dr.status = 'pending') THEN 1 ELSE 0 END as has_pending_delete
         FROM submissions s 
         JOIN users u ON s.user_id = u.id 
         WHERE s.user_id = ? 
         ORDER BY s.updated_at DESC
     `),
     getAll: db.prepare(`
-        SELECT s.*, u.username, u.hospital 
+        SELECT s.*, u.username, u.hospital,
+        CASE WHEN EXISTS (SELECT 1 FROM delete_requests dr WHERE dr.submission_id = s.id AND dr.status = 'pending') THEN 1 ELSE 0 END as has_pending_delete
         FROM submissions s 
         JOIN users u ON s.user_id = u.id 
         ORDER BY s.updated_at DESC
     `),
     delete: db.prepare('DELETE FROM submissions WHERE id = ? AND user_id = ?'),
     deleteAdmin: db.prepare('DELETE FROM submissions WHERE id = ?')
+};
+
+// Delete request queries
+const deleteRequestQueries = {
+    create: db.prepare(`
+        INSERT INTO delete_requests (submission_id, requester_id, medical_record_number, admission_date, record_time)
+        VALUES (?, ?, ?, ?, ?)
+    `),
+    findById: db.prepare('SELECT * FROM delete_requests WHERE id = ?'),
+    findBySubmission: db.prepare('SELECT * FROM delete_requests WHERE submission_id = ? AND status = ?'),
+    findPendingBySubmission: db.prepare('SELECT * FROM delete_requests WHERE submission_id = ? AND status = ?'),
+    getByRequester: db.prepare(`
+        SELECT dr.*, 
+               COALESCE(dr.medical_record_number, s.medical_record_number) as medical_record_number,
+               COALESCE(dr.admission_date, s.admission_date) as admission_date,
+               dr.record_time
+        FROM delete_requests dr
+        LEFT JOIN submissions s ON dr.submission_id = s.id
+        WHERE dr.requester_id = ?
+        ORDER BY dr.created_at DESC
+    `),
+    getAll: db.prepare(`
+        SELECT dr.*, 
+               COALESCE(dr.medical_record_number, s.medical_record_number) as medical_record_number,
+               COALESCE(dr.admission_date, s.admission_date) as admission_date,
+               dr.record_time,
+               u.username as requester_username, u.hospital as requester_hospital
+        FROM delete_requests dr
+        LEFT JOIN submissions s ON dr.submission_id = s.id
+        JOIN users u ON dr.requester_id = u.id
+        ORDER BY dr.created_at DESC
+    `),
+    approve: db.prepare(`
+        UPDATE delete_requests
+        SET status = 'approved', resolved_at = CURRENT_TIMESTAMP, resolved_by = ?
+        WHERE id = ?
+    `),
+    reject: db.prepare(`
+        UPDATE delete_requests
+        SET status = 'rejected', resolved_at = CURRENT_TIMESTAMP, resolved_by = ?, reject_reason = ?
+        WHERE id = ?
+    `)
 };
 
 // Export a no-op initializeDatabase for backwards compatibility
@@ -106,5 +166,6 @@ module.exports = {
     db,
     initializeDatabase,
     userQueries,
-    submissionQueries
+    submissionQueries,
+    deleteRequestQueries
 };

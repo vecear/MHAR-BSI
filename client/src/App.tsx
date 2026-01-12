@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import FormPage from './pages/FormPage';
+import DeleteRequests from './pages/DeleteRequests';
 import Layout from './components/Layout';
 
 // Types
@@ -116,6 +117,7 @@ function App() {
             } />
             <Route path="form" element={<FormPage />} />
             <Route path="form/:id" element={<FormPage />} />
+            <Route path="delete-requests" element={<DeleteRequests />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

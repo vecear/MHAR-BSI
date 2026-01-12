@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const formRoutes = require('./routes/forms');
 const userRoutes = require('./routes/users');
 const exportRoutes = require('./routes/export');
+const deleteRequestRoutes = require('./routes/delete-requests');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -39,6 +40,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/forms', formRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/delete-requests', deleteRequestRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

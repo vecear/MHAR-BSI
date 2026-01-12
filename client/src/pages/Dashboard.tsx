@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Download, Trash2, Plus, AlertCircle, Filter, X, ArrowUp, ArrowDown, Edit } from 'lucide-react';
+import { FileText, Upload, Trash2, Plus, AlertCircle, Filter, X, ArrowUp, ArrowDown, Edit, Clock } from 'lucide-react';
 import { API_URL, useAuth } from '../App';
 import CsvUpload from '../components/CsvUpload';
 
@@ -12,37 +12,45 @@ interface Submission {
     data_status: string;
     created_at: string;
     updated_at: string;
+    update_count?: number;
     username: string;
     hospital: string;
+    has_pending_delete?: number;
 }
 
-// Generate years from 2020 to 2100
-const YEARS = Array.from({ length: 81 }, (_, i) => 2020 + i);
-const MONTHS = [
-    { value: '', label: '全部月份' },
-    { value: '01', label: '1月' },
-    { value: '02', label: '2月' },
-    { value: '03', label: '3月' },
-    { value: '04', label: '4月' },
-    { value: '05', label: '5月' },
-    { value: '06', label: '6月' },
-    { value: '07', label: '7月' },
-    { value: '08', label: '8月' },
-    { value: '09', label: '9月' },
-    { value: '10', label: '10月' },
-    { value: '11', label: '11月' },
-    { value: '12', label: '12月' }
+interface DeleteRequest {
+    id: number;
+    submission_id: number;
+    status: 'pending' | 'approved' | 'rejected';
+}
+
+const HOSPITALS = [
+    '內湖總院', '松山分院', '澎湖分院', '桃園總院',
+    '台中總院', '高雄總院', '左營總院', '花蓮總院'
+];
+
+const PATHOGEN_CONFIG = [
+    { id: 'CRKP', label: 'CRKP', bg: '#fee2e2', text: '#dc2626' },
+    { id: 'CRAB', label: 'CRAB', bg: '#f3e8ff', text: '#9333ea' },
+    { id: 'CRECOLI', label: 'CRECOLI', bg: '#dbeafe', text: '#2563eb' },
+    { id: 'CRPA', label: 'CRPA', bg: '#ffedd5', text: '#ea580c' }
 ];
 
 export default function Dashboard() {
     const { user } = useAuth();
     const [submissions, setSubmissions] = useState<Submission[]>([]);
+    const [deleteRequests, setDeleteRequests] = useState<DeleteRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
     // Filter states
-    const [filterYear, setFilterYear] = useState<string>('');
-    const [filterMonth, setFilterMonth] = useState<string>('');
+    const [admissionStartDate, setAdmissionStartDate] = useState<string>('');
+    const [admissionEndDate, setAdmissionEndDate] = useState<string>('');
+    const [cultureStartDate, setCultureStartDate] = useState<string>('');
+    const [cultureEndDate, setCultureEndDate] = useState<string>('');
+    const [filterHospital, setFilterHospital] = useState('');
+    const [filterPathogen, setFilterPathogen] = useState('');
+    const [filterMRN, setFilterMRN] = useState('');
     const [sortField, setSortField] = useState<string>('updated_at');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -56,8 +64,20 @@ export default function Dashboard() {
     };
 
     useEffect(() => {
-        fetchSubmissions();
+        const loadData = async () => {
+            setLoading(true);
+            await Promise.all([fetchSubmissions(), fetchDeleteRequests()]);
+            setLoading(false);
+        };
+        loadData();
     }, []);
+
+    // Lock hospital filter if user has a hospital
+    useEffect(() => {
+        if (user?.hospital) {
+            setFilterHospital(user.hospital);
+        }
+    }, [user]);
 
     const fetchSubmissions = async () => {
         try {
@@ -69,53 +89,85 @@ export default function Dashboard() {
             setSubmissions(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : '發生錯誤');
-        } finally {
-            setLoading(false);
         }
     };
 
-    // Filter submissions by year and month
+    const fetchDeleteRequests = async () => {
+        try {
+            const res = await fetch(`${API_URL}/delete-requests`, {
+                credentials: 'include'
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setDeleteRequests(data);
+            }
+        } catch (err) {
+            console.error('Error fetching delete requests', err);
+        }
+    };
+
+    // Filter submissions
     const filteredSubmissions = useMemo(() => {
         return submissions.filter(sub => {
-            const cultureDate = (sub.form_data?.positive_culture_date as string) || ''; // Format: YYYY-MM-DD
+            const cultureDate = (sub.form_data?.positive_culture_date as string) || '';
+            const admissionDate = sub.admission_date || '';
 
-            if (filterYear && !cultureDate.startsWith(filterYear)) {
-                return false;
-            }
-            if (filterMonth && filterYear) {
-                const monthPart = cultureDate.substring(5, 7);
-                if (monthPart !== filterMonth) {
-                    return false;
-                }
-            }
+            // Admission date filter
+            if (admissionStartDate && admissionDate < admissionStartDate) return false;
+            if (admissionEndDate && admissionDate > admissionEndDate) return false;
+
+            // Positive culture date filter
+            if (cultureStartDate && cultureDate < cultureStartDate) return false;
+            if (cultureEndDate && cultureDate > cultureEndDate) return false;
+
+            if (filterHospital && sub.hospital !== filterHospital) return false;
+
+            const pathogen = (sub.form_data?.pathogen as string) || '';
+            if (filterPathogen && pathogen !== filterPathogen) return false;
+
+            // Medical record number search (case-insensitive partial match)
+            if (filterMRN && !sub.medical_record_number.toLowerCase().includes(filterMRN.toLowerCase())) return false;
+
             return true;
         }).sort((a, b) => {
-            const aValue = (() => {
+            const getValue = (item: Submission) => {
                 switch (sortField) {
-                    case 'medical_record_number': return a.medical_record_number;
-                    case 'admission_date': return a.admission_date;
-                    case 'positive_culture_date': return (a.form_data?.positive_culture_date as string) || '';
-                    case 'data_status': return a.data_status;
-                    case 'updated_at': return a.updated_at;
+                    case 'medical_record_number': return item.medical_record_number;
+                    case 'admission_date': return item.admission_date;
+                    case 'positive_culture_date': return (item.form_data?.positive_culture_date as string) || '';
+                    case 'username': return item.username;
+                    case 'hospital': return item.hospital;
+                    case 'data_status': return item.data_status;
+                    case 'created_at': return item.created_at;
+                    case 'updated_at': return item.updated_at;
+                    case 'update_count': return (item.update_count || 0);
                     default: return '';
                 }
-            })();
-            const bValue = (() => {
-                switch (sortField) {
-                    case 'medical_record_number': return b.medical_record_number;
-                    case 'admission_date': return b.admission_date;
-                    case 'positive_culture_date': return (b.form_data?.positive_culture_date as string) || '';
-                    case 'data_status': return b.data_status;
-                    case 'updated_at': return b.updated_at;
-                    default: return '';
-                }
-            })();
+            };
+
+            const aValue = getValue(a);
+            const bValue = getValue(b);
 
             if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
             if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [submissions, filterYear, filterMonth, sortField, sortDirection]);
+    }, [submissions, admissionStartDate, admissionEndDate, cultureStartDate, cultureEndDate, filterHospital, filterPathogen, filterMRN, sortField, sortDirection]);
+
+    // Check if any filter is active
+    const hasActiveFilters = admissionStartDate || admissionEndDate || cultureStartDate || cultureEndDate ||
+        (!user?.hospital && filterHospital) || filterPathogen || filterMRN;
+
+    // Clear all filters
+    const clearAllFilters = () => {
+        setAdmissionStartDate('');
+        setAdmissionEndDate('');
+        setCultureStartDate('');
+        setCultureEndDate('');
+        if (!user?.hospital) setFilterHospital('');
+        setFilterPathogen('');
+        setFilterMRN('');
+    };
 
     const handleExportCSV = async () => {
         try {
@@ -125,10 +177,32 @@ export default function Dashboard() {
             if (!res.ok) throw new Error('匯出失敗');
 
             const blob = await res.blob();
+            const defaultFileName = `mhar-bsi-export-${new Date().toISOString().split('T')[0]}.csv`;
+
+            // 嘗試使用 File System Access API 顯示「另存為」對話框
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await (window as any).showSaveFilePicker({
+                        suggestedName: defaultFileName,
+                        types: [{
+                            description: 'CSV 檔案',
+                            accept: { 'text/csv': ['.csv'] }
+                        }]
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    return;
+                } catch (err) {
+                    if ((err as Error).name === 'AbortError') return;
+                }
+            }
+
+            // Fallback: 傳統下載方式
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `mhar-bsi-export-${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = defaultFileName;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -139,18 +213,36 @@ export default function Dashboard() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('確定要刪除此筆資料嗎？')) return;
+        if (!confirm('確定要申請刪除此筆資料嗎？此申請將送交管理員審核。')) return;
 
         try {
-            const res = await fetch(`${API_URL}/forms/${id}`, {
-                method: 'DELETE',
-                credentials: 'include'
+            const res = await fetch(`${API_URL}/delete-requests`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ submission_id: id })
             });
-            if (!res.ok) throw new Error('刪除失敗');
-            setSubmissions(submissions.filter(s => s.id !== id));
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || '申請失敗');
+            }
+
+            alert('刪除申請已送出，待管理員審核');
+            fetchDeleteRequests(); // Refresh status
         } catch (err) {
-            alert(err instanceof Error ? err.message : '刪除失敗');
+            alert(err instanceof Error ? err.message : '申請失敗');
         }
+    };
+
+    const getStatusBadge = (status: string) => {
+        const isComplete = status === 'complete';
+        return (
+            <span className={`badge ${isComplete ? 'badge-success' : 'badge-warning'}`}>
+                {isComplete ? '已完成' : '未完成'}
+            </span>
+        );
     };
 
     if (loading) {
@@ -166,9 +258,10 @@ export default function Dashboard() {
             <div className="page-header">
                 <h1>我的表單記錄</h1>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <CsvUpload variant="buttons" onUploadComplete={fetchSubmissions} userHospital={user?.hospital || ''} onError={setError} />
                     <button className="btn btn-secondary" onClick={handleExportCSV}>
-                        <Download size={18} />
-                        匯出 CSV
+                        <Upload size={18} />
+                        匯出
                     </button>
                     <Link to="/form" className="btn btn-primary">
                         <Plus size={18} />
@@ -184,64 +277,153 @@ export default function Dashboard() {
                 </div>
             )}
 
-            {/* CSV 批次匯入區塊 */}
-            <div className="card" style={{ marginBottom: 'var(--spacing-lg)' }}>
-                <CsvUpload onUploadComplete={fetchSubmissions} userHospital={user?.hospital || ''} />
-            </div>
-
             {/* Filter Section */}
             <div className="card" style={{ marginBottom: 'var(--spacing-lg)', padding: 'var(--spacing-md)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Filter size={18} color="var(--text-muted)" />
-                        <span style={{ fontWeight: 500 }}>篩選條件 (陽性日期)：</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                    {/* Line 1: Hospital, MRN, Clear button */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 'fit-content' }}>
+                            <Filter size={18} color="var(--text-muted)" />
+                            <span style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>篩選條件:</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>醫院：</label>
+                            {user?.hospital ? (
+                                <span className="badge badge-info" style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}>
+                                    {user.hospital}
+                                </span>
+                            ) : (
+                                <select
+                                    className="form-select"
+                                    value={filterHospital}
+                                    onChange={e => setFilterHospital(e.target.value)}
+                                    style={{ width: 'auto', minWidth: '100px' }}
+                                >
+                                    <option value="">全部</option>
+                                    {HOSPITALS.map(h => (
+                                        <option key={h} value={h}>{h}</option>
+                                    ))}
+                                </select>
+                            )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>病歷號：</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                value={filterMRN}
+                                onChange={e => setFilterMRN(e.target.value)}
+                                placeholder="搜尋..."
+                                style={{ width: 'auto', minWidth: '100px', maxWidth: '150px' }}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: 'auto', flexWrap: 'wrap' }}>
+                            <button
+                                className={`btn ${hasActiveFilters ? 'btn-danger' : 'btn-secondary'}`}
+                                onClick={clearAllFilters}
+                                disabled={!hasActiveFilters}
+                                style={{
+                                    padding: '0.4rem 0.8rem',
+                                    fontSize: '0.9rem',
+                                    opacity: hasActiveFilters ? 1 : 0.5,
+                                    cursor: hasActiveFilters ? 'pointer' : 'not-allowed'
+                                }}
+                            >
+                                <X size={14} style={{ marginRight: '4px' }} />
+                                清除篩選條件
+                            </button>
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                                {filteredSubmissions.length} / {submissions.length} 筆
+                            </div>
+                        </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <label style={{ color: 'var(--text-secondary)' }}>年份：</label>
-                        <select
-                            className="form-select"
-                            value={filterYear}
-                            onChange={e => {
-                                setFilterYear(e.target.value);
-                                if (!e.target.value) setFilterMonth('');
-                            }}
-                            style={{ width: 'auto', minWidth: '100px' }}
-                        >
-                            <option value="">全部年份</option>
-                            {YEARS.map(year => (
-                                <option key={year} value={year}>{year}年</option>
+
+                    {/* Line 2: Date Filters */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', paddingLeft: '1.5rem' }}>
+                        {/* Admission Date */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap' }}>
+                            <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontWeight: 500 }}>住院日期</label>
+                            <input
+                                type="date"
+                                className="form-input"
+                                value={admissionStartDate}
+                                onChange={e => setAdmissionStartDate(e.target.value)}
+                                style={{ width: 'auto', minWidth: '130px' }}
+                            />
+                            <span style={{ color: 'var(--text-muted)' }}>~</span>
+                            <input
+                                type="date"
+                                className="form-input"
+                                value={admissionEndDate}
+                                onChange={e => setAdmissionEndDate(e.target.value)}
+                                style={{ width: 'auto', minWidth: '130px' }}
+                            />
+                        </div>
+
+                        {/* Positive Culture Date */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap' }}>
+                            <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontWeight: 500 }}>陽性日期</label>
+                            <input
+                                type="date"
+                                className="form-input"
+                                value={cultureStartDate}
+                                onChange={e => setCultureStartDate(e.target.value)}
+                                style={{ width: 'auto', minWidth: '130px' }}
+                            />
+                            <span style={{ color: 'var(--text-muted)' }}>~</span>
+                            <input
+                                type="date"
+                                className="form-input"
+                                value={cultureEndDate}
+                                onChange={e => setCultureEndDate(e.target.value)}
+                                style={{ width: 'auto', minWidth: '130px' }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Line 3: Pathogen Tags */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '1.5rem' }}>
+                        <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>菌種：</label>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <button
+                                onClick={() => setFilterPathogen('')}
+                                style={{
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '9999px',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 500,
+                                    cursor: 'pointer',
+                                    border: filterPathogen === '' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                                    backgroundColor: 'var(--bg-primary)',
+                                    color: 'var(--text-primary)',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: filterPathogen === '' ? 'var(--shadow-sm)' : 'none'
+                                }}
+                            >
+                                全部
+                            </button>
+                            {PATHOGEN_CONFIG.map(p => (
+                                <button
+                                    key={p.id}
+                                    onClick={() => setFilterPathogen(p.id)}
+                                    style={{
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: '9999px',
+                                        fontSize: '0.85rem',
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                        border: filterPathogen === p.id ? `2px solid ${p.text}` : '2px solid transparent',
+                                        backgroundColor: p.bg,
+                                        color: p.text,
+                                        transition: 'all 0.2s ease',
+                                        boxShadow: filterPathogen === p.id ? 'var(--shadow-sm)' : 'none',
+                                        opacity: filterPathogen && filterPathogen !== p.id ? 0.6 : 1
+                                    }}
+                                >
+                                    {p.label}
+                                </button>
                             ))}
-                        </select>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <label style={{ color: 'var(--text-secondary)' }}>月份：</label>
-                        <select
-                            className="form-select"
-                            value={filterMonth}
-                            onChange={e => setFilterMonth(e.target.value)}
-                            disabled={!filterYear}
-                            style={{ width: 'auto', minWidth: '100px' }}
-                        >
-                            {MONTHS.map(m => (
-                                <option key={m.value} value={m.value}>{m.label}</option>
-                            ))}
-                        </select>
-                    </div>
-                    {(filterYear || filterMonth) && (
-                        <button
-                            className="btn btn-secondary"
-                            onClick={() => {
-                                setFilterYear('');
-                                setFilterMonth('');
-                            }}
-                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
-                        >
-                            <X size={14} style={{ marginRight: '4px' }} />
-                            清除篩選
-                        </button>
-                    )}
-                    <div style={{ marginLeft: 'auto', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                        顯示 {filteredSubmissions.length} / {submissions.length} 筆
+                        </div>
                     </div>
                 </div>
             </div>
@@ -263,6 +445,11 @@ export default function Dashboard() {
                             <thead>
                                 <tr>
                                     <th style={{ minWidth: '80px', textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1.5rem' }}>修改</th>
+                                    <th style={{ minWidth: '60px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                        <div>紀錄編號</div>
+                                        <div style={{ fontSize: '0.75em', fontWeight: 'normal' }}>(建立時間)</div>
+                                    </th>
+                                    <th style={{ minWidth: '50px', textAlign: 'center', verticalAlign: 'middle' }}>菌種</th>
                                     <th onClick={() => handleSort('medical_record_number')} style={{ cursor: 'pointer', textAlign: 'center', verticalAlign: 'middle' }}>
                                         病歷號 {sortField === 'medical_record_number' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                     </th>
@@ -272,49 +459,102 @@ export default function Dashboard() {
                                     <th onClick={() => handleSort('positive_culture_date')} style={{ cursor: 'pointer', textAlign: 'center', verticalAlign: 'middle' }}>
                                         陽性日期 {sortField === 'positive_culture_date' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                     </th>
+                                    <th onClick={() => handleSort('username')} style={{ cursor: 'pointer', minWidth: '45px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                        填寫者 {sortField === 'username' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                    </th>
+                                    <th onClick={() => handleSort('hospital')} style={{ cursor: 'pointer', minWidth: '60px', whiteSpace: 'nowrap', textAlign: 'center', verticalAlign: 'middle' }}>
+                                        醫院 {sortField === 'hospital' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                    </th>
                                     <th onClick={() => handleSort('data_status')} style={{ cursor: 'pointer', textAlign: 'center', verticalAlign: 'middle' }}>
                                         狀態 {sortField === 'data_status' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                     </th>
                                     <th onClick={() => handleSort('updated_at')} style={{ cursor: 'pointer', textAlign: 'center', verticalAlign: 'middle' }}>
-                                        更新時間 {sortField === 'updated_at' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                        最後更新時間 {sortField === 'updated_at' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                    </th>
+                                    <th style={{ minWidth: '45px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                        更新次數 {sortField === 'update_count' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredSubmissions.map(sub => (
-                                    <tr key={sub.id}>
-                                        <td style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1rem' }}>
-                                            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-start', width: '100%' }}>
-                                                <Link
-                                                    to={`/form/${sub.id}`}
-                                                    className="btn btn-icon"
-                                                    title="修改"
-                                                >
-                                                    <Edit size={16} color="var(--color-primary)" />
-                                                </Link>
-                                                <button
-                                                    className="btn btn-icon"
-                                                    onClick={() => handleDelete(sub.id)}
-                                                    title="刪除"
-                                                >
-                                                    <Trash2 size={16} color="var(--color-danger)" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.medical_record_number}</td>
-                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.admission_date}</td>
-                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{(sub.form_data?.positive_culture_date as string) || '-'}</td>
-                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                            <span className={`badge ${sub.data_status === 'complete' ? 'badge-success' : 'badge-warning'}`}>
-                                                {sub.data_status === 'complete' ? '已完成' : '未完成'}
-                                            </span>
-                                        </td>
-                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{new Date(sub.updated_at).toLocaleString('zh-TW', { hour12: false })}</td>
-                                    </tr>
-                                ))}
+                                {filteredSubmissions.map(sub => {
+                                    const pendingDelete = deleteRequests.some(r => r.submission_id === sub.id && r.status === 'pending');
+                                    return (
+                                        <tr key={sub.id}>
+                                            <td style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1rem' }}>
+                                                <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-start', width: '100%' }}>
+                                                    <Link
+                                                        to={`/form/${sub.id}`}
+                                                        className="btn btn-icon"
+                                                        title="修改"
+                                                        style={{ opacity: pendingDelete ? 0.5 : 1, pointerEvents: pendingDelete ? 'none' : 'auto' }}
+                                                    >
+                                                        <Edit size={16} color="var(--color-primary)" />
+                                                    </Link>
+                                                    {pendingDelete ? (
+                                                        <div className="btn btn-icon" title="刪除申請審核中" style={{ cursor: 'help' }}>
+                                                            <Clock size={16} color="var(--color-warning)" />
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            className="btn btn-icon"
+                                                            onClick={() => handleDelete(sub.id)}
+                                                            title="刪除"
+                                                        >
+                                                            <Trash2 size={16} color="var(--color-danger)" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.85em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                                                {(sub.form_data?.record_time as string)?.replace(/[-T:]/g, '') || '-'}
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                {(() => {
+                                                    const pathogen = (sub.form_data?.pathogen as string) || '';
+                                                    const config = PATHOGEN_CONFIG.find(p => p.id === pathogen);
+
+                                                    return pathogen ? (
+                                                        <span className="badge" style={{ backgroundColor: config?.bg || '#f0f0f0', color: config?.text || '#666' }}>
+                                                            {pathogen}
+                                                        </span>
+                                                    ) : '-';
+                                                })()}
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.medical_record_number}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.admission_date}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{(sub.form_data?.positive_culture_date as string) || '-'}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.username}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <span className="badge badge-info">{sub.hospital}</span>
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+                                                    {getStatusBadge(sub.data_status)}
+                                                    {sub.has_pending_delete === 1 && (
+                                                        <span className="badge badge-danger" style={{ fontSize: '0.7em', padding: '2px 6px' }}>
+                                                            刪除申請中
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <div>{new Date(sub.updated_at + (sub.updated_at.includes('Z') ? '' : 'Z')).toLocaleDateString('zh-TW')}</div>
+                                                <div style={{ fontSize: '0.85em', color: 'var(--text-muted)' }}>
+                                                    {new Date(sub.updated_at + (sub.updated_at.includes('Z') ? '' : 'Z')).toLocaleTimeString('zh-TW', { hour12: false })}
+                                                </div>
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <span className="badge badge-secondary" style={{ backgroundColor: '#f0f0f0', color: '#666' }}>
+                                                    {sub.update_count || 1} 次
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
-                    </div>
+                    </div >
                 </div >
             )
             }

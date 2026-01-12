@@ -13,6 +13,10 @@
   /* Ensure button text is white */
   --text-on-header: #ffffff;
   /* Default header text to white */
+  --color-success: #22c55e;
+  --color-success-hover: #16a34a;
+  --color-danger: #ef4444;
+  --color-danger-hover: #dc2626;
   --border-color: #e2e8f0;
   --border-radius: 8px;
   --border-radius: 8px;
@@ -386,6 +390,42 @@
   vertical-align: middle !important;
 }
 
+/* Responsive visibility utilities */
+.hide-mobile {
+  display: block;
+}
+
+.show-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none !important;
+  }
+
+  .show-mobile {
+    display: block !important;
+  }
+}
+
+/* Touch-friendly minimum sizes */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Prevent text selection on interactive elements */
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Smooth scrolling for the whole page */
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -476,6 +516,12 @@ h3 {
 .btn-success {
   background: var(--color-success);
   color: var(--text-on-primary);
+}
+
+.btn-success:hover:not(:disabled) {
+  background: var(--color-success-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-icon {
@@ -692,7 +738,7 @@ h3 {
 
 .data-table th,
 .data-table td {
-  padding: var(--spacing-md);
+  padding: 0.25rem 0.125rem;
   text-align: left;
   border-bottom: 1px solid var(--border-color);
 }
@@ -830,6 +876,36 @@ h3 {
   gap: var(--spacing-lg);
 }
 
+/* Tablet breakpoint */
+@media (max-width: 1024px) {
+  .container {
+    max-width: 100%;
+    padding: 0 var(--spacing-md);
+  }
+
+  .form-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Reduce card padding slightly */
+  .card {
+    padding: var(--spacing-lg);
+  }
+
+  /* Make table more compact on tablets */
+  .data-table th,
+  .data-table td {
+    padding: 0.5rem 0.375rem;
+    font-size: 0.8rem;
+  }
+
+  /* Form steps - slightly smaller */
+  .form-step {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.8rem;
+  }
+}
+
 @media (max-width: 768px) {
 
   .form-grid-2,
@@ -839,6 +915,237 @@ h3 {
 
   .form-steps {
     flex-wrap: wrap;
+  }
+
+  /* Navbar mobile */
+  .navbar {
+    flex-direction: column;
+    padding: var(--spacing-sm) var(--spacing-md);
+    gap: var(--spacing-sm);
+  }
+
+  .navbar-brand {
+    font-size: 1rem;
+    text-align: center;
+    width: 100%;
+  }
+
+  .navbar-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-sm);
+  }
+
+  .navbar-user {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+  }
+
+  .navbar-user>span {
+    width: 100%;
+    text-align: center;
+    font-size: 0.85rem;
+  }
+
+  /* Hide clock on mobile to save space */
+  .navbar-user>div:first-child {
+    display: none;
+  }
+
+  /* Container */
+  .container {
+    padding: 0 var(--spacing-sm);
+  }
+
+  /* Main Content */
+  .main-content {
+    padding: var(--spacing-md);
+  }
+
+  /* Page Header */
+  .page-header {
+    flex-direction: column;
+    gap: var(--spacing-md);
+    align-items: stretch;
+  }
+
+  .page-header>h1 {
+    text-align: center;
+    font-size: 1.5rem;
+  }
+
+  .page-header>div {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* Cards */
+  .card {
+    padding: var(--spacing-md);
+  }
+
+  /* Form Actions */
+  .form-actions {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .form-actions>div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    justify-content: center;
+  }
+
+  .form-actions .btn {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  /* Table - enable horizontal scroll */
+  .table-container {
+    margin: 0 calc(-1 * var(--spacing-md));
+    padding: 0 var(--spacing-md);
+  }
+
+  .data-table {
+    font-size: 0.75rem;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 0.5rem 0.25rem;
+    white-space: nowrap;
+  }
+
+  /* Modal */
+  .modal {
+    width: 95%;
+    max-height: 85vh;
+  }
+
+  /* Login */
+  .login-card {
+    margin: var(--spacing-md);
+    padding: var(--spacing-lg);
+  }
+
+  /* Form step on mobile */
+  .form-step {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.75rem;
+  }
+
+  .form-step-number {
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.65rem;
+  }
+
+  /* Buttons */
+  .btn {
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: 0.8rem;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+  :root {
+    font-size: 14px;
+  }
+
+  .navbar-brand {
+    font-size: 0.9rem;
+  }
+
+  .navbar-nav {
+    gap: var(--spacing-xs);
+  }
+
+  .navbar-link {
+    font-size: 0.8rem;
+    padding: var(--spacing-xs);
+  }
+
+  /* Page header */
+  .page-header>h1 {
+    font-size: 1.25rem;
+  }
+
+  /* Form step - show only number on very small screens */
+  .form-step {
+    padding: var(--spacing-xs);
+  }
+
+  /* Hide step text on very small screens, only show number */
+  .form-step>span:last-child {
+    display: none;
+  }
+
+  /* Buttons stack vertically */
+  .page-header>div {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .page-header>div .btn {
+    width: 100%;
+  }
+
+  /* Cards */
+  .card {
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius);
+  }
+
+  /* Form labels */
+  .form-label {
+    font-size: 0.8rem;
+  }
+
+  /* Input fields */
+  .form-input,
+  .form-select,
+  .form-textarea {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.85rem;
+  }
+
+  /* Badges */
+  .badge {
+    padding: 0.15rem 0.5rem;
+    font-size: 0.65rem;
+  }
+
+  /* Modal */
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    max-height: 90vh;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: var(--spacing-md);
+  }
+
+  /* Table - compact mode */
+  .data-table {
+    font-size: 0.7rem;
+  }
+
+  /* CSV upload actions */
+  .csv-upload-actions {
+    flex-direction: column;
+  }
+
+  .csv-upload-actions .btn {
+    width: 100%;
   }
 }
 

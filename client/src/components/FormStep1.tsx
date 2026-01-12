@@ -40,13 +40,46 @@ export default function FormStep1({ formData, updateFormData, onFetch, loading }
                 <div className="form-grid-2">
                     <div className="form-group">
                         <label className="form-label required">紀錄時間</label>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <input
-                                type="datetime-local"
+                                type="date"
                                 className="form-input"
-                                value={formData.record_time}
-                                onChange={e => updateFormData({ record_time: e.target.value })}
+                                value={formData.record_time?.split('T')[0] || ''}
+                                onChange={e => {
+                                    const time = formData.record_time?.split('T')[1] || '00:00';
+                                    updateFormData({ record_time: `${e.target.value}T${time}` });
+                                }}
+                                style={{ flex: 1 }}
                             />
+                            <select
+                                className="form-select"
+                                value={formData.record_time?.split('T')[1]?.split(':')[0] || '00'}
+                                onChange={e => {
+                                    const date = formData.record_time?.split('T')[0] || new Date().toISOString().split('T')[0];
+                                    const minute = formData.record_time?.split('T')[1]?.split(':')[1] || '00';
+                                    updateFormData({ record_time: `${date}T${e.target.value}:${minute}` });
+                                }}
+                                style={{ width: '70px' }}
+                            >
+                                {Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')).map(h => (
+                                    <option key={h} value={h}>{h}</option>
+                                ))}
+                            </select>
+                            <span style={{ fontWeight: 'bold' }}>:</span>
+                            <select
+                                className="form-select"
+                                value={formData.record_time?.split('T')[1]?.split(':')[1] || '00'}
+                                onChange={e => {
+                                    const date = formData.record_time?.split('T')[0] || new Date().toISOString().split('T')[0];
+                                    const hour = formData.record_time?.split('T')[1]?.split(':')[0] || '00';
+                                    updateFormData({ record_time: `${date}T${hour}:${e.target.value}` });
+                                }}
+                                style={{ width: '70px' }}
+                            >
+                                {Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0')).map(m => (
+                                    <option key={m} value={m}>{m}</option>
+                                ))}
+                            </select>
                             <button
                                 className="btn btn-secondary"
                                 onClick={() => {
@@ -62,6 +95,18 @@ export default function FormStep1({ formData, updateFormData, onFetch, loading }
                                 現在時間
                             </button>
                         </div>
+                    </div>
+                    <div className="form-group" style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '0.5rem' }}>
+                        <span style={{
+                            fontSize: '1rem',
+                            color: 'var(--text-secondary)',
+                            fontFamily: 'monospace',
+                            letterSpacing: '0.05em'
+                        }}>
+                            紀錄編號：<strong style={{ color: 'var(--text-primary)' }}>
+                                {formData.record_time ? formData.record_time.replace(/[-T:]/g, '') : '-'}
+                            </strong>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -117,14 +162,12 @@ export default function FormStep1({ formData, updateFormData, onFetch, loading }
                         />
                     </div>
                     <div className="form-group">
-                        <label className="form-label required">Recorded By</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            value={formData.recorded_by}
-                            onChange={e => updateFormData({ recorded_by: e.target.value })}
-                            disabled
-                        />
+                        <label className="form-label">Recorded By</label>
+                        <div style={{ marginTop: '0.25rem' }}>
+                            <span className="badge badge-info" style={{ fontSize: '1rem', padding: '0.4rem 1rem' }}>
+                                {formData.recorded_by}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
