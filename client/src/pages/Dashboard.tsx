@@ -350,10 +350,7 @@ export default function Dashboard() {
                         <Upload size={18} />
                         匯出
                     </button>
-                    <Link to="/form" className="btn btn-primary">
-                        <Plus size={18} />
-                        新增表單
-                    </Link>
+
                 </div>
             </div>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight, Trash2, AlertTriangle, Users } from 'lucide-react';
+import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight, Trash2, AlertTriangle, Users, RefreshCw, Upload } from 'lucide-react';
 import { useAuth, API_URL } from '../App';
 import { useTheme, THEMES } from '../context/ThemeContext';
 import ProfileModal from './ProfileModal';
@@ -62,6 +62,25 @@ export default function Layout() {
     const handleLogout = async () => {
         await logout();
         navigate('/login');
+    };
+
+    const handleExportAllData = async () => {
+        try {
+            const res = await fetch(`${API_URL}/export/csv`, { credentials: 'include' });
+            if (!res.ok) throw new Error('匯出失敗');
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mhar-bsi-all-data-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            alert(err instanceof Error ? err.message : '匯出失敗');
+        }
     };
 
     return (
@@ -163,6 +182,31 @@ export default function Layout() {
                                         修改基本資料
                                     </button>
 
+                                    {user?.role === 'admin' && (
+                                        <button
+                                            className="dropdown-item"
+                                            onClick={() => {
+                                                handleExportAllData();
+                                                setShowSettingsMenu(false);
+                                            }}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                width: '100%',
+                                                padding: '0.75rem 1rem',
+                                                border: 'none',
+                                                background: 'none',
+                                                cursor: 'pointer',
+                                                color: 'var(--text-primary)',
+                                                textAlign: 'left',
+                                                fontSize: '0.95rem'
+                                            }}
+                                        >
+                                            <Upload size={16} style={{ marginRight: '0.75rem' }} />
+                                            匯出整個資料庫
+                                        </button>
+                                    )}
+
                                     <div
                                         className="dropdown-item-submenu-trigger"
                                         onMouseEnter={() => setShowThemeMenu(true)}
@@ -241,12 +285,34 @@ export default function Layout() {
                                             </div>
                                         )}
                                     </div>
+
+                                    <div style={{ borderTop: '1px solid var(--border-color)', margin: '0.25rem 0' }}></div>
+
+                                    <button
+                                        className="dropdown-item"
+                                        onClick={handleLogout}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            width: '100%',
+                                            padding: '0.75rem 1rem',
+                                            border: 'none',
+                                            background: 'none',
+                                            cursor: 'pointer',
+                                            color: 'var(--color-danger)',
+                                            textAlign: 'left',
+                                            fontSize: '0.95rem'
+                                        }}
+                                    >
+                                        <LogOut size={16} style={{ marginRight: '0.75rem' }} />
+                                        登出
+                                    </button>
                                 </div>
                             )}
                         </div>
 
-                        <button className="btn btn-icon" onClick={handleLogout} title="登出">
-                            <LogOut size={18} color="white" />
+                        <button className="btn btn-icon" onClick={() => window.location.reload()} title="重新整理">
+                            <RefreshCw size={18} color="white" />
                         </button>
                     </div>
                 </div>

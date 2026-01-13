@@ -154,24 +154,7 @@ export default function AdminDashboard() {
         setFilterMRN('');
     };
 
-    const handleExportCSV = async () => {
-        try {
-            const res = await fetch(`${API_URL}/export/csv`, { credentials: 'include' });
-            if (!res.ok) throw new Error('匯出失敗');
 
-            const blob = await res.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `mhar-bsi-all-data-${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        } catch (err) {
-            alert(err instanceof Error ? err.message : '匯出失敗');
-        }
-    };
 
     const handleExportFilteredCSV = async () => {
         try {
@@ -330,14 +313,8 @@ export default function AdminDashboard() {
                 <h1>管理員儀表板</h1>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <CsvUpload variant="buttons" onUploadComplete={fetchSubmissions} userHospital={user?.hospital || ''} onError={setError} />
-                    <button className="btn btn-secondary" onClick={handleExportCSV} style={{ fontWeight: 'bold', fontSize: '0.875rem' }}>
-                        <Upload size={18} />
-                        匯出整個資料庫
-                    </button>
-                    <Link to="/form" className="btn btn-primary">
-                        <Plus size={18} />
-                        新增表單
-                    </Link>
+
+
                 </div>
             </div>
 
