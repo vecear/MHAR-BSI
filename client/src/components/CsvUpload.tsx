@@ -722,11 +722,7 @@ export default function CsvUpload({ onUploadComplete, onError, userHospital, var
     if (variant === 'buttons') {
         return (
             <>
-                <button className="btn btn-secondary" onClick={downloadTemplate} title="下載 CSV 範本">
-                    <ClipboardList size={18} />
-                    下載範本
-                </button>
-                <label className="btn btn-secondary" style={{ cursor: 'pointer' }} title="上傳 CSV">
+                <label className="btn btn-secondary" style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '0.875rem' }} title="上傳 CSV">
                     <Download size={18} />
                     {uploading ? '...' : '匯入'}
                     <input

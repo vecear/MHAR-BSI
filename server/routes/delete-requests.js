@@ -146,4 +146,26 @@ router.put('/:id/reject', requireAdmin, (req, res) => {
     }
 });
 
+// Delete a decided delete request record (admin only) - only for approved/rejected requests
+router.delete('/:id', requireAdmin, (req, res) => {
+    try {
+        const request = deleteRequestQueries.findById.get(req.params.id);
+        if (!request) {
+            return res.status(404).json({ error: '找不到該刪除申請' });
+        }
+
+        if (request.status === 'pending') {
+            return res.status(400).json({ error: '待審核的申請不能刪除' });
+        }
+
+        // Delete the request record
+        deleteRequestQueries.delete.run(req.params.id);
+
+        res.json({ message: '已刪除申請記錄' });
+    } catch (err) {
+        console.error('Error deleting delete request:', err);
+        res.status(500).json({ error: '刪除失敗' });
+    }
+});
+
 module.exports = router;

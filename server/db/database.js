@@ -157,7 +157,8 @@ const deleteRequestQueries = {
         UPDATE delete_requests
         SET status = 'rejected', resolved_at = CURRENT_TIMESTAMP, resolved_by = ?, reject_reason = ?
         WHERE id = ?
-    `)
+    `),
+    delete: db.prepare('DELETE FROM delete_requests WHERE id = ?')
 };
 
 // Export a no-op initializeDatabase for backwards compatibility

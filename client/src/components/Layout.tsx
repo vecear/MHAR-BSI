@@ -90,7 +90,7 @@ export default function Layout() {
                                     padding: '0.4rem 0.8rem',
                                     fontSize: '0.85rem'
                                 }}
-                                onClick={() => navigate('/?tab=delete-requests')}
+                                onClick={() => navigate('/admin/delete-requests')}
                                 title="點擊查看刪除申請"
                             >
                                 <AlertTriangle size={16} />

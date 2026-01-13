@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Download, Trash2, Edit, AlertCircle, X, Filter, ArrowUp, ArrowDown, Plus } from 'lucide-react';
+import { FileText, Trash2, Edit, AlertCircle, X, Filter, ArrowUp, ArrowDown, Plus, Upload } from 'lucide-react';
 import { API_URL, useAuth } from '../App';
 import CsvUpload from '../components/CsvUpload';
 import DualDateRangePicker from '../components/DualDateRangePicker';
@@ -330,9 +330,9 @@ export default function AdminDashboard() {
                 <h1>管理員儀表板</h1>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <CsvUpload variant="buttons" onUploadComplete={fetchSubmissions} userHospital={user?.hospital || ''} onError={setError} />
-                    <button className="btn btn-secondary" onClick={handleExportCSV}>
-                        <Download size={18} />
-                        匯出
+                    <button className="btn btn-secondary" onClick={handleExportCSV} style={{ fontWeight: 'bold', fontSize: '0.875rem' }}>
+                        <Upload size={18} />
+                        匯出整個資料庫
                     </button>
                     <Link to="/form" className="btn btn-primary">
                         <Plus size={18} />
@@ -401,7 +401,7 @@ export default function AdminDashboard() {
                                             marginRight: '0.5rem'
                                         }}
                                     >
-                                        <Download size={14} style={{ marginRight: '4px' }} />
+                                        <Upload size={14} style={{ marginRight: '4px' }} />
                                         匯出篩選表單
                                     </button>
                                     <button
@@ -489,8 +489,8 @@ export default function AdminDashboard() {
                         {/* Bulk delete button above table */}
                         {selectedIds.size > 0 && (
                             <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                <button className="btn btn-secondary" onClick={handleExportSelectedCSV} style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                    <Download size={16} />
+                                <button className="btn btn-success" onClick={handleExportSelectedCSV} style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                    <Upload size={16} />
                                     匯出勾選 ({selectedIds.size})
                                 </button>
                                 <button className="btn btn-danger" onClick={handleBulkDelete} style={{ fontSize: '0.9rem' }}>

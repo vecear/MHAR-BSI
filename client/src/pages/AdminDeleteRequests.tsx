@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { Trash2, AlertCircle, Check, XCircle, FileText } from 'lucide-react';
 import { API_URL } from '../App';
@@ -20,7 +20,11 @@ export default function AdminDeleteRequests() {
     const [deleteRequests, setDeleteRequests] = useState<DeleteRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const { refreshPendingDeleteCount } = useOutletContext<{ refreshPendingDeleteCount: () => void }>();
+
+    // Only decided (approved/rejected) requests can be selected for deletion
+    const decidedRequests = useMemo(() => deleteRequests.filter(req => req.status !== 'pending'), [deleteRequests]);
 
     useEffect(() => {
         fetchDeleteRequests();
@@ -33,6 +37,7 @@ export default function AdminDeleteRequests() {
             if (!res.ok) throw new Error('取得删除申請失敗');
             const data = await res.json();
             setDeleteRequests(data);
+            setSelectedIds(new Set()); // Reset selection on refresh
         } catch (err) {
             setError(err instanceof Error ? err.message : '發生錯誤');
         } finally {
@@ -75,6 +80,42 @@ export default function AdminDeleteRequests() {
         }
     };
 
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return;
+        if (!confirm(`確定要删除這 ${selectedIds.size} 筆申請紀錄？`)) return;
+
+        try {
+            const ids = Array.from(selectedIds);
+            await Promise.all(ids.map(id =>
+                fetch(`${API_URL}/delete-requests/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                })
+            ));
+
+            fetchDeleteRequests();
+        } catch (err) {
+            alert(err instanceof Error ? err.message : '操作失敗');
+        }
+    };
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev => {
+            const n = new Set(prev);
+            if (n.has(id)) n.delete(id);
+            else n.add(id);
+            return n;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.size === decidedRequests.length && decidedRequests.length > 0) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(decidedRequests.map(r => r.id)));
+        }
+    };
+
     return (
         <div className="animate-fadeIn">
             <div className="page-header">
@@ -94,6 +135,20 @@ export default function AdminDeleteRequests() {
                 </div>
             ) : (
                 <div className="card">
+                    {/* Bulk Actions */}
+                    {selectedIds.size > 0 && (
+                        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <button className="btn btn-danger" onClick={handleBulkDelete} style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <Trash2 size={16} />
+                                删除勾選紀錄 ({selectedIds.size})
+                            </button>
+                            <button className="btn btn-warning" onClick={() => setSelectedIds(new Set())} style={{ fontSize: '0.9rem' }}>
+                                <XCircle size={16} />
+                                取消複選
+                            </button>
+                        </div>
+                    )}
+
                     {deleteRequests.length === 0 ? (
                         <div className="empty-state">
                             <Trash2 className="empty-state-icon" />
@@ -107,6 +162,14 @@ export default function AdminDeleteRequests() {
                             <table className="data-table">
                                 <thead>
                                     <tr>
+                                        <th style={{ width: '30px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.size === decidedRequests.length && decidedRequests.length > 0}
+                                                onChange={toggleSelectAll}
+                                                disabled={decidedRequests.length === 0}
+                                            />
+                                        </th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>紀錄編號</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>病歷號</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>住院日期</th>
@@ -122,6 +185,15 @@ export default function AdminDeleteRequests() {
                                 <tbody>
                                     {deleteRequests.map(req => (
                                         <tr key={req.id}>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                {req.status !== 'pending' && (
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.has(req.id)}
+                                                        onChange={() => toggleSelect(req.id)}
+                                                    />
+                                                )}
+                                            </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.85em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
                                                 {req.status === 'approved' ? (
                                                     (req as any).submission_record_time?.replace(/[-T:]/g, '') || '-'

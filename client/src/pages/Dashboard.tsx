@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Upload, Trash2, Plus, AlertCircle, Filter, X, ArrowUp, ArrowDown, Edit, Clock, Download } from 'lucide-react';
+import { FileText, Upload, Trash2, Plus, AlertCircle, Filter, X, ArrowUp, ArrowDown, Edit, Clock } from 'lucide-react';
 import { API_URL, useAuth } from '../App';
 import CsvUpload from '../components/CsvUpload';
 import DualDateRangePicker from '../components/DualDateRangePicker';
@@ -468,7 +468,7 @@ export default function Dashboard() {
                                     marginRight: '0.5rem'
                                 }}
                             >
-                                <Download size={14} style={{ marginRight: '4px' }} />
+                                <Upload size={14} style={{ marginRight: '4px' }} />
                                 匯出篩選表單
                             </button>
                             <button
@@ -566,11 +566,11 @@ export default function Dashboard() {
                         animation: 'fadeIn 0.2s ease-out'
                     }}>
                         <button
-                            className="btn btn-secondary"
+                            className="btn btn-success"
                             onClick={handleExportSelectedCSV}
                             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                         >
-                            <Download size={18} />
+                            <Upload size={18} />
                             匯出勾選表單 ({selectedIds.length})
                         </button>
 
