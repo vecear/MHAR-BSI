@@ -38,7 +38,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                 <div className="form-grid-2">
                     <div className="form-group">
                         <label className="form-label required">紀錄時間</label>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <div className="record-time-row">
                             <input
                                 type="date"
                                 className="form-input"
@@ -47,39 +47,38 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                                     const time = formData.record_time?.split('T')[1] || '00:00';
                                     updateFormData({ record_time: `${e.target.value}T${time}` });
                                 }}
-                                style={{ flex: 1 }}
                             />
-                            <select
-                                className="form-select"
-                                value={formData.record_time?.split('T')[1]?.split(':')[0] || '00'}
-                                onChange={e => {
-                                    const date = formData.record_time?.split('T')[0] || new Date().toISOString().split('T')[0];
-                                    const minute = formData.record_time?.split('T')[1]?.split(':')[1] || '00';
-                                    updateFormData({ record_time: `${date}T${e.target.value}:${minute}` });
-                                }}
-                                style={{ width: '70px' }}
-                            >
-                                {Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')).map(h => (
-                                    <option key={h} value={h}>{h}</option>
-                                ))}
-                            </select>
-                            <span style={{ fontWeight: 'bold' }}>:</span>
-                            <select
-                                className="form-select"
-                                value={formData.record_time?.split('T')[1]?.split(':')[1] || '00'}
-                                onChange={e => {
-                                    const date = formData.record_time?.split('T')[0] || new Date().toISOString().split('T')[0];
-                                    const hour = formData.record_time?.split('T')[1]?.split(':')[0] || '00';
-                                    updateFormData({ record_time: `${date}T${hour}:${e.target.value}` });
-                                }}
-                                style={{ width: '70px' }}
-                            >
-                                {Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0')).map(m => (
-                                    <option key={m} value={m}>{m}</option>
-                                ))}
-                            </select>
+                            <div className="time-picker-group">
+                                <select
+                                    className="form-select time-select"
+                                    value={formData.record_time?.split('T')[1]?.split(':')[0] || '00'}
+                                    onChange={e => {
+                                        const date = formData.record_time?.split('T')[0] || new Date().toISOString().split('T')[0];
+                                        const minute = formData.record_time?.split('T')[1]?.split(':')[1] || '00';
+                                        updateFormData({ record_time: `${date}T${e.target.value}:${minute}` });
+                                    }}
+                                >
+                                    {Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')).map(h => (
+                                        <option key={h} value={h}>{h}</option>
+                                    ))}
+                                </select>
+                                <span className="time-separator">:</span>
+                                <select
+                                    className="form-select time-select"
+                                    value={formData.record_time?.split('T')[1]?.split(':')[1] || '00'}
+                                    onChange={e => {
+                                        const date = formData.record_time?.split('T')[0] || new Date().toISOString().split('T')[0];
+                                        const hour = formData.record_time?.split('T')[1]?.split(':')[0] || '00';
+                                        updateFormData({ record_time: `${date}T${hour}:${e.target.value}` });
+                                    }}
+                                >
+                                    {Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0')).map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
+                            </div>
                             <button
-                                className="btn btn-secondary"
+                                className="btn btn-secondary btn-now-time"
                                 onClick={() => {
                                     const now = new Date();
                                     const offset = now.getTimezoneOffset();
@@ -87,7 +86,6 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                                     updateFormData({ record_time: local.toISOString().slice(0, 16) });
                                 }}
                                 type="button"
-                                style={{ whiteSpace: 'nowrap' }}
                             >
                                 <Clock size={16} />
                                 現在時間

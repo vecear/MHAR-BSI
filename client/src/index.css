@@ -891,6 +891,71 @@ h3 {
   color: var(--text-primary);
 }
 
+/* Record Time Picker Row */
+.record-time-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.record-time-row>input[type="date"] {
+  flex: 1 1 auto;
+  min-width: 140px;
+}
+
+.time-picker-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.time-select {
+  width: 65px !important;
+  min-width: 65px;
+  text-align: center;
+}
+
+.time-separator {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.btn-now-time {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Mobile: stack record time row */
+@media (max-width: 768px) {
+  .record-time-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .record-time-row>input[type="date"] {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .time-picker-group {
+    justify-content: center;
+  }
+
+  .time-select {
+    width: 70px !important;
+    min-height: 44px;
+  }
+
+  .btn-now-time {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* Grid */
 .form-grid {
   display: grid;
@@ -1082,6 +1147,139 @@ h3 {
   .btn {
     padding: var(--spacing-xs) var(--spacing-md);
     font-size: 0.8rem;
+  }
+
+  /* ============================================
+     MOBILE FORM FIXES
+     ============================================ */
+
+  /* Date input full width on mobile */
+  input[type="date"] {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+
+  /* Record time picker row - stack on mobile */
+  .form-section .form-group>div[style*="display: flex"][style*="gap"] {
+    flex-wrap: wrap !important;
+  }
+
+  /* Time picker selects - smaller on mobile */
+  .form-group select[style*="width: 70px"] {
+    width: 60px !important;
+    min-width: 60px !important;
+  }
+
+  /* Form inputs minimum height for touch */
+  .form-input,
+  .form-select {
+    min-height: 44px;
+    font-size: 16px !important;
+    /* Prevent iOS zoom */
+  }
+
+  /* ============================================
+     MOBILE FILTER SECTION FIXES
+     ============================================ */
+
+  /* Filter section vertical layout on mobile */
+  .card>div[style*="display: flex"][style*="flex-direction: column"]>div[style*="display: flex"][style*="alignItems: center"] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+
+  /* Filter labels and inputs stacking */
+  .card>div[style*="display: flex"]>div[style*="display: flex"][style*="gap: 0.5rem"] {
+    flex-wrap: wrap !important;
+    width: 100% !important;
+  }
+
+  /* Filter select and input full width */
+  .card .form-select[style*="width: auto"],
+  .card .form-input[style*="width: auto"] {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+
+  /* Filter action buttons row */
+  .card>div[style*="display: flex"]>div[style*="marginLeft: auto"] {
+    margin-left: 0 !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  /* Filter buttons */
+  .card>div[style*="display: flex"] .btn[style*="padding: 0.4rem"] {
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+
+  /* Date range picker stacking */
+  .card>div[style*="paddingLeft: 1.5rem"] {
+    padding-left: 0 !important;
+  }
+
+  /* ============================================
+     MOBILE NAVBAR FIXES  
+     ============================================ */
+
+  /* Navbar stacked - override inline styles */
+  .navbar.navbar-stacked {
+    padding: 0 !important;
+  }
+
+  .navbar-header {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    padding: 0.5rem 0.75rem !important;
+    align-items: center !important;
+  }
+
+  .navbar-header>.navbar-brand {
+    order: 1;
+    width: 100%;
+    text-align: center;
+  }
+
+  .navbar-header>.navbar-user {
+    order: 2;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* Hide long user info on mobile, keep essentials */
+  .navbar-user>span:not(.badge) {
+    display: none !important;
+  }
+
+  /* Show only the delete badge on mobile */
+  .navbar-user .badge.badge-danger {
+    margin-right: 0.5rem !important;
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.5rem !important;
+  }
+
+  /* Secondary nav row scrolling */
+  .navbar-secondary-row {
+    gap: 0.75rem !important;
+    padding: 0.25rem 0.75rem !important;
+    justify-content: flex-start !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .navbar-secondary-row .navbar-link {
+    font-size: 0.85rem !important;
+    padding: 0.375rem 0.5rem !important;
+    white-space: nowrap;
+  }
+
+  /* Show text only, hide icons in nav links on mobile */
+  .navbar-secondary-row .navbar-link svg {
+    display: none !important;
   }
 }
 
