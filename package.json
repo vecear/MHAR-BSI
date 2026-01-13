@@ -4,8 +4,7 @@
     "description": "MHAR-BSI 菌血症研究表單系統",
     "scripts": {
         "start": "node server/index.js",
-        "build": "cd client && npm install --include=dev && npm run build",
-        "postinstall": "cd server && rm -rf node_modules && npm install && npm rebuild better-sqlite3"
+        "build": "cd client && npm install --include=dev && npm run build"
     },
     "engines": {
         "node": ">=18.0.0"
