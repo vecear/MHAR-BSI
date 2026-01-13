@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../App';
+import { useToast } from '../components/Toast';
 import { LogIn, Building2 } from 'lucide-react';
 
 const HOSPITALS = [
@@ -15,20 +17,19 @@ const HOSPITALS = [
 
 export default function Login() {
     const { login } = useAuth();
+    const { showError } = useToast();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
         setLoading(true);
 
         try {
             await login(username, password);
         } catch (err) {
-            setError(err instanceof Error ? err.message : '登入失敗');
+            showError(err instanceof Error ? err.message : '登入失敗');
         } finally {
             setLoading(false);
         }
@@ -42,10 +43,6 @@ export default function Login() {
                     <h1 className="login-title">MHAR-BSI</h1>
                     <p className="login-subtitle">菌血症研究表單系統</p>
                 </div>
-
-                {error && (
-                    <div className="alert alert-error">{error}</div>
-                )}
 
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
@@ -89,6 +86,21 @@ export default function Login() {
                         )}
                     </button>
                 </form>
+
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                    <Link to="/register" className="btn btn-secondary" style={{ flex: 1 }}>
+                        建立帳號
+                    </Link>
+                    <Link to="/forgot-password" className="btn btn-secondary" style={{ flex: 1 }}>
+                        忘記密碼
+                    </Link>
+                </div>
+
+                <div style={{ marginTop: '0.5rem' }}>
+                    <Link to="/forgot-username" className="btn btn-secondary" style={{ width: '100%' }}>
+                        忘記帳號
+                    </Link>
+                </div>
 
                 <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '1rem' }}>

@@ -98,7 +98,15 @@ function flattenFormData(submission) {
     if (formData) {
         Object.keys(formData).forEach(key => {
             const value = formData[key];
-            if (Array.isArray(value)) {
+
+            // Special handling for mic_data - expand each drug into separate column
+            if (key === 'mic_data' && typeof value === 'object' && value !== null) {
+                Object.keys(value).forEach(drug => {
+                    // Create column name like MIC_AMPICILLIN
+                    const colName = `mic_${drug.toLowerCase().replace(/[\/\s-]/g, '_')}`;
+                    flat[colName] = value[drug];
+                });
+            } else if (Array.isArray(value)) {
                 flat[key] = value.join(', ');
             } else if (typeof value === 'object' && value !== null) {
                 flat[key] = JSON.stringify(value);

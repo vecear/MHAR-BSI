@@ -414,7 +414,7 @@ export default function AdminDashboard() {
     };
 
     const handleDeleteUser = async (id: number) => {
-        if (!confirm('確定要刪除此使用者嗎？該使用者的所有表單資料也會一併刪除。')) return;
+        if (!confirm('確定要刪除此使用者嗎？（該使用者建立的表單資料將會保留）')) return;
         try {
             const res = await fetch(`${API_URL}/users/${id}`, {
                 method: 'DELETE',
