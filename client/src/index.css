@@ -794,6 +794,190 @@ h3 {
   }
 }
 
+/* ===========================================
+   Filter Section - Base & Responsive Styles
+   =========================================== */
+
+/* Base filter styles */
+.filter-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter-row-main {
+  gap: 0.75rem;
+}
+
+.filter-row-dates,
+.filter-row-pathogens {
+  padding-left: 1.5rem;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-label {
+  min-width: fit-content;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* Mobile Filter Section */
+@media (max-width: 768px) {
+  .filter-section {
+    padding: var(--spacing-sm) !important;
+  }
+
+  .filter-content {
+    gap: 1rem;
+  }
+
+  /* Main filter row - allow wrapping but keep items grouped */
+  .filter-row-main {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  /* Filter label stays horizontal at top, full width */
+  .filter-label {
+    flex: 1 1 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+  }
+
+  /* Hospital and MRN share the same row (each ~50%) */
+  .filter-row-main .filter-group:not(.filter-label) {
+    flex: 1 1 45%;
+    min-width: 120px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .filter-group label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  .filter-group .form-input,
+  .filter-group .form-select {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: unset !important;
+  }
+
+  /* Actions - buttons on same row (each ~50%) */
+  .filter-actions {
+    flex: 1 1 100%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-left: 0;
+    gap: 0.5rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+  }
+
+  .filter-actions .btn {
+    flex: 1 1 45%;
+    min-width: 100px;
+    justify-content: center;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .filter-actions>div {
+    flex: 1 1 100%;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  /* Date row - full width, no left padding */
+  .filter-row-dates {
+    padding-left: 0;
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .filter-row-dates>* {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  /* DualDateRangePicker full width */
+  .dual-date-picker {
+    width: 100% !important;
+    display: block !important;
+  }
+
+  .dual-date-picker-btn {
+    width: 100% !important;
+  }
+
+  /* Pathogens row */
+  .filter-row-pathogens {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-left: 0;
+  }
+
+  .filter-row-pathogens>div {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .filter-row-pathogens label[style] {
+    padding: 0.35rem 0.5rem !important;
+    font-size: 0.8rem;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .filter-section {
+    padding: var(--spacing-xs) !important;
+  }
+
+  .filter-group label {
+    font-size: 0.8rem;
+  }
+
+  .filter-actions .btn {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Stack pathogen checkboxes in single column */
+  .filter-row-pathogens>div {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Main Content */
 .main-content {
   flex: 1;

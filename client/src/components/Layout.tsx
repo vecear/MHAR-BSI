@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight, Trash2, AlertTriangle, Users, RefreshCw, Upload } from 'lucide-react';
+import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight, Trash2, AlertTriangle, Users, RefreshCw, Upload, Download } from 'lucide-react';
 import { useAuth, API_URL } from '../App';
 import { useTheme, THEMES } from '../context/ThemeContext';
 import ProfileModal from './ProfileModal';
+import CsvUpload from './CsvUpload';
 
 export default function Layout() {
     const { user, logout } = useAuth();
@@ -14,6 +15,7 @@ export default function Layout() {
     const [showSettingsMenu, setShowSettingsMenu] = useState(false);
     const [showThemeMenu, setShowThemeMenu] = useState(false);
     const [pendingDeleteCount, setPendingDeleteCount] = useState(0);
+    const [showImportModal, setShowImportModal] = useState(false);
     const settingsRef = useRef<HTMLDivElement>(null);
 
     // Clock state
@@ -66,18 +68,25 @@ export default function Layout() {
 
     const handleExportAllData = async () => {
         try {
-            const res = await fetch(`${API_URL}/export/csv`, { credentials: 'include' });
+            // Admin exports all, regular users export their hospital's data
+            const params = new URLSearchParams();
+            if (user?.role !== 'admin' && user?.hospital) {
+                params.append('hospital', user.hospital);
+            }
+            const url = `${API_URL}/export/csv${params.toString() ? '?' + params.toString() : ''}`;
+            const res = await fetch(url, { credentials: 'include' });
             if (!res.ok) throw new Error('匯出失敗');
 
             const blob = await res.blob();
-            const url = window.URL.createObjectURL(blob);
+            const downloadUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
-            a.download = `mhar-bsi-all-data-${new Date().toISOString().split('T')[0]}.csv`;
+            a.href = downloadUrl;
+            const prefix = user?.role === 'admin' ? 'all-data' : (user?.hospital || 'data');
+            a.download = `mhar-bsi-${prefix}-${new Date().toISOString().split('T')[0]}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            window.URL.revokeObjectURL(downloadUrl);
         } catch (err) {
             alert(err instanceof Error ? err.message : '匯出失敗');
         }
@@ -182,30 +191,54 @@ export default function Layout() {
                                         修改基本資料
                                     </button>
 
-                                    {user?.role === 'admin' && (
-                                        <button
-                                            className="dropdown-item"
-                                            onClick={() => {
-                                                handleExportAllData();
-                                                setShowSettingsMenu(false);
-                                            }}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                width: '100%',
-                                                padding: '0.75rem 1rem',
-                                                border: 'none',
-                                                background: 'none',
-                                                cursor: 'pointer',
-                                                color: 'var(--text-primary)',
-                                                textAlign: 'left',
-                                                fontSize: '0.95rem'
-                                            }}
-                                        >
-                                            <Upload size={16} style={{ marginRight: '0.75rem' }} />
-                                            匯出整個資料庫
-                                        </button>
-                                    )}
+                                    {/* Export - available to all users */}
+                                    <button
+                                        className="dropdown-item"
+                                        onClick={() => {
+                                            handleExportAllData();
+                                            setShowSettingsMenu(false);
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            width: '100%',
+                                            padding: '0.75rem 1rem',
+                                            border: 'none',
+                                            background: 'none',
+                                            cursor: 'pointer',
+                                            color: 'var(--text-primary)',
+                                            textAlign: 'left',
+                                            fontSize: '0.95rem'
+                                        }}
+                                    >
+                                        <Upload size={16} style={{ marginRight: '0.75rem' }} />
+                                        {user?.role === 'admin' ? '匯出整個資料庫' : '匯出我的資料'}
+                                    </button>
+
+                                    {/* Import - available to all users */}
+                                    <button
+                                        className="dropdown-item"
+                                        onClick={() => {
+                                            setShowImportModal(true);
+                                            setShowSettingsMenu(false);
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            width: '100%',
+                                            padding: '0.75rem 1rem',
+                                            border: 'none',
+                                            background: 'none',
+                                            cursor: 'pointer',
+                                            color: 'var(--text-primary)',
+                                            textAlign: 'left',
+                                            fontSize: '0.95rem'
+                                        }}
+                                    >
+                                        <Download size={16} style={{ marginRight: '0.75rem' }} />
+                                        匯入資料
+                                    </button>
+
 
                                     <div
                                         className="dropdown-item-submenu-trigger"
@@ -358,6 +391,57 @@ export default function Layout() {
                 isOpen={showProfile}
                 onClose={() => setShowProfile(false)}
             />
+
+            {/* Import Modal */}
+            {showImportModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        backgroundColor: 'var(--bg-card)',
+                        borderRadius: 'var(--border-radius)',
+                        padding: '1.5rem',
+                        maxWidth: '600px',
+                        width: '90%',
+                        maxHeight: '80vh',
+                        overflow: 'auto'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h2 style={{ margin: 0 }}>匯入資料</h2>
+                            <button
+                                onClick={() => setShowImportModal(false)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '1.5rem',
+                                    cursor: 'pointer',
+                                    color: 'var(--text-muted)'
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <CsvUpload
+                            variant="card"
+                            userHospital={user?.hospital || ''}
+                            onUploadComplete={() => {
+                                setShowImportModal(false);
+                                window.location.reload();
+                            }}
+                            onError={(msg) => alert(msg)}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

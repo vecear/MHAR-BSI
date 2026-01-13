@@ -332,15 +332,15 @@ export default function AdminDashboard() {
             ) : (
                 <>
                     {/* Filter Section */}
-                    <div className="card" style={{ marginBottom: 'var(--spacing-lg)', padding: 'var(--spacing-md)' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                    <div className="card filter-section" style={{ marginBottom: 'var(--spacing-lg)', padding: 'var(--spacing-md)' }}>
+                        <div className="filter-content">
                             {/* Line 1: Hospital, MRN, Clear button */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div className="filter-row filter-row-main">
+                                <div className="filter-group filter-label">
                                     <Filter size={18} color="var(--text-muted)" />
                                     <span style={{ fontWeight: 500 }}>篩選條件:</span>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div className="filter-group">
                                     <label style={{ color: 'var(--text-secondary)' }}>醫院：</label>
                                     <select
                                         className="form-select"
@@ -355,7 +355,7 @@ export default function AdminDashboard() {
                                     </select>
                                 </div>
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div className="filter-group">
                                     <label style={{ color: 'var(--text-secondary)' }}>病歷號：</label>
                                     <input
                                         type="text"
@@ -367,7 +367,7 @@ export default function AdminDashboard() {
                                     />
                                 </div>
 
-                                <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <div className="filter-actions">
                                     <button
                                         className={`btn btn-secondary`}
                                         onClick={handleExportFilteredCSV}
@@ -402,7 +402,7 @@ export default function AdminDashboard() {
                             </div>
 
                             {/* Line 2: Date Filters */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', paddingLeft: '1.5rem' }}>
+                            <div className="filter-row filter-row-dates">
                                 <DualDateRangePicker
                                     admissionRange={{ start: admissionStartDate, end: admissionEndDate }}
                                     cultureRange={{ start: cultureStartDate, end: cultureEndDate }}
@@ -418,7 +418,7 @@ export default function AdminDashboard() {
                             </div>
 
                             {/* Line 3: Pathogen Tags */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '1.5rem' }}>
+                            <div className="filter-row filter-row-pathogens">
                                 <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>菌種：</label>
                                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                                     {PATHOGEN_CONFIG.map(p => {

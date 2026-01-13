@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Upload, Trash2, AlertCircle, Filter, X, ArrowUp, ArrowDown, Edit, Clock } from 'lucide-react';
+import { FileText, Trash2, AlertCircle, Filter, X, ArrowUp, ArrowDown, Edit, Clock, Upload } from 'lucide-react';
 import { API_URL, useAuth } from '../App';
-import CsvUpload from '../components/CsvUpload';
 import DualDateRangePicker from '../components/DualDateRangePicker';
 
 interface Submission {
@@ -344,14 +343,6 @@ export default function Dashboard() {
         <div className="animate-fadeIn">
             <div className="page-header">
                 <h1>我的表單記錄</h1>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <CsvUpload variant="buttons" onUploadComplete={fetchSubmissions} userHospital={user?.hospital || ''} onError={setError} />
-                    <button className="btn btn-secondary" onClick={handleExportCSV}>
-                        <Upload size={18} />
-                        匯出
-                    </button>
-
-                </div>
             </div>
 
             {error && (
@@ -362,15 +353,15 @@ export default function Dashboard() {
             )}
 
             {/* Filter Section */}
-            <div className="card" style={{ marginBottom: 'var(--spacing-lg)', padding: 'var(--spacing-md)' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+            <div className="card filter-section" style={{ marginBottom: 'var(--spacing-lg)', padding: 'var(--spacing-md)' }}>
+                <div className="filter-content">
                     {/* Line 1: Hospital, MRN, Clear button */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 'fit-content' }}>
+                    <div className="filter-row filter-row-main">
+                        <div className="filter-group filter-label">
                             <Filter size={18} color="var(--text-muted)" />
                             <span style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>篩選條件:</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <div className="filter-group">
                             <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>醫院：</label>
                             {user?.hospital ? (
                                 <span className="badge badge-info" style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}>
@@ -390,7 +381,7 @@ export default function Dashboard() {
                                 </select>
                             )}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <div className="filter-group">
                             <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>病歷號：</label>
                             <input
                                 type="text"
@@ -401,7 +392,7 @@ export default function Dashboard() {
                                 style={{ width: 'auto', minWidth: '100px', maxWidth: '150px' }}
                             />
                         </div>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: 'auto', flexWrap: 'wrap' }}>
+                        <div className="filter-actions">
                             <button
                                 className={`btn btn-secondary`}
                                 onClick={async () => {
@@ -489,7 +480,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* Line 2: Date Filters */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', paddingLeft: '1.5rem' }}>
+                    <div className="filter-row filter-row-dates">
                         <DualDateRangePicker
                             admissionRange={{ start: admissionStartDate, end: admissionEndDate }}
                             cultureRange={{ start: cultureStartDate, end: cultureEndDate }}
@@ -505,7 +496,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* Line 3: Pathogen Tags */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '1.5rem' }}>
+                    <div className="filter-row filter-row-pathogens">
                         <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>菌種：</label>
                         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                             {PATHOGEN_CONFIG.map(p => {
