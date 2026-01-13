@@ -63,7 +63,6 @@ router.post('/', requireAuth, (req, res) => {
             req.session.userId,
             submission.medical_record_number,
             submission.admission_date,
-            submission.admission_date,
             record_time,
             request_reason || ''
         );

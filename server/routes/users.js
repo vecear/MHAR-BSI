@@ -122,7 +122,8 @@ router.post('/', requireAdmin, (req, res) => {
         const hash = bcrypt.hashSync(password, 10);
         const result = userQueries.create.run(
             username, hash, hospital, 'user',
-            email || null, display_name || null, gender || null, phone || null, address || null, line_id || null
+            email || null, display_name || null, gender || null, phone || null, address || null, line_id || null,
+            null, null // security_question, security_answer
         );
 
         res.status(201).json({

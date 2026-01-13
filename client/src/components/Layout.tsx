@@ -252,7 +252,7 @@ export default function Layout() {
                 </div>
 
                 {/* Second row: Navigation links */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', padding: '0.5rem 2rem', backgroundColor: 'rgba(255,255,255,0.08)', width: '100%', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', padding: '1px 2rem', backgroundColor: 'rgba(255,255,255,0.08)', width: '100%', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                     <Link to="/" className={`navbar-link ${location.pathname === '/' ? 'active' : ''}`}>
                         <Home size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
                         首頁
@@ -261,6 +261,12 @@ export default function Layout() {
                         <FileText size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
                         新增表單
                     </Link>
+                    {user?.role === 'admin' && (
+                        <Link to="/admin/delete-requests" className={`navbar-link ${location.pathname === '/admin/delete-requests' ? 'active' : ''}`}>
+                            <Trash2 size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                            刪除表單
+                        </Link>
+                    )}
                     {user?.role === 'admin' && (
                         <Link to="/users" className={`navbar-link ${location.pathname === '/users' ? 'active' : ''}`}>
                             <Users size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />

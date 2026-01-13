@@ -1,8 +1,9 @@
 
 import { useState, useEffect, useMemo } from 'react';
-import { Link, useLocation, useOutletContext } from 'react-router-dom';
-import { FileText, Download, Trash2, Edit, AlertCircle, X, Filter, ArrowUp, ArrowDown, Plus, Check, XCircle } from 'lucide-react';
-import { API_URL } from '../App';
+import { Link } from 'react-router-dom';
+import { FileText, Download, Trash2, Edit, AlertCircle, X, Filter, ArrowUp, ArrowDown, Plus } from 'lucide-react';
+import { API_URL, useAuth } from '../App';
+import CsvUpload from '../components/CsvUpload';
 import DualDateRangePicker from '../components/DualDateRangePicker';
 
 interface Submission {
@@ -16,19 +17,6 @@ interface Submission {
     update_count?: number;
     username: string;
     hospital: string;
-}
-
-interface DeleteRequest {
-    id: number;
-    submission_id: number;
-    medical_record_number: string;
-    admission_date: string;
-    requester_username: string;
-    requester_hospital: string;
-    status: 'pending' | 'approved' | 'rejected';
-    created_at: string;
-    reject_reason?: string;
-    request_reason?: string;
 }
 
 const HOSPITALS = [
@@ -55,22 +43,10 @@ const PATHOGEN_CONFIG = [
 ];
 
 export default function AdminDashboard() {
-    const [activeTab, setActiveTab] = useState<'submissions' | 'delete-requests'>('submissions');
+    const { user } = useAuth();
     const [submissions, setSubmissions] = useState<Submission[]>([]);
-    const [deleteRequests, setDeleteRequests] = useState<DeleteRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const { refreshPendingDeleteCount } = useOutletContext<{ refreshPendingDeleteCount: () => void }>();
-
-    // Read URL params to switch tabs
-    const location = useLocation();
-    useEffect(() => {
-        const params = new URLSearchParams(location.search);
-        const tab = params.get('tab');
-        if (tab === 'delete-requests') {
-            setActiveTab('delete-requests');
-        }
-    }, [location.search]);
 
     // Filter states
     const [admissionStartDate, setAdmissionStartDate] = useState('');
@@ -94,32 +70,8 @@ export default function AdminDashboard() {
     };
 
     useEffect(() => {
-        // Reset specific states when tab changes if needed
-        setError('');
-
-        const fetchData = async () => {
-            if (activeTab === 'submissions') await fetchSubmissions();
-            else if (activeTab === 'delete-requests') await fetchDeleteRequests();
-        };
-        fetchData();
-    }, [activeTab]);
-
-    // Fetch delete requests count on mount (to show correct tab badge)
-    useEffect(() => {
-        fetchDeleteRequestsCount();
+        fetchSubmissions();
     }, []);
-
-    const fetchDeleteRequestsCount = async () => {
-        try {
-            const res = await fetch(`${API_URL}/delete-requests`, { credentials: 'include' });
-            if (res.ok) {
-                const data = await res.json();
-                setDeleteRequests(data);
-            }
-        } catch {
-            // Silently fail - just for count display
-        }
-    };
 
     const fetchSubmissions = async () => {
         setLoading(true);
@@ -135,55 +87,7 @@ export default function AdminDashboard() {
         }
     };
 
-    const fetchDeleteRequests = async () => {
-        setLoading(true);
-        try {
-            const res = await fetch(`${API_URL}/delete-requests`, { credentials: 'include' });
-            if (!res.ok) throw new Error('取得删除申請失敗');
-            const data = await res.json();
-            setDeleteRequests(data);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : '發生錯誤');
-        } finally {
-            setLoading(false);
-        }
-    };
 
-    const handleApproveDelete = async (id: number) => {
-        if (!confirm('確定要核准此删除申請？資料將永久删除。')) return;
-        try {
-            const res = await fetch(`${API_URL}/delete-requests/${id}/approve`, {
-                method: 'PUT',
-                credentials: 'include'
-            });
-            if (!res.ok) throw new Error('操作失敗');
-
-            // Refresh counts and current view
-            fetchDeleteRequests();
-            if (activeTab === 'submissions') fetchSubmissions();
-            refreshPendingDeleteCount();
-        } catch (err) {
-            alert(err instanceof Error ? err.message : '操作失敗');
-        }
-    };
-
-    const handleRejectDelete = async (id: number) => {
-        const reason = prompt('請輸入拒絕理由（可留空）：');
-        if (reason === null) return; // User cancelled
-        try {
-            const res = await fetch(`${API_URL}/delete-requests/${id}/reject`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ reason })
-            });
-            if (!res.ok) throw new Error('操作失敗');
-            fetchDeleteRequests();
-            refreshPendingDeleteCount();
-        } catch (err) {
-            alert(err instanceof Error ? err.message : '操作失敗');
-        }
-    };
 
     // Filter submissions
     const filteredSubmissions = useMemo(() => {
@@ -269,6 +173,110 @@ export default function AdminDashboard() {
         }
     };
 
+    const handleExportFilteredCSV = async () => {
+        try {
+            const params = new URLSearchParams();
+            if (admissionStartDate) params.append('admission_start', admissionStartDate);
+            if (admissionEndDate) params.append('admission_end', admissionEndDate);
+            if (cultureStartDate) params.append('culture_start', cultureStartDate);
+            if (cultureEndDate) params.append('culture_end', cultureEndDate);
+            if (filterHospital) params.append('hospital', filterHospital); // Admin can filter by hospital
+            if (filterPathogens.length > 0) params.append('pathogens', filterPathogens.join(','));
+            if (filterMRN) params.append('mrn', filterMRN);
+
+            const res = await fetch(`${API_URL}/export/csv?${params.toString()}`, {
+                credentials: 'include'
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || '匯出失敗');
+            }
+
+            const blob = await res.blob();
+            const defaultFileName = `mhar-bsi-filtered-${new Date().toISOString().split('T')[0]}.csv`;
+
+            // Try File System Access API
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await (window as any).showSaveFilePicker({
+                        suggestedName: defaultFileName,
+                        types: [{
+                            description: 'CSV 檔案',
+                            accept: { 'text/csv': ['.csv'] }
+                        }]
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    return;
+                } catch (err) {
+                    if ((err as Error).name === 'AbortError') return;
+                }
+            }
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = defaultFileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            alert(err instanceof Error ? err.message : '匯出失敗');
+        }
+    };
+
+    // Export Selected CSV
+    const handleExportSelectedCSV = async () => {
+        if (selectedIds.size === 0) return;
+
+        try {
+            const params = new URLSearchParams();
+            const ids = Array.from(selectedIds);
+            params.append('ids', ids.join(','));
+
+            const res = await fetch(`${API_URL}/export/csv?${params.toString()}`, {
+                credentials: 'include'
+            });
+
+            if (!res.ok) throw new Error('匯出失敗');
+
+            const blob = await res.blob();
+            const defaultFileName = `mhar-bsi-selected-${new Date().toISOString().split('T')[0]}.csv`;
+
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await (window as any).showSaveFilePicker({
+                        suggestedName: defaultFileName,
+                        types: [{
+                            description: 'CSV 檔案',
+                            accept: { 'text/csv': ['.csv'] }
+                        }]
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    return;
+                } catch (err) {
+                    if ((err as Error).name === 'AbortError') return;
+                }
+            }
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = defaultFileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            alert(err instanceof Error ? err.message : '匯出失敗');
+        }
+    };
+
     const handleDeleteSubmission = async (id: number) => {
         if (!confirm('確定要刪除此筆資料嗎？')) return;
         try {
@@ -321,36 +329,16 @@ export default function AdminDashboard() {
             <div className="page-header">
                 <h1>管理員儀表板</h1>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    {activeTab === 'submissions' && (
-                        <>
-                            <button className="btn btn-secondary" onClick={handleExportCSV}>
-                                <Download size={18} />
-                                匯出全部 CSV
-                            </button>
-                        </>
-                    )}
+                    <CsvUpload variant="buttons" onUploadComplete={fetchSubmissions} userHospital={user?.hospital || ''} onError={setError} />
+                    <button className="btn btn-secondary" onClick={handleExportCSV}>
+                        <Download size={18} />
+                        匯出
+                    </button>
                     <Link to="/form" className="btn btn-primary">
                         <Plus size={18} />
                         新增表單
                     </Link>
                 </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                <button
-                    className={`btn ${activeTab === 'submissions' ? 'btn-primary' : 'btn-secondary'}`}
-                    onClick={() => setActiveTab('submissions')}
-                >
-                    <FileText size={18} />
-                    所有表單 ({submissions.length})
-                </button>
-                <button
-                    className={`btn ${activeTab === 'delete-requests' ? 'btn-primary' : 'btn-secondary'}`}
-                    onClick={() => setActiveTab('delete-requests')}
-                >
-                    <Trash2 size={18} />
-                    刪除表單 ({deleteRequests.length})
-                </button>
             </div>
 
             {error && (
@@ -364,7 +352,7 @@ export default function AdminDashboard() {
                 <div className="loading-container">
                     <div className="spinner"></div>
                 </div>
-            ) : activeTab === 'submissions' ? (
+            ) : (
                 <>
                     {/* Filter Section */}
                     <div className="card" style={{ marginBottom: 'var(--spacing-lg)', padding: 'var(--spacing-md)' }}>
@@ -403,6 +391,19 @@ export default function AdminDashboard() {
                                 </div>
 
                                 <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    <button
+                                        className={`btn btn-secondary`}
+                                        onClick={handleExportFilteredCSV}
+                                        disabled={filteredSubmissions.length === 0}
+                                        style={{
+                                            padding: '0.4rem 0.8rem',
+                                            fontSize: '0.9rem',
+                                            marginRight: '0.5rem'
+                                        }}
+                                    >
+                                        <Download size={14} style={{ marginRight: '4px' }} />
+                                        匯出篩選表單
+                                    </button>
                                     <button
                                         className={`btn ${hasActiveFilters ? 'btn-danger' : 'btn-secondary'}`}
                                         onClick={clearAllFilters}
@@ -488,6 +489,10 @@ export default function AdminDashboard() {
                         {/* Bulk delete button above table */}
                         {selectedIds.size > 0 && (
                             <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <button className="btn btn-secondary" onClick={handleExportSelectedCSV} style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                    <Download size={16} />
+                                    匯出勾選 ({selectedIds.size})
+                                </button>
                                 <button className="btn btn-danger" onClick={handleBulkDelete} style={{ fontSize: '0.9rem' }}>
                                     <Trash2 size={16} />
                                     多筆一次刪除 ({selectedIds.size})
@@ -593,20 +598,21 @@ export default function AdminDashboard() {
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.medical_record_number}</td>
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.admission_date}</td>
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{(sub.form_data?.positive_culture_date as string) || '-'}</td>
-                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.username}</td>
+                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{`${sub.username}|${sub.hospital}`}</td>
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                     {(() => {
-                                                        const hConfig = HOSPITAL_CONFIG[sub.hospital];
+                                                        const displayHospital = (sub.form_data?.hospital as string) || sub.hospital;
+                                                        const hConfig = HOSPITAL_CONFIG[displayHospital] || HOSPITAL_CONFIG[sub.hospital];
                                                         return (
                                                             <span className="badge" style={{ backgroundColor: hConfig?.bg || '#f0f0f0', color: hConfig?.text || '#666' }}>
-                                                                {sub.hospital}
+                                                                {displayHospital}
                                                             </span>
                                                         );
                                                     })()}
                                                 </td>
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                    <span className={`badge ${sub.data_status === 'complete' ? 'badge-success' : 'badge-warning'}`}>
-                                                        {sub.data_status === 'complete' ? '已完成' : '未完成'}
+                                                    <span className={`badge ${['complete', 'completed', '完成'].includes(sub.data_status?.toLowerCase() || '') ? 'badge-success' : 'badge-warning'}`}>
+                                                        {['complete', 'completed', '完成'].includes(sub.data_status?.toLowerCase() || '') ? '已完成' : '未完成'}
                                                     </span>
                                                 </td>
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
@@ -628,111 +634,6 @@ export default function AdminDashboard() {
                         )}
                     </div>
                 </>
-            ) : (
-                // Delete Requests Table
-                <div className="card">
-                    {deleteRequests.length === 0 ? (
-                        <div className="empty-state">
-                            <Trash2 className="empty-state-icon" />
-                            <h3>暫無待審核的刪除申請</h3>
-                            <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>
-                                當使用者申請刪除資料時，會顯示在這裡
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="table-container">
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>紀錄編號</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>病歷號</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>住院日期</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>申請原因</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>申請者</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>醫院</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>申請時間</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>狀態</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>拒絕原因</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>動作</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {deleteRequests.map(req => (
-                                        <tr key={req.id}>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.85em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
-                                                {req.status === 'approved' ? (
-                                                    ((req as any).record_time as string)?.replace(/[-T:]/g, '') || '-'
-                                                ) : (
-                                                    <Link to={`/form/${req.submission_id}`} style={{ textDecoration: 'none', color: 'var(--color-primary)' }}>
-                                                        {((req as any).record_time as string)?.replace(/[-T:]/g, '') || '-'}
-                                                    </Link>
-                                                )}
-                                            </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.medical_record_number}</td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.admission_date}</td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle', maxWidth: '150px', whiteSpace: 'normal', fontSize: '0.9rem', color: '#444' }}>
-                                                {req.request_reason || <span style={{ color: '#aaa', fontStyle: 'italic' }}>無</span>}
-                                            </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.requester_username}</td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                <span className="badge badge-info">{req.requester_hospital}</span>
-                                            </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                {new Date(req.created_at + (req.created_at.includes('Z') ? '' : 'Z')).toLocaleString('zh-TW', { hour12: false })}
-                                            </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                {req.status === 'pending' && (
-                                                    <span className="badge badge-warning">待審核</span>
-                                                )}
-                                                {req.status === 'approved' && (
-                                                    <span className="badge badge-success">已刪除</span>
-                                                )}
-                                                {req.status === 'rejected' && (
-                                                    <span className="badge badge-danger">已拒絕</span>
-                                                )}
-                                            </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle', maxWidth: '150px' }}>
-                                                {req.status === 'rejected' ? (
-                                                    <span style={{ color: 'var(--color-danger)', fontSize: '0.9rem' }}>
-                                                        {req.reject_reason || '-'}
-                                                    </span>
-                                                ) : (
-                                                    <span style={{ color: 'var(--text-muted)' }}>-</span>
-                                                )}
-                                            </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                {req.status === 'pending' ? (
-                                                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                                                        <button
-                                                            className="btn btn-success"
-                                                            onClick={() => handleApproveDelete(req.id)}
-                                                            title="核准刪除"
-                                                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
-                                                        >
-                                                            <Check size={14} />
-                                                            核准
-                                                        </button>
-                                                        <button
-                                                            className="btn btn-danger"
-                                                            onClick={() => handleRejectDelete(req.id)}
-                                                            title="拒絕"
-                                                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
-                                                        >
-                                                            <XCircle size={14} />
-                                                            拒絕
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <span style={{ color: 'var(--text-muted)' }}>-</span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
             )}
         </div >
     );

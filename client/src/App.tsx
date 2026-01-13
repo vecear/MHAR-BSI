@@ -8,6 +8,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ForgotUsername from './pages/ForgotUsername';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminDeleteRequests from './pages/AdminDeleteRequests'; // Added import
 import FormPage from './pages/FormPage';
 import DeleteRequests from './pages/DeleteRequests';
 import UserManagement from './pages/UserManagement';
@@ -133,6 +134,7 @@ function App() {
               <Route path="form" element={<FormPage />} />
               <Route path="form/:id" element={<FormPage />} />
               <Route path="delete-requests" element={<DeleteRequests />} />
+              <Route path="admin/delete-requests" element={<AdminDeleteRequests />} />
               <Route path="users" element={<UserManagement />} />
             </Route>
 
