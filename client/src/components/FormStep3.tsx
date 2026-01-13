@@ -1,5 +1,20 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+
+// Helper to format Date to YYYY-MM-DD (Local)
+const formatDate = (date: Date | null) => {
+    if (!date) return '';
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
+// Helper to parse YYYY-MM-DD to Date (Local)
+const parseDate = (dateStr: string) => {
+    if (!dateStr) return null;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d);
+};
 import type { FormData } from '../pages/FormPage';
 
 interface Props {
@@ -118,11 +133,10 @@ export default function FormStep3({ formData, updateFormData }: Props) {
         }
     };
 
-    const updateDrugUsage = (
+    const updateDrugUsageBatch = (
         classKey: string,
         drug: string,
-        field: string,
-        value: string | boolean
+        updates: Record<string, string | boolean>
     ) => {
         const details = formData.antibiotic_details || {};
         const classDetails = details[classKey] || { drugs: [], usage: {} };
@@ -135,11 +149,20 @@ export default function FormStep3({ formData, updateFormData }: Props) {
                     ...classDetails,
                     usage: {
                         ...classDetails.usage,
-                        [drug]: { ...drugUsage, [field]: value }
+                        [drug]: { ...drugUsage, ...updates }
                     }
                 }
             }
         });
+    };
+
+    const updateDrugUsage = (
+        classKey: string,
+        drug: string,
+        field: string,
+        value: string | boolean
+    ) => {
+        updateDrugUsageBatch(classKey, drug, { [field]: value });
     };
 
     const isClassSelected = (classKey: string) =>
@@ -229,23 +252,26 @@ export default function FormStep3({ formData, updateFormData }: Props) {
                                             >
                                                 <h4 style={{ fontSize: '0.875rem', marginBottom: '0.75rem' }}>{drug}</h4>
 
-                                                <div className="form-grid-2">
-                                                    <div className="form-group" style={{ marginBottom: '0.5rem' }}>
-                                                        <label className="form-label">Start Date</label>
-                                                        <input
-                                                            type="date"
+                                                <div className="form-group" style={{ marginBottom: '0.5rem' }}>
+                                                    <label className="form-label">使用期間 (Start ~ End)</label>
+                                                    <div>
+                                                        <DatePicker
+                                                            selectsRange={true}
+                                                            startDate={parseDate(usage.start_date || '')}
+                                                            endDate={parseDate(usage.end_date || '')}
+                                                            onChange={(update) => {
+                                                                const [start, end] = update || [null, null];
+                                                                updateDrugUsageBatch(abClass.key, drug, {
+                                                                    start_date: formatDate(start),
+                                                                    end_date: formatDate(end)
+                                                                });
+                                                            }}
+                                                            shouldCloseOnSelect={false}
                                                             className="form-input"
-                                                            value={usage.start_date || ''}
-                                                            onChange={e => updateDrugUsage(abClass.key, drug, 'start_date', e.target.value)}
-                                                        />
-                                                    </div>
-                                                    <div className="form-group" style={{ marginBottom: '0.5rem' }}>
-                                                        <label className="form-label">End Date</label>
-                                                        <input
-                                                            type="date"
-                                                            className="form-input"
-                                                            value={usage.end_date || ''}
-                                                            onChange={e => updateDrugUsage(abClass.key, drug, 'end_date', e.target.value)}
+                                                            placeholderText="請選擇使用期間"
+                                                            dateFormat="yyyy/MM/dd"
+                                                            isClearable={true}
+                                                            wrapperClassName="w-full"
                                                         />
                                                     </div>
                                                 </div>
@@ -273,23 +299,26 @@ export default function FormStep3({ formData, updateFormData }: Props) {
                                                 </div>
 
                                                 {usage.second_use && (
-                                                    <div className="form-grid-2">
-                                                        <div className="form-group" style={{ marginBottom: 0 }}>
-                                                            <label className="form-label">Second Start Date</label>
-                                                            <input
-                                                                type="date"
+                                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                                        <label className="form-label">第二次使用期間 (Start ~ End)</label>
+                                                        <div>
+                                                            <DatePicker
+                                                                selectsRange={true}
+                                                                startDate={parseDate(usage.second_start_date || '')}
+                                                                endDate={parseDate(usage.second_end_date || '')}
+                                                                onChange={(update) => {
+                                                                    const [start, end] = update || [null, null];
+                                                                    updateDrugUsageBatch(abClass.key, drug, {
+                                                                        second_start_date: formatDate(start),
+                                                                        second_end_date: formatDate(end)
+                                                                    });
+                                                                }}
+                                                                shouldCloseOnSelect={false}
                                                                 className="form-input"
-                                                                value={usage.second_start_date || ''}
-                                                                onChange={e => updateDrugUsage(abClass.key, drug, 'second_start_date', e.target.value)}
-                                                            />
-                                                        </div>
-                                                        <div className="form-group" style={{ marginBottom: 0 }}>
-                                                            <label className="form-label">Second End Date</label>
-                                                            <input
-                                                                type="date"
-                                                                className="form-input"
-                                                                value={usage.second_end_date || ''}
-                                                                onChange={e => updateDrugUsage(abClass.key, drug, 'second_end_date', e.target.value)}
+                                                                placeholderText="請選擇第二次使用期間"
+                                                                dateFormat="yyyy/MM/dd"
+                                                                isClearable={true}
+                                                                wrapperClassName="w-full"
                                                             />
                                                         </div>
                                                     </div>

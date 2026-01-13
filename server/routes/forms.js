@@ -105,15 +105,29 @@ router.get('/check/:medicalRecordNumber/:admissionDate', requireAuth, (req, res)
 // Create new submission
 router.post('/', requireAuth, (req, res) => {
     try {
-        const { medical_record_number, admission_date, form_data, data_status } = req.body;
+        const { medical_record_number, admission_date, form_data, data_status, owner_username } = req.body;
 
         if (!medical_record_number || !admission_date || !form_data) {
             return res.status(400).json({ error: '缺少必要欄位' });
         }
 
-        // Check if already exists
+        // Determine record owner
+        let userId = req.session.userId;
+
+        // If admin specifies an owner, try to find that user
+        if (req.session.role === 'admin' && owner_username) {
+            const owner = userQueries.findByUsername.get(owner_username);
+            if (owner) {
+                userId = owner.id;
+            } else {
+                // Determine if we should fail or fallback. Failing is safer to prevent data attribution errors.
+                return res.status(400).json({ error: `找不到使用者: ${owner_username}` });
+            }
+        }
+
+        // Check if already exists for this specific user
         const existing = submissionQueries.findByUserAndRecord.get(
-            req.session.userId,
+            userId,
             medical_record_number,
             admission_date
         );
@@ -126,7 +140,7 @@ router.post('/', requireAuth, (req, res) => {
         }
 
         const result = submissionQueries.create.run(
-            req.session.userId,
+            userId,
             medical_record_number,
             admission_date,
             JSON.stringify(form_data),

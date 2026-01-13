@@ -25,7 +25,7 @@ const requireAdmin = (req, res, next) => {
 // Create a delete request (non-admin users)
 router.post('/', requireAuth, (req, res) => {
     try {
-        const { submission_id } = req.body;
+        const { submission_id, request_reason } = req.body;
 
         if (!submission_id) {
             return res.status(400).json({ error: '缺少submission_id' });
@@ -63,7 +63,8 @@ router.post('/', requireAuth, (req, res) => {
             req.session.userId,
             submission.medical_record_number,
             submission.admission_date,
-            record_time
+            record_time,
+            request_reason || ''
         );
 
         res.status(201).json({
@@ -142,6 +143,28 @@ router.put('/:id/reject', requireAdmin, (req, res) => {
     } catch (err) {
         console.error('Error rejecting delete request:', err);
         res.status(500).json({ error: '處理失敗' });
+    }
+});
+
+// Delete a decided delete request record (admin only) - only for approved/rejected requests
+router.delete('/:id', requireAdmin, (req, res) => {
+    try {
+        const request = deleteRequestQueries.findById.get(req.params.id);
+        if (!request) {
+            return res.status(404).json({ error: '找不到該刪除申請' });
+        }
+
+        if (request.status === 'pending') {
+            return res.status(400).json({ error: '待審核的申請不能刪除' });
+        }
+
+        // Delete the request record
+        deleteRequestQueries.delete.run(req.params.id);
+
+        res.json({ message: '已刪除申請記錄' });
+    } catch (err) {
+        console.error('Error deleting delete request:', err);
+        res.status(500).json({ error: '刪除失敗' });
     }
 });
 

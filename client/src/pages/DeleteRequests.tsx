@@ -13,6 +13,7 @@ interface DeleteRequest {
     created_at: string;
     resolved_at: string | null;
     record_time?: string;
+    request_reason?: string;
 }
 
 export default function DeleteRequests() {
@@ -114,10 +115,11 @@ export default function DeleteRequests() {
                                     <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>紀錄編號</th>
                                     <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>病歷號</th>
                                     <th style={{ textAlign: 'center' }}>住院日期</th>
+                                    <th style={{ textAlign: 'center' }}>申請原因</th>
                                     <th style={{ textAlign: 'center' }}>狀態</th>
                                     <th style={{ textAlign: 'center' }}>申請時間</th>
                                     <th style={{ textAlign: 'center' }}>處理時間</th>
-                                    <th style={{ textAlign: 'center' }}>備註</th>
+                                    <th style={{ textAlign: 'center' }}>管理員回覆</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -134,6 +136,9 @@ export default function DeleteRequests() {
                                         </td>
                                         <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.medical_record_number}</td>
                                         <td style={{ textAlign: 'center' }}>{req.admission_date}</td>
+                                        <td style={{ textAlign: 'center', maxWidth: '200px', whiteSpace: 'normal', fontSize: '0.9rem', color: '#555' }}>
+                                            {req.request_reason || <span style={{ color: '#ccc', fontStyle: 'italic' }}>無</span>}
+                                        </td>
                                         <td style={{ textAlign: 'center' }}>{getStatusBadge(req.status)}</td>
                                         <td style={{ textAlign: 'center' }}>{formatDateTime(req.created_at)}</td>
                                         <td style={{ textAlign: 'center' }}>{req.resolved_at ? formatDateTime(req.resolved_at) : '-'}</td>

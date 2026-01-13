@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, ArrowLeft } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import { API_URL } from '../App';
 
 const HOSPITALS = [
     '內湖總院',
@@ -53,7 +54,7 @@ export default function Register() {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:3001/api/auth/register', {
+            const res = await fetch(`${API_URL}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

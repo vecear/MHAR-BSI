@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { KeyRound, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import { API_URL } from '../App';
 
 type Step = 'username' | 'answer' | 'reset';
 
@@ -21,7 +22,7 @@ export default function ForgotPassword() {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:3001/api/auth/forgot-password/question', {
+            const res = await fetch(`${API_URL}/auth/forgot-password/question`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username })
@@ -58,7 +59,7 @@ export default function ForgotPassword() {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:3001/api/auth/forgot-password/verify', {
+            const res = await fetch(`${API_URL}/auth/forgot-password/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
