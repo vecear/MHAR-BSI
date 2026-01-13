@@ -66,9 +66,9 @@ export default function Layout() {
 
     return (
         <div className="app-layout">
-            <nav className="navbar" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '0' }}>
+            <nav className="navbar navbar-stacked">
                 {/* First row: brand + user info */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 1.5rem', width: '100%' }}>
+                <div className="navbar-header">
                     <div className="navbar-brand">
                         <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>
                             🏥 MHAR-BSI 菌血症研究表單
@@ -252,7 +252,7 @@ export default function Layout() {
                 </div>
 
                 {/* Second row: Navigation links */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', padding: '1px 2rem', backgroundColor: 'rgba(255,255,255,0.08)', width: '100%', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                <div className="navbar-secondary-row">
                     <Link to="/" className={`navbar-link ${location.pathname === '/' ? 'active' : ''}`}>
                         <Home size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
                         首頁
