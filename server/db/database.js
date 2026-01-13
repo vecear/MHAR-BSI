@@ -3,7 +3,20 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const dbPath = path.join(__dirname, 'mhar-bsi.db');
+// Database path - uses /opt/render/project/src/server/data if disk is mounted, otherwise uses local directory
+const isProduction = process.env.NODE_ENV === 'production';
+const persistentPath = '/opt/render/project/src/server/data';
+const localDataDir = path.join(__dirname);
+
+// Check if persistent disk is available, otherwise use local directory
+let dataDir;
+if (isProduction && fs.existsSync(persistentPath)) {
+    dataDir = persistentPath;
+} else {
+    dataDir = localDataDir;
+}
+
+const dbPath = path.join(dataDir, 'mhar-bsi.db');
 const db = new Database(dbPath);
 
 // Enable foreign keys

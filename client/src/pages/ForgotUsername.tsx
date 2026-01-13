@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { User, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import { API_URL } from '../App';
 
 export default function ForgotUsername() {
     const { showError } = useToast();
@@ -16,7 +17,7 @@ export default function ForgotUsername() {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:3001/api/auth/forgot-username', {
+            const res = await fetch(`${API_URL}/auth/forgot-username`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, phone })

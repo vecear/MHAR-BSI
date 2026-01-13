@@ -1,0 +1,13 @@
+{
+    "name": "mhar-bsi",
+    "version": "1.0.0",
+    "description": "MHAR-BSI 菌血症研究表單系統",
+    "scripts": {
+        "start": "node server/index.js",
+        "build": "cd client && npm install && npm run build",
+        "postinstall": "cd server && npm install"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}
