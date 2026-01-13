@@ -713,27 +713,84 @@ h3 {
   font-size: 0.875rem;
 }
 
+.navbar-time {
+  margin-right: 1.5rem;
+}
+
+.navbar-badge {
+  margin-right: 2rem;
+}
+
 @media (max-width: 768px) {
   .navbar-header {
     flex-direction: column;
     align-items: stretch;
     gap: 0.5rem;
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 1rem;
   }
 
-  /* 確保使用者資訊原本是橫向排列的，在手機版維持橫向但換行 */
   .navbar-user {
     width: 100%;
-    /* 寬度佔滿 */
-    justify-content: flex-end;
-    /* 靠右對齊 (或者 space-between) */
-    flex-wrap: wrap;
-    /* 內容太多時自動換行 */
+    display: flex;
+    flex-wrap: nowrap;
+    /* 不換行，讓 flex 處理寬度 */
+    align-items: center;
+    justify-content: space-between;
     gap: 0.5rem;
-    /* 間距縮小一點 */
     margin-top: 0.25rem;
-    /* padding-top: 0.5rem; */
-    /* border-top: 1px solid rgba(255, 255, 255, 0.1); 可選的分隔線 */
+    color: var(--text-on-header);
+    /* 強制白色文字 */
+  }
+
+  /* 手機版隱藏時間 */
+  .navbar-time {
+    display: none;
+  }
+
+  /* Badge 自適應寬度 */
+  .navbar-badge {
+    margin-right: 0;
+    width: auto !important;
+    max-width: 35%;
+    /* 稍微縮小最大寬度 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 0 1 auto;
+  }
+
+  /* 使用者名稱 */
+  .navbar-profile {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+    /* 佔據剩餘空間 */
+    min-width: 0;
+    /* 允許縮小 */
+    /* 強制白色，並增加字重確保可讀性 */
+    color: #ffffff !important;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-right: 0.5rem;
+    line-height: 1.5;
+  }
+
+  /* 確保 Badge 不會被壓縮 */
+  .navbar-profile .badge {
+    flex-shrink: 0;
+    white-space: nowrap;
+    margin-left: 4px !important;
+    /* 確保與文字有間距 */
+    padding: 0.2rem 0.5rem;
+    /* 手機版稍微縮小 padding */
+    font-size: 0.7rem;
+  }
+
+  /* 確保圖示按鈕不被壓縮 */
+  .navbar-user .btn-icon {
+    flex: 0 0 auto;
+    padding: 0.25rem;
   }
 }
 
@@ -825,10 +882,9 @@ h3 {
 }
 
 .badge-success {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  border: 1px solid var(--color-primary);
-  /* Add border for better definition */
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #22c55e;
 }
 
 .badge-warning {
