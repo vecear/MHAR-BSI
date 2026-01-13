@@ -402,7 +402,7 @@ export default function AdminDashboard() {
                                         }}
                                     >
                                         <Upload size={14} style={{ marginRight: '4px' }} />
-                                        匯出篩選表單
+                                        {hasActiveFilters ? '匯出篩選表單' : '匯出表單'}
                                     </button>
                                     <button
                                         className={`btn ${hasActiveFilters ? 'btn-danger' : 'btn-secondary'}`}
