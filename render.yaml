@@ -2,7 +2,7 @@ services:
   - type: web
     name: mhar-bsi
     runtime: node
-    buildCommand: npm install && cd server && npm install && rm -rf node_modules/better-sqlite3/prebuilds && npm rebuild better-sqlite3 --build-from-source && cd .. && npm run build
+    buildCommand: npm install && cd server && npm install && cd .. && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV

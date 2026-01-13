@@ -14,9 +14,6 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Initialize database
-initializeDatabase();
-
 // Middleware
 const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
 app.use(cors({
@@ -72,9 +69,21 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: '伺服器錯誤' });
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    if (!isProduction) {
-        console.log('Default admin credentials: username=admin, password=admin123');
+// Initialize database and start server
+async function startServer() {
+    try {
+        await initializeDatabase();
+
+        app.listen(PORT, () => {
+            console.log(`Server running on http://localhost:${PORT}`);
+            if (!isProduction) {
+                console.log('Default admin credentials: username=admin, password=admin123');
+            }
+        });
+    } catch (error) {
+        console.error('Failed to initialize database:', error);
+        process.exit(1);
     }
-});
+}
+
+startServer();
