@@ -25,7 +25,7 @@ const requireAdmin = (req, res, next) => {
 // Create a delete request (non-admin users)
 router.post('/', requireAuth, (req, res) => {
     try {
-        const { submission_id } = req.body;
+        const { submission_id, request_reason } = req.body;
 
         if (!submission_id) {
             return res.status(400).json({ error: '缺少submission_id' });
@@ -63,7 +63,9 @@ router.post('/', requireAuth, (req, res) => {
             req.session.userId,
             submission.medical_record_number,
             submission.admission_date,
-            record_time
+            submission.admission_date,
+            record_time,
+            request_reason || ''
         );
 
         res.status(201).json({

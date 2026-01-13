@@ -1,8 +1,9 @@
 
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { FileText, Download, Trash2, Edit, AlertCircle, Users, X, Filter, ArrowUp, ArrowDown, UserPlus, Plus, Check, XCircle } from 'lucide-react';
+import { Link, useLocation, useOutletContext } from 'react-router-dom';
+import { FileText, Download, Trash2, Edit, AlertCircle, X, Filter, ArrowUp, ArrowDown, Plus, Check, XCircle } from 'lucide-react';
 import { API_URL } from '../App';
+import DualDateRangePicker from '../components/DualDateRangePicker';
 
 interface Submission {
     id: number;
@@ -17,52 +18,6 @@ interface Submission {
     hospital: string;
 }
 
-interface User {
-    id: number;
-    username: string;
-    hospital: string;
-    role: string;
-    email?: string;
-    display_name?: string;
-    gender?: string;
-    phone?: string;
-    address?: string;
-    line_id?: string;
-    created_at: string;
-}
-
-interface UserFormData {
-    username: string;
-    password: string;
-    hospital: string;
-    email: string;
-    display_name: string;
-    gender: string;
-    phone: string;
-
-    address: string;
-    line_id: string;
-}
-
-const HOSPITALS = [
-    '內湖總院', '松山分院', '澎湖分院', '桃園總院',
-    '台中總院', '高雄總院', '左營總院', '花蓮總院'
-];
-
-
-
-const initialUserForm: UserFormData = {
-    username: '',
-    password: '',
-    hospital: HOSPITALS[0],
-    email: '',
-    display_name: '',
-    gender: '',
-    phone: '',
-    address: '',
-    line_id: ''
-};
-
 interface DeleteRequest {
     id: number;
     submission_id: number;
@@ -72,7 +27,25 @@ interface DeleteRequest {
     requester_hospital: string;
     status: 'pending' | 'approved' | 'rejected';
     created_at: string;
+    reject_reason?: string;
+    request_reason?: string;
 }
+
+const HOSPITALS = [
+    '內湖總院', '松山分院', '澎湖分院', '桃園總院',
+    '台中總院', '高雄總院', '左營總院', '花蓮總院'
+];
+
+const HOSPITAL_CONFIG: Record<string, { bg: string; text: string }> = {
+    '內湖總院': { bg: '#dbeafe', text: '#2563eb' },
+    '松山分院': { bg: '#dcfce7', text: '#16a34a' },
+    '澎湖分院': { bg: '#fef3c7', text: '#d97706' },
+    '桃園總院': { bg: '#fce7f3', text: '#db2777' },
+    '台中總院': { bg: '#e0e7ff', text: '#4f46e5' },
+    '高雄總院': { bg: '#fee2e2', text: '#dc2626' },
+    '左營總院': { bg: '#f3e8ff', text: '#9333ea' },
+    '花蓮總院': { bg: '#ccfbf1', text: '#0d9488' }
+};
 
 const PATHOGEN_CONFIG = [
     { id: 'CRKP', label: 'CRKP', bg: '#fee2e2', text: '#dc2626' },
@@ -82,12 +55,22 @@ const PATHOGEN_CONFIG = [
 ];
 
 export default function AdminDashboard() {
-    const [activeTab, setActiveTab] = useState<'submissions' | 'users' | 'delete-requests'>('submissions');
+    const [activeTab, setActiveTab] = useState<'submissions' | 'delete-requests'>('submissions');
     const [submissions, setSubmissions] = useState<Submission[]>([]);
-    const [users, setUsers] = useState<User[]>([]);
     const [deleteRequests, setDeleteRequests] = useState<DeleteRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const { refreshPendingDeleteCount } = useOutletContext<{ refreshPendingDeleteCount: () => void }>();
+
+    // Read URL params to switch tabs
+    const location = useLocation();
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const tab = params.get('tab');
+        if (tab === 'delete-requests') {
+            setActiveTab('delete-requests');
+        }
+    }, [location.search]);
 
     // Filter states
     const [admissionStartDate, setAdmissionStartDate] = useState('');
@@ -95,7 +78,7 @@ export default function AdminDashboard() {
     const [cultureStartDate, setCultureStartDate] = useState('');
     const [cultureEndDate, setCultureEndDate] = useState('');
     const [filterHospital, setFilterHospital] = useState('');
-    const [filterPathogen, setFilterPathogen] = useState('');
+    const [filterPathogens, setFilterPathogens] = useState<string[]>([]);
     const [filterMRN, setFilterMRN] = useState('');
     const [sortField, setSortField] = useState<string>('updated_at');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -110,19 +93,12 @@ export default function AdminDashboard() {
         }
     };
 
-    // Modal states
-    const [showUserModal, setShowUserModal] = useState(false);
-    const [editingUser, setEditingUser] = useState<User | null>(null);
-    const [userForm, setUserForm] = useState<UserFormData>(initialUserForm);
-    const [savingUser, setSavingUser] = useState(false);
-
     useEffect(() => {
         // Reset specific states when tab changes if needed
         setError('');
 
         const fetchData = async () => {
             if (activeTab === 'submissions') await fetchSubmissions();
-            else if (activeTab === 'users') await fetchUsers();
             else if (activeTab === 'delete-requests') await fetchDeleteRequests();
         };
         fetchData();
@@ -159,20 +135,6 @@ export default function AdminDashboard() {
         }
     };
 
-    const fetchUsers = async () => {
-        setLoading(true);
-        try {
-            const res = await fetch(`${API_URL}/users`, { credentials: 'include' });
-            if (!res.ok) throw new Error('取得使用者失敗');
-            const data = await res.json();
-            setUsers(data);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : '發生錯誤');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const fetchDeleteRequests = async () => {
         setLoading(true);
         try {
@@ -199,6 +161,7 @@ export default function AdminDashboard() {
             // Refresh counts and current view
             fetchDeleteRequests();
             if (activeTab === 'submissions') fetchSubmissions();
+            refreshPendingDeleteCount();
         } catch (err) {
             alert(err instanceof Error ? err.message : '操作失敗');
         }
@@ -216,6 +179,7 @@ export default function AdminDashboard() {
             });
             if (!res.ok) throw new Error('操作失敗');
             fetchDeleteRequests();
+            refreshPendingDeleteCount();
         } catch (err) {
             alert(err instanceof Error ? err.message : '操作失敗');
         }
@@ -238,7 +202,7 @@ export default function AdminDashboard() {
             if (filterHospital && sub.hospital !== filterHospital) return false;
 
             const pathogen = (sub.form_data?.pathogen as string) || '';
-            if (filterPathogen && pathogen !== filterPathogen) return false;
+            if (filterPathogens.length > 0 && !filterPathogens.includes(pathogen)) return false;
 
             // Medical record number search (case-insensitive partial match)
             if (filterMRN && !sub.medical_record_number.toLowerCase().includes(filterMRN.toLowerCase())) return false;
@@ -247,6 +211,8 @@ export default function AdminDashboard() {
         }).sort((a, b) => {
             const getValue = (item: Submission) => {
                 switch (sortField) {
+                    case 'record_time': return (item.form_data?.record_time as string) || '';
+                    case 'pathogen': return (item.form_data?.pathogen as string) || '';
                     case 'medical_record_number': return item.medical_record_number;
                     case 'admission_date': return item.admission_date;
                     case 'positive_culture_date': return (item.form_data?.positive_culture_date as string) || '';
@@ -255,7 +221,7 @@ export default function AdminDashboard() {
                     case 'data_status': return item.data_status;
                     case 'created_at': return item.created_at;
                     case 'updated_at': return item.updated_at;
-                    case 'update_count': return (item.update_count || 0); // numeric comparison works with < >
+                    case 'update_count': return (item.update_count || 0);
                     default: return '';
                 }
             };
@@ -267,11 +233,11 @@ export default function AdminDashboard() {
             if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [submissions, admissionStartDate, admissionEndDate, cultureStartDate, cultureEndDate, filterHospital, filterPathogen, filterMRN, sortField, sortDirection]);
+    }, [submissions, admissionStartDate, admissionEndDate, cultureStartDate, cultureEndDate, filterHospital, filterPathogens, filterMRN, sortField, sortDirection]);
 
     // Check if any filter is active
     const hasActiveFilters = admissionStartDate || admissionEndDate || cultureStartDate || cultureEndDate ||
-        filterHospital || filterPathogen || filterMRN;
+        filterHospital || filterPathogens.length > 0 || filterMRN;
 
     // Clear all filters
     const clearAllFilters = () => {
@@ -280,7 +246,7 @@ export default function AdminDashboard() {
         setCultureStartDate('');
         setCultureEndDate('');
         setFilterHospital('');
-        setFilterPathogen('');
+        setFilterPathogens([]);
         setFilterMRN('');
     };
 
@@ -350,83 +316,6 @@ export default function AdminDashboard() {
         }
     };
 
-    const openAddUser = () => {
-        setEditingUser(null);
-        setUserForm(initialUserForm);
-        setShowUserModal(true);
-    };
-
-    const openEditUser = (user: User) => {
-        setEditingUser(user);
-        setUserForm({
-            username: user.username,
-            password: '',
-            hospital: user.hospital,
-            email: user.email || '',
-            display_name: user.display_name || '',
-            gender: user.gender || '',
-            phone: user.phone || '',
-            address: user.address || '',
-            line_id: user.line_id || ''
-        });
-        setShowUserModal(true);
-    };
-
-    const handleSaveUser = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSavingUser(true);
-        try {
-            if (editingUser) {
-                const res = await fetch(`${API_URL}/users/${editingUser.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                        ...userForm,
-                        newPassword: userForm.password || undefined
-                    })
-                });
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.error || '更新失敗');
-                }
-            } else {
-                if (!userForm.password) throw new Error('請輸入密碼');
-                const res = await fetch(`${API_URL}/users`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(userForm)
-                });
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.error || '新增失敗');
-                }
-            }
-            setShowUserModal(false);
-            setUserForm(initialUserForm);
-            fetchUsers();
-        } catch (err) {
-            alert(err instanceof Error ? err.message : '儲存失敗');
-        } finally {
-            setSavingUser(false);
-        }
-    };
-
-    const handleDeleteUser = async (id: number) => {
-        if (!confirm('確定要刪除此使用者嗎？（該使用者建立的表單資料將會保留）')) return;
-        try {
-            const res = await fetch(`${API_URL}/users/${id}`, {
-                method: 'DELETE',
-                credentials: 'include'
-            });
-            if (!res.ok) throw new Error('刪除失敗');
-            setUsers(prev => prev.filter(u => u.id !== id));
-        } catch (err) {
-            alert(err instanceof Error ? err.message : '刪除失敗');
-        }
-    };
-
     return (
         <div className="animate-fadeIn">
             <div className="page-header">
@@ -434,23 +323,11 @@ export default function AdminDashboard() {
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     {activeTab === 'submissions' && (
                         <>
-                            {selectedIds.size > 0 && (
-                                <button className="btn btn-danger" onClick={handleBulkDelete}>
-                                    <Trash2 size={18} />
-                                    多筆一次刪除 ({selectedIds.size})
-                                </button>
-                            )}
                             <button className="btn btn-secondary" onClick={handleExportCSV}>
                                 <Download size={18} />
                                 匯出全部 CSV
                             </button>
                         </>
-                    )}
-                    {activeTab === 'users' && (
-                        <button className="btn btn-primary" onClick={openAddUser}>
-                            <UserPlus size={18} />
-                            新增使用者
-                        </button>
                     )}
                     <Link to="/form" className="btn btn-primary">
                         <Plus size={18} />
@@ -466,13 +343,6 @@ export default function AdminDashboard() {
                 >
                     <FileText size={18} />
                     所有表單 ({submissions.length})
-                </button>
-                <button
-                    className={`btn ${activeTab === 'users' ? 'btn-primary' : 'btn-secondary'}`}
-                    onClick={() => setActiveTab('users')}
-                >
-                    <Users size={18} />
-                    使用者管理 ({users.length})
                 </button>
                 <button
                     className={`btn ${activeTab === 'delete-requests' ? 'btn-primary' : 'btn-secondary'}`}
@@ -555,89 +425,59 @@ export default function AdminDashboard() {
 
                             {/* Line 2: Date Filters */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', paddingLeft: '1.5rem' }}>
-                                {/* Admission Date */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap' }}>
-                                    <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontWeight: 500 }}>住院日期</label>
-                                    <input
-                                        type="date"
-                                        className="form-input"
-                                        value={admissionStartDate}
-                                        onChange={e => setAdmissionStartDate(e.target.value)}
-                                        style={{ width: 'auto', minWidth: '130px' }}
-                                    />
-                                    <span style={{ color: 'var(--text-muted)' }}>~</span>
-                                    <input
-                                        type="date"
-                                        className="form-input"
-                                        value={admissionEndDate}
-                                        onChange={e => setAdmissionEndDate(e.target.value)}
-                                        style={{ width: 'auto', minWidth: '130px' }}
-                                    />
-                                </div>
-
-                                {/* Positive Culture Date */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap' }}>
-                                    <label style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontWeight: 500 }}>陽性日期</label>
-                                    <input
-                                        type="date"
-                                        className="form-input"
-                                        value={cultureStartDate}
-                                        onChange={e => setCultureStartDate(e.target.value)}
-                                        style={{ width: 'auto', minWidth: '130px' }}
-                                    />
-                                    <span style={{ color: 'var(--text-muted)' }}>~</span>
-                                    <input
-                                        type="date"
-                                        className="form-input"
-                                        value={cultureEndDate}
-                                        onChange={e => setCultureEndDate(e.target.value)}
-                                        style={{ width: 'auto', minWidth: '130px' }}
-                                    />
-                                </div>
+                                <DualDateRangePicker
+                                    admissionRange={{ start: admissionStartDate, end: admissionEndDate }}
+                                    cultureRange={{ start: cultureStartDate, end: cultureEndDate }}
+                                    onAdmissionChange={(range) => {
+                                        setAdmissionStartDate(range.start);
+                                        setAdmissionEndDate(range.end);
+                                    }}
+                                    onCultureChange={(range) => {
+                                        setCultureStartDate(range.start);
+                                        setCultureEndDate(range.end);
+                                    }}
+                                />
                             </div>
 
                             {/* Line 3: Pathogen Tags */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '1.5rem' }}>
                                 <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>菌種：</label>
-                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                    <button
-                                        onClick={() => setFilterPathogen('')}
-                                        style={{
-                                            padding: '0.25rem 0.75rem',
-                                            borderRadius: '9999px',
-                                            fontSize: '0.85rem',
-                                            fontWeight: 500,
-                                            cursor: 'pointer',
-                                            border: filterPathogen === '' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                                            backgroundColor: 'var(--bg-primary)',
-                                            color: 'var(--text-primary)',
-                                            transition: 'all 0.2s ease',
-                                            boxShadow: filterPathogen === '' ? 'var(--shadow-sm)' : 'none'
-                                        }}
-                                    >
-                                        全部
-                                    </button>
-                                    {PATHOGEN_CONFIG.map(p => (
-                                        <button
-                                            key={p.id}
-                                            onClick={() => setFilterPathogen(p.id)}
-                                            style={{
-                                                padding: '0.25rem 0.75rem',
-                                                borderRadius: '9999px',
-                                                fontSize: '0.85rem',
-                                                fontWeight: 500,
-                                                cursor: 'pointer',
-                                                border: filterPathogen === p.id ? `2px solid ${p.text}` : '2px solid transparent',
-                                                backgroundColor: p.bg,
-                                                color: p.text,
-                                                transition: 'all 0.2s ease',
-                                                boxShadow: filterPathogen === p.id ? 'var(--shadow-sm)' : 'none',
-                                                opacity: filterPathogen && filterPathogen !== p.id ? 0.6 : 1
-                                            }}
-                                        >
-                                            {p.label}
-                                        </button>
-                                    ))}
+                                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                    {PATHOGEN_CONFIG.map(p => {
+                                        const isChecked = filterPathogens.includes(p.id);
+                                        return (
+                                            <label
+                                                key={p.id}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.35rem',
+                                                    cursor: 'pointer',
+                                                    padding: '0.25rem 0.5rem',
+                                                    borderRadius: '6px',
+                                                    backgroundColor: isChecked ? p.bg : 'transparent',
+                                                    border: isChecked ? `2px solid ${p.text}` : '2px solid transparent',
+                                                    transition: 'all 0.2s ease'
+                                                }}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={() => {
+                                                        if (isChecked) {
+                                                            setFilterPathogens(filterPathogens.filter(x => x !== p.id));
+                                                        } else {
+                                                            setFilterPathogens([...filterPathogens, p.id]);
+                                                        }
+                                                    }}
+                                                    style={{ accentColor: p.text, width: '16px', height: '16px' }}
+                                                />
+                                                <span style={{ color: p.text, fontWeight: 500, fontSize: '0.85rem' }}>
+                                                    {p.label}
+                                                </span>
+                                            </label>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
@@ -645,6 +485,19 @@ export default function AdminDashboard() {
 
                     {/* Submissions Table */}
                     <div className="card">
+                        {/* Bulk delete button above table */}
+                        {selectedIds.size > 0 && (
+                            <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <button className="btn btn-danger" onClick={handleBulkDelete} style={{ fontSize: '0.9rem' }}>
+                                    <Trash2 size={16} />
+                                    多筆一次刪除 ({selectedIds.size})
+                                </button>
+                                <button className="btn btn-warning" onClick={() => setSelectedIds(new Set())} style={{ fontSize: '0.9rem' }}>
+                                    <X size={16} />
+                                    取消複選
+                                </button>
+                            </div>
+                        )}
                         {filteredSubmissions.length === 0 ? (
                             <div className="empty-state">
                                 <FileText className="empty-state-icon" />
@@ -669,11 +522,13 @@ export default function AdminDashboard() {
                                                 />
                                             </th>
                                             <th style={{ minWidth: '50px', textAlign: 'left', verticalAlign: 'middle', paddingLeft: '0.5rem' }}>修改</th>
-                                            <th style={{ minWidth: '60px', textAlign: 'center', verticalAlign: 'middle' }}>
-                                                <div>紀錄編號</div>
+                                            <th onClick={() => handleSort('record_time')} style={{ cursor: 'pointer', minWidth: '60px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <div>紀錄編號 {sortField === 'record_time' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}</div>
                                                 <div style={{ fontSize: '0.75em', fontWeight: 'normal' }}>(建立時間)</div>
                                             </th>
-                                            <th style={{ minWidth: '50px', textAlign: 'center', verticalAlign: 'middle' }}>菌種</th>
+                                            <th onClick={() => handleSort('pathogen')} style={{ cursor: 'pointer', minWidth: '50px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                                菌種 {sortField === 'pathogen' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                            </th>
                                             <th onClick={() => handleSort('medical_record_number')} style={{ cursor: 'pointer', minWidth: '50px', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 病歷號 {sortField === 'medical_record_number' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
@@ -695,7 +550,7 @@ export default function AdminDashboard() {
                                             <th onClick={() => handleSort('updated_at')} style={{ cursor: 'pointer', minWidth: '65px', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 最後更新時間 {sortField === 'updated_at' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
-                                            <th style={{ minWidth: '45px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <th onClick={() => handleSort('update_count')} style={{ cursor: 'pointer', minWidth: '45px', textAlign: 'center', verticalAlign: 'middle' }}>
                                                 更新次數 {sortField === 'update_count' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                                             </th>
                                         </tr>
@@ -740,7 +595,14 @@ export default function AdminDashboard() {
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{(sub.form_data?.positive_culture_date as string) || '-'}</td>
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.username}</td>
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                    <span className="badge badge-info">{sub.hospital}</span>
+                                                    {(() => {
+                                                        const hConfig = HOSPITAL_CONFIG[sub.hospital];
+                                                        return (
+                                                            <span className="badge" style={{ backgroundColor: hConfig?.bg || '#f0f0f0', color: hConfig?.text || '#666' }}>
+                                                                {sub.hospital}
+                                                            </span>
+                                                        );
+                                                    })()}
                                                 </td>
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                     <span className={`badge ${sub.data_status === 'complete' ? 'badge-success' : 'badge-warning'}`}>
@@ -766,7 +628,7 @@ export default function AdminDashboard() {
                         )}
                     </div>
                 </>
-            ) : activeTab === 'delete-requests' ? (
+            ) : (
                 // Delete Requests Table
                 <div className="card">
                     {deleteRequests.length === 0 ? (
@@ -785,10 +647,12 @@ export default function AdminDashboard() {
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>紀錄編號</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>病歷號</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>住院日期</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>申請原因</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>申請者</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>醫院</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>申請時間</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>狀態</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>拒絕原因</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>動作</th>
                                     </tr>
                                 </thead>
@@ -806,6 +670,9 @@ export default function AdminDashboard() {
                                             </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.medical_record_number}</td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.admission_date}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle', maxWidth: '150px', whiteSpace: 'normal', fontSize: '0.9rem', color: '#444' }}>
+                                                {req.request_reason || <span style={{ color: '#aaa', fontStyle: 'italic' }}>無</span>}
+                                            </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.requester_username}</td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 <span className="badge badge-info">{req.requester_hospital}</span>
@@ -818,10 +685,19 @@ export default function AdminDashboard() {
                                                     <span className="badge badge-warning">待審核</span>
                                                 )}
                                                 {req.status === 'approved' && (
-                                                    <span className="badge badge-success">已核准</span>
+                                                    <span className="badge badge-success">已刪除</span>
                                                 )}
                                                 {req.status === 'rejected' && (
                                                     <span className="badge badge-danger">已拒絕</span>
+                                                )}
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle', maxWidth: '150px' }}>
+                                                {req.status === 'rejected' ? (
+                                                    <span style={{ color: 'var(--color-danger)', fontSize: '0.9rem' }}>
+                                                        {req.reject_reason || '-'}
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ color: 'var(--text-muted)' }}>-</span>
                                                 )}
                                             </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
@@ -837,7 +713,7 @@ export default function AdminDashboard() {
                                                             核准
                                                         </button>
                                                         <button
-                                                            className="btn btn-secondary"
+                                                            className="btn btn-danger"
                                                             onClick={() => handleRejectDelete(req.id)}
                                                             title="拒絕"
                                                             style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
@@ -857,202 +733,7 @@ export default function AdminDashboard() {
                         </div>
                     )}
                 </div>
-            ) : (
-                // Users Table
-                <div className="card">
-                    {users.length === 0 ? (
-                        <div className="empty-state">
-                            <Users className="empty-state-icon" />
-                            <h3>尚無使用者</h3>
-                            <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>
-                                點擊「新增使用者」來建立帳號
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="table-container">
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th style={{ minWidth: '80px', textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1.5rem' }}>修改</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>帳號</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>姓名</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>醫院</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>E-mail</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>電話</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>建立時間</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {users.map(u => (
-                                        <tr key={u.id}>
-                                            <td style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1rem' }}>
-                                                <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-start', width: '100%' }}>
-                                                    <button className="btn btn-icon" onClick={() => openEditUser(u)} title="編輯">
-                                                        <Edit size={16} color="var(--color-primary)" />
-                                                    </button>
-                                                    <button className="btn btn-icon" onClick={() => handleDeleteUser(u.id)} title="刪除">
-                                                        <Trash2 size={16} color="var(--color-danger)" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.username}</td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.display_name || '-'}</td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                <span className="badge badge-info">{u.hospital}</span>
-                                            </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.email || '-'}</td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.phone || '-'}</td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{new Date(u.created_at + (u.created_at.includes('Z') ? '' : 'Z')).toLocaleString('zh-TW', { hour12: false })}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-            )
-            }
-
-            {/* User Modal (Add/Edit) */}
-            {
-                showUserModal && (
-                    <div className="modal-overlay" onClick={() => setShowUserModal(false)}>
-                        <div className="modal animate-slideUp" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
-                            <div className="modal-header">
-                                <h3>{editingUser ? '編輯使用者' : '新增使用者'}</h3>
-                                <button className="btn btn-icon" onClick={() => setShowUserModal(false)}>
-                                    <X size={18} />
-                                </button>
-                            </div>
-                            <form onSubmit={handleSaveUser}>
-                                <div className="modal-body">
-                                    <div className="form-grid-2">
-                                        <div className="form-group">
-                                            <label className="form-label required">帳號</label>
-                                            <input
-                                                type="text"
-                                                className="form-input"
-                                                value={userForm.username}
-                                                onChange={e => setUserForm({ ...userForm, username: e.target.value })}
-                                                required
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label className={`form-label ${editingUser ? '' : 'required'}`}>
-                                                {editingUser ? '新密碼（留空不變更）' : '密碼'}
-                                            </label>
-                                            <input
-                                                type="password"
-                                                className="form-input"
-                                                value={userForm.password}
-                                                onChange={e => setUserForm({ ...userForm, password: e.target.value })}
-                                                minLength={6}
-                                                required={!editingUser}
-                                                placeholder={editingUser ? '留空保持原密碼' : '至少6個字元'}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="form-label required">所屬醫院</label>
-                                        <select
-                                            className="form-select"
-                                            value={userForm.hospital}
-                                            onChange={e => setUserForm({ ...userForm, hospital: e.target.value })}
-                                        >
-                                            {HOSPITALS.map(h => (
-                                                <option key={h} value={h}>{h}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <hr style={{ margin: '1.5rem 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
-
-                                    <div className="form-grid-2">
-                                        <div className="form-group">
-                                            <label className="form-label">姓名</label>
-                                            <input
-                                                type="text"
-                                                className="form-input"
-                                                value={userForm.display_name}
-                                                onChange={e => setUserForm({ ...userForm, display_name: e.target.value })}
-                                                placeholder="使用者姓名"
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label className="form-label">性別</label>
-                                            <select
-                                                className="form-select"
-                                                value={userForm.gender}
-                                                onChange={e => setUserForm({ ...userForm, gender: e.target.value })}
-                                            >
-                                                <option value="">請選擇</option>
-                                                <option value="male">男</option>
-                                                <option value="female">女</option>
-                                                <option value="other">其他</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div className="form-grid-2">
-                                        <div className="form-group">
-                                            <label className="form-label">E-mail</label>
-                                            <input
-                                                type="email"
-                                                className="form-input"
-                                                value={userForm.email}
-                                                onChange={e => setUserForm({ ...userForm, email: e.target.value })}
-                                                placeholder="user@example.com"
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label className="form-label">電話</label>
-                                            <input
-                                                type="tel"
-                                                className="form-input"
-                                                value={userForm.phone}
-                                                onChange={e => setUserForm({ ...userForm, phone: e.target.value })}
-                                                placeholder="0912-345-678"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="form-grid-2">
-                                        <div className="form-group">
-                                            <label className="form-label">地址</label>
-                                            <input
-                                                type="text"
-                                                className="form-input"
-                                                value={userForm.address}
-                                                onChange={e => setUserForm({ ...userForm, address: e.target.value })}
-                                                placeholder="通訊地址"
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label className="form-label">Line ID</label>
-                                            <input
-                                                type="text"
-                                                className="form-input"
-                                                value={userForm.line_id}
-                                                onChange={e => setUserForm({ ...userForm, line_id: e.target.value })}
-                                                placeholder="Line ID"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="modal-footer">
-                                    <button type="button" className="btn btn-secondary" onClick={() => setShowUserModal(false)}>
-                                        取消
-                                    </button>
-                                    <button type="submit" className="btn btn-primary" disabled={savingUser}>
-                                        {savingUser ? <div className="spinner" style={{ width: '1rem', height: '1rem' }}></div> : (editingUser ? '儲存' : '建立')}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )
-            }
+            )}
         </div >
     );
 }

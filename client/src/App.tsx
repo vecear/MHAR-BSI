@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import FormPage from './pages/FormPage';
 import DeleteRequests from './pages/DeleteRequests';
+import UserManagement from './pages/UserManagement';
 import Layout from './components/Layout';
 import { ToastProvider } from './components/Toast';
 
@@ -132,6 +133,7 @@ function App() {
               <Route path="form" element={<FormPage />} />
               <Route path="form/:id" element={<FormPage />} />
               <Route path="delete-requests" element={<DeleteRequests />} />
+              <Route path="users" element={<UserManagement />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

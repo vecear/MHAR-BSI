@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS delete_requests (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     resolved_at DATETIME,
     resolved_by INTEGER,
-    FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE,
+    FOREIGN KEY (submission_id) REFERENCES submissions(id),
     FOREIGN KEY (requester_id) REFERENCES users(id),
     FOREIGN KEY (resolved_by) REFERENCES users(id)
 );

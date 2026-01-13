@@ -121,8 +121,8 @@ const submissionQueries = {
 // Delete request queries
 const deleteRequestQueries = {
     create: db.prepare(`
-        INSERT INTO delete_requests (submission_id, requester_id, medical_record_number, admission_date, record_time)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO delete_requests (submission_id, requester_id, medical_record_number, admission_date, record_time, request_reason)
+        VALUES (?, ?, ?, ?, ?, ?)
     `),
     findById: db.prepare('SELECT * FROM delete_requests WHERE id = ?'),
     findBySubmission: db.prepare('SELECT * FROM delete_requests WHERE submission_id = ? AND status = ?'),
