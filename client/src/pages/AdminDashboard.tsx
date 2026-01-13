@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Trash2, Edit, AlertCircle, X, Filter, ArrowUp, ArrowDown } from 'lucide-react';
+import { FileText, Trash2, Edit, AlertCircle, X, Filter, ArrowUp, ArrowDown, Upload } from 'lucide-react';
 import { API_URL, useAuth } from '../App';
 import CsvUpload from '../components/CsvUpload';
 import DualDateRangePicker from '../components/DualDateRangePicker';
