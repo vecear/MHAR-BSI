@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Download, Upload, FileSpreadsheet, AlertCircle, Check, ClipboardList } from 'lucide-react';
+import { Download, Upload, FileSpreadsheet, AlertCircle, Check } from 'lucide-react';
 import { API_URL } from '../App';
 
 // Options for one-hot encoding columns
@@ -315,7 +315,7 @@ const CSV_HEADER_ALIASES: Record<string, string[]> = {
     'data_status': ['Data Status', 'data_status', 'Status', '狀態']
 };
 
-export default function CsvUpload({ onUploadComplete, onError, userHospital, variant = 'card' }: CsvUploadProps) {
+export default function CsvUpload({ onUploadComplete, onError, userHospital: _userHospital, variant = 'card' }: CsvUploadProps) {
     const [uploading, setUploading] = useState(false);
     const [result, setResult] = useState<UploadResult | null>(null);
     const [error, setError] = useState('');

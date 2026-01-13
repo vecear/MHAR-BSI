@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Save, Check, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Save, Check } from 'lucide-react';
 import { API_URL, useAuth } from '../App';
 import { useToast } from '../components/Toast';
 import FormStep1 from '../components/FormStep1';
