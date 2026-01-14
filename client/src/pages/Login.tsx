@@ -56,13 +56,13 @@ export default function Login() {
 
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label className="form-label required">Email</label>
+                        <label className="form-label required">Email / 帳號名稱</label>
                         <input
-                            type="email"
+                            type="text"
                             className="form-input"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="請輸入 Email"
+                            placeholder="請輸入 Email 或帳號名稱"
                             required
                             autoFocus
                         />

@@ -32,6 +32,8 @@ export default function Register() {
     const [formData, setFormData] = useState({
         email: '',
         username: '',
+        display_name: '',
+        line_id: '',
         password: '',
         confirmPassword: '',
         hospital: '',
@@ -58,6 +60,8 @@ export default function Register() {
         try {
             await register(formData.email, formData.password, {
                 username: formData.username,
+                display_name: formData.display_name,
+                line_id: formData.line_id,
                 hospital: formData.hospital,
                 security_question: formData.security_question,
                 security_answer: formData.security_answer
@@ -105,14 +109,37 @@ export default function Register() {
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label required">顯示名稱</label>
+                        <label className="form-label required">帳號名稱</label>
                         <input
                             type="text"
                             className="form-input"
                             value={formData.username}
                             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                            placeholder="請輸入顯示名稱"
+                            placeholder="請輸入帳號名稱"
                             required
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label required">真實姓名</label>
+                        <input
+                            type="text"
+                            className="form-input"
+                            value={formData.display_name}
+                            onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
+                            placeholder="請輸入真實姓名"
+                            required
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Line ID</label>
+                        <input
+                            type="text"
+                            className="form-input"
+                            value={formData.line_id}
+                            onChange={(e) => setFormData({ ...formData, line_id: e.target.value })}
+                            placeholder="請輸入 Line ID（選填）"
                         />
                     </div>
 

@@ -7,7 +7,7 @@ import {
     onAuthStateChanged
 } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { DEFAULT_PROJECT_ID } from '../constants/projects';
 
@@ -125,8 +125,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return () => unsubscribe();
     }, []);
 
-    const login = async (email: string, password: string, projectId: string = DEFAULT_PROJECT_ID) => {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const login = async (emailOrUsername: string, password: string, projectId: string = DEFAULT_PROJECT_ID) => {
+        let loginEmail = emailOrUsername;
+
+        // If not an email, try to find the email by username
+        if (!emailOrUsername.includes('@')) {
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where('username', '==', emailOrUsername));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                throw new Error('找不到此帳號名稱');
+            }
+
+            // Assuming username is unique, get the first match
+            const userData = querySnapshot.docs[0].data();
+            if (!userData.email) {
+                throw new Error('此帳號沒有綁定 Email，無法登入');
+            }
+            loginEmail = userData.email;
+        }
+
+        const userCredential = await signInWithEmailAndPassword(auth, loginEmail, password);
 
         // Fetch user profile to check permissions
         const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
