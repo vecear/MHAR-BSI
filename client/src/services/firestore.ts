@@ -551,6 +551,7 @@ export const userService = {
         if (data.address !== undefined) updateData.address = data.address;
         if (data.gender !== undefined) updateData.gender = data.gender;
         if (data.line_id !== undefined) updateData.line_id = data.line_id;
+        if (data.role !== undefined) updateData.role = data.role;
         if (data.security_question !== undefined) updateData.security_question = data.security_question;
         if (data.security_answer !== undefined) updateData.security_answer = data.security_answer;
 

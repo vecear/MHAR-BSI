@@ -15,6 +15,7 @@ interface UserFormData {
     phone: string;
     address: string;
     line_id: string;
+    role: 'user' | 'admin';
     allowed_projects: string[];
 }
 
@@ -33,6 +34,7 @@ const initialUserForm: UserFormData = {
     phone: '',
     address: '',
     line_id: '',
+    role: 'user',
     allowed_projects: []
 };
 
@@ -78,6 +80,7 @@ export default function UserManagement() {
             phone: user.phone || '',
             address: user.address || '',
             line_id: user.line_id || '',
+            role: user.role || 'user',
             allowed_projects: user.allowed_projects || []
         });
         setShowUserModal(true);
@@ -86,6 +89,13 @@ export default function UserManagement() {
     const handleSaveUser = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingUser) return;
+
+        // Check for promotion to admin
+        if (editingUser.role !== 'admin' && userForm.role === 'admin') {
+            if (!confirm('您確定要將此使用者設為管理員嗎？\n該成員將獲得管理員權限')) {
+                return;
+            }
+        }
 
         setSavingUser(true);
         try {
@@ -97,6 +107,7 @@ export default function UserManagement() {
                 phone: userForm.phone,
                 address: userForm.address,
                 line_id: userForm.line_id,
+                role: userForm.role,
                 allowed_projects: userForm.allowed_projects
             });
 
@@ -175,6 +186,7 @@ export default function UserManagement() {
                                     <tr>
                                         <th style={{ minWidth: '80px', textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1.5rem' }}>修改</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>Email</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>身分</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>帳號</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>姓名</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>醫院</th>
@@ -212,6 +224,18 @@ export default function UserManagement() {
                                                     </span>
                                                 )}
                                                 {u.email || '-'}
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <span
+                                                    className="badge"
+                                                    style={{
+                                                        backgroundColor: u.role === 'admin' ? 'var(--color-primary)' : 'var(--bg-secondary)',
+                                                        color: u.role === 'admin' ? 'white' : 'var(--text-primary)',
+                                                        border: u.role === 'admin' ? 'none' : '1px solid var(--border-color)'
+                                                    }}
+                                                >
+                                                    {u.role === 'admin' ? '管理員' : '成員'}
+                                                </span>
                                             </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 {u.username}
@@ -266,7 +290,17 @@ export default function UserManagement() {
                                             style={editingUser ? { backgroundColor: 'var(--bg-primary)' } : {}}
                                         />
                                     </div>
-
+                                    <div className="form-group">
+                                        <label className="form-label required">身分權限</label>
+                                        <select
+                                            className="form-select"
+                                            value={userForm.role}
+                                            onChange={e => setUserForm({ ...userForm, role: e.target.value as 'user' | 'admin' })}
+                                        >
+                                            <option value="user">成員</option>
+                                            <option value="admin">管理員</option>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div className="form-grid-2">
