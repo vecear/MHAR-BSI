@@ -505,7 +505,7 @@ export default function Dashboard() {
                                     const pendingDelete = deleteRequests.some(r => r.submission_id === sub.id && r.status === 'pending');
                                     return (
                                         <tr key={sub.id} className={selectedIds.includes(sub.id) ? 'selected-row' : ''}>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <td className="mobile-col-checkbox" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedIds.includes(sub.id)}
@@ -513,7 +513,7 @@ export default function Dashboard() {
                                                     style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                                                 />
                                             </td>
-                                            <td data-label="修改" style={{ textAlign: 'left', verticalAlign: 'middle' }}>
+                                            <td className="mobile-col-actions" data-label="修改" style={{ textAlign: 'left', verticalAlign: 'middle' }}>
                                                 <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-start', width: '100%' }}>
                                                     <Link
                                                         to={`/form/${sub.id}`}

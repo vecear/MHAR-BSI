@@ -162,7 +162,7 @@ export default function AdminDeleteRequests() {
                                 <tbody>
                                     {deleteRequests.map(req => (
                                         <tr key={req.id}>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <td className="mobile-col-checkbox" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 {req.status !== 'pending' && (
                                                     <input
                                                         type="checkbox"
@@ -171,7 +171,7 @@ export default function AdminDeleteRequests() {
                                                     />
                                                 )}
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.85em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                                            <td data-label="紀錄編號" style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.85em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
                                                 {req.status === 'approved' ? (
                                                     req.record_time?.replace(/[-T:]/g, '') || '-'
                                                 ) : (
@@ -181,19 +181,19 @@ export default function AdminDeleteRequests() {
                                                     </Link>
                                                 )}
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.medical_record_number}</td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.admission_date}</td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle', maxWidth: '150px', whiteSpace: 'normal', fontSize: '0.9rem', color: '#444' }}>
+                                            <td data-label="病歷號" style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.medical_record_number}</td>
+                                            <td data-label="住院日期" style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.admission_date}</td>
+                                            <td data-label="申請原因" style={{ textAlign: 'center', verticalAlign: 'middle', maxWidth: '150px', whiteSpace: 'normal', fontSize: '0.9rem', color: '#444' }}>
                                                 {req.request_reason || <span style={{ color: '#aaa', fontStyle: 'italic' }}>無</span>}
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.requester_username || '-'}</td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <td data-label="申請者" style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.requester_username || '-'}</td>
+                                            <td data-label="醫院" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 <span className="badge badge-info">{req.requester_hospital || '-'}</span>
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <td data-label="申請時間" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 {formatDateTime(req.created_at)}
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <td data-label="狀態" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 {req.status === 'pending' && (
                                                     <span className="badge badge-warning">待審核</span>
                                                 )}
@@ -204,7 +204,7 @@ export default function AdminDeleteRequests() {
                                                     <span className="badge badge-danger">已拒絕</span>
                                                 )}
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle', maxWidth: '150px' }}>
+                                            <td data-label="拒絕原因" style={{ textAlign: 'center', verticalAlign: 'middle', maxWidth: '150px' }}>
                                                 {req.status === 'rejected' ? (
                                                     <span style={{ color: 'var(--color-danger)', fontSize: '0.9rem' }}>
                                                         {req.reject_reason || '-'}
@@ -213,7 +213,7 @@ export default function AdminDeleteRequests() {
                                                     <span style={{ color: 'var(--text-muted)' }}>-</span>
                                                 )}
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <td className="mobile-col-actions" data-label="動作" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 {req.status === 'pending' ? (
                                                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                                                         <button

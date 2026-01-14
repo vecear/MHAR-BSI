@@ -447,14 +447,14 @@ export default function AdminDashboard() {
                                     <tbody>
                                         {filteredSubmissions.map(sub => (
                                             <tr key={sub.id}>
-                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <td className="mobile-col-checkbox" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                     <input
                                                         type="checkbox"
                                                         checked={selectedIds.has(sub.id)}
                                                         onChange={() => toggleSelect(sub.id)}
                                                     />
                                                 </td>
-                                                <td data-label="修改" style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '0.5rem' }}>
+                                                <td className="mobile-col-actions" data-label="修改" style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '0.5rem' }}>
                                                     <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-start', width: '100%' }}>
                                                         <Link to={`/form/${sub.id}`} className="btn btn-icon" title="修改">
                                                             <Edit size={16} color="var(--color-primary)" />

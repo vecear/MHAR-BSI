@@ -277,7 +277,7 @@ export default function UserManagement() {
                                 <tbody>
                                     {sortedUsers.map(u => (
                                         <tr key={u.id}>
-                                            <td data-label="修改" style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1rem' }}>
+                                            <td className="mobile-col-actions" data-label="修改" style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1rem' }}>
                                                 <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-start', width: '100%' }}>
                                                     <button className="btn btn-icon" onClick={() => openEditUser(u)} title="編輯">
                                                         <Edit size={16} color="var(--color-primary)" />

@@ -1392,13 +1392,15 @@ h3 {
   }
 
   .data-table tr {
-    display: block;
+    display: grid;
+    grid-template-columns: 1fr auto;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     margin-bottom: 1rem;
     padding: 0.5rem;
     box-shadow: var(--shadow-sm);
+    gap: 0;
   }
 
   .data-table td {
@@ -1411,6 +1413,7 @@ h3 {
     font-size: 0.9rem;
     min-height: 40px;
     white-space: normal;
+    grid-column: 1 / -1;
   }
 
   .data-table td:last-child {
@@ -1429,27 +1432,31 @@ h3 {
     min-width: 100px;
   }
 
-  /* Checkbox logic for mobile card view */
-  .data-table td:first-child {
-    justify-content: flex-end;
-    /* Keep checkbox on right or left? User screenshot had it top right. */
+  /* Checkbox Column - Top Right */
+  .data-table td.mobile-col-checkbox {
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
     border-bottom: none;
-    padding-bottom: 0;
+    padding: 0.5rem;
+    justify-content: flex-end;
   }
 
-  .data-table td:first-child::before {
+  .data-table td.mobile-col-checkbox::before {
     display: none;
   }
 
-  /* Actions logic */
-  .data-table td:nth-child(2) {
-    justify-content: flex-end;
-    padding-top: 0;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border-color);
+  /* Actions Column - Top Left */
+  .data-table td.mobile-col-actions {
+    grid-column: 1;
+    grid-row: 1;
+    width: auto;
+    border-bottom: none;
+    padding: 0.5rem;
+    justify-content: flex-start;
   }
 
-  .data-table td:nth-child(2)::before {
+  .data-table td.mobile-col-actions::before {
     display: none;
   }
 
