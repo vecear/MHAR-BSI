@@ -9,7 +9,7 @@ Military Hospitals Antimicrobial-resistant BSI Surveillance
 ```text
 MHAR-BSI/
 ├── client/          # React + TypeScript 前端 (Vite) & Firebase 配置
-└── server/          # (Legacy) Express.js 後端
+└── server/          # (Legacy) Express.js 後端 (已停用，改用 Firebase)
 ```
 
 ## 快速開始
@@ -23,7 +23,7 @@ npm install
 
 ### 2. 設定 Firebase ENVIRONMENT
 
-專案使用 Firebase 進行認證與資料庫存取。請確保本地環境已正確配置。
+專案使用 Firebase 進行認證與資料庫存取。請確保本地環境已正確配置 `.env` 檔案。
 
 ### 3. 啟動開發環境
 
@@ -38,25 +38,35 @@ npm run dev
 | ----- | -------- | ------ |
 | <admin@example.com> | (請洽管理員) | 管理員 |
 
-*(註：目前使用 Firebase Auth，請使用 Email 登入)*
+*(註：目前使用 Firebase Auth，請使用 Email 登入。新註冊帳號需等待管理員審核)*
 
 ## 功能特點
 
 ### 🏥 一般使用者功能
 
-- 🔐 **使用者認證** - 完整的 Firebase Authentication 整合。
+- 🔐 **使用者認證**
+  - 支援 Email/密碼 註冊與登入。
+  - **權限審核機制**：新註冊帳號預設為「未開通」，無法存取專案內容，需等待管理員開通權限。
 - 📝 **表單提交系統**
+  - **多階段表單**：包含基本資料、MIC Data、Antibiotic Use、Outcome 四大區塊。
   - **彈性儲存**：支援「儲存草稿」與「正式送出」雙模式。
   - **狀態追蹤**：清晰標示資料狀態（草稿、已完成）。
   - **完整性檢查**：正式送出前自動檢查必填欄位。
+- 📖 **收案說明 (Project Guide)**
+  - 可查看即時更新的收案標準與說明。
+  - **留言討論**：針對收案內容進行提問與討論，支援表情符號與針對特定留言回覆 (Threaded Replies)。
 - 👤 **個人資料管理** - 可編輯姓名、性別、E-mail、電話、地址及 Line ID。
 - 🗑️ **資料刪除申請** - 對於已提交的資料，可發起刪除請求，由管理員審核。
 
 ### ⚙️ 管理員 (Admin) 功能
 
-- 👥 **帳號管理** - 完整的使用者 CRUD 功能。
+- 👥 **帳號管理**
+  - 完整的使用者 CRUD 功能。
+  - **權限控管**：可針對個別使用者開通或關閉特定專案的存取權限。
+  - **審核提示**：未開通權限的使用者會以紅色閃爍標籤提示。
+- 📖 **收案說明編輯** - 內建 Rich Text Editor，可圖文並茂編輯收案說明。
 - 📊 **全院資料監控** - 可檢視跨院區所有提交資料，支援多條件篩選與排序。
-- 🛡️ **刪除請求管理** - 專屬「刪除表單」審核介面。
+- 🛡️ **刪除請求管理** - 專屬「刪除表單」審核介面，即時處理使用者刪除申請。
 - 📥 **CSV 批次匯入** - 提供範本下載，支援 Excel 編輯後批次匯入資料。
 - 📤 **進階資料匯出** - 支援將系統資料匯出為專用 CSV 格式。
 
@@ -71,12 +81,13 @@ npm run dev
 - Firebase Hosting (靜態網站託管)
 - React Router DOM
 - Lucide React (Icons)
+- React Quill New (Rich Text Editor)
+- Emoji Picker React
 
 ## 部署 (Deployment)
 
 本專案已配置為部署至 **Firebase Hosting**。
-
-詳細部署指南請參閱 [DEPLOY.md](./DEPLOY.md)。
+任何推送到 `main` 分支的更動將自動透過 GitHub Actions 部署。
 
 ## 支援院區
 
