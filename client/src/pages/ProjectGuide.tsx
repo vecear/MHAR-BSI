@@ -1,14 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { projectGuideService, commentService } from '../services/firestore';
 import type { GuideComment } from '../services/firestore';
 import { useToast } from '../components/Toast';
 import { Edit, Save, X, BookOpen, Send, MessageSquare, Trash2, Bell, Check, User } from 'lucide-react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 export default function ProjectGuide() {
     const { user } = useAuth();
+    // ... (rest of state)
+
+    // ... (fetch functions)
+
+    const modules = useMemo(() => ({
+        toolbar: [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+            ['link', 'clean']
+        ],
+    }), []);
+
+    const formats = useMemo(() => [
+        'header',
+        'bold', 'italic', 'underline', 'strike',
+        'color', 'background',
+        'list', 'bullet',
+        'link'
+    ], []);
     const { showSuccess, showError } = useToast();
 
     // Content State
@@ -116,23 +137,7 @@ export default function ProjectGuide() {
         }
     };
 
-    const modules = {
-        toolbar: [
-            [{ 'header': [1, 2, 3, false] }],
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ 'color': [] }, { 'background': [] }],
-            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-            ['link', 'clean']
-        ],
-    };
 
-    const formats = [
-        'header',
-        'bold', 'italic', 'underline', 'strike',
-        'color', 'background',
-        'list', 'bullet',
-        'link'
-    ];
 
     if (loading) {
         return (
