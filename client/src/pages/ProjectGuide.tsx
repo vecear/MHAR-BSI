@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { projectGuideService, commentService } from '../services/firestore';
 import type { GuideComment, CommentReply } from '../services/firestore';
@@ -11,6 +12,7 @@ import type { EmojiClickData } from 'emoji-picker-react';
 
 
 export default function ProjectGuide() {
+    const { refreshPendingDeleteCount } = useOutletContext<{ refreshPendingDeleteCount: () => void }>();
     const { user } = useAuth();
     const { showSuccess, showError } = useToast();
     // const { theme } = useTheme(); // Removed unused variable
@@ -130,6 +132,7 @@ export default function ProjectGuide() {
             setShowEmojiPicker(false);
             showSuccess('留言已送出');
             fetchComments();
+            refreshPendingDeleteCount?.();
         } catch (error) {
             console.error('Error adding comment:', error);
             showError('留言失敗');
@@ -154,6 +157,7 @@ export default function ProjectGuide() {
             setShowReplyEmoji(false);
             showSuccess('回覆已送出');
             fetchComments();
+            refreshPendingDeleteCount?.();
         } catch (error) {
             console.error('Error replying:', error);
             showError('回覆失敗');
@@ -166,6 +170,7 @@ export default function ProjectGuide() {
             await commentService.delete(id);
             showSuccess('留言已刪除');
             fetchComments();
+            refreshPendingDeleteCount?.();
         } catch (error) {
             console.error('Error deleting comment:', error);
             showError('刪除失敗');
@@ -178,6 +183,7 @@ export default function ProjectGuide() {
             await commentService.deleteReply(commentId, reply);
             showSuccess('回覆已刪除');
             fetchComments();
+            refreshPendingDeleteCount?.();
         } catch (error) {
             console.error('Error deleting reply:', error);
             showError('刪除失敗');
@@ -190,6 +196,7 @@ export default function ProjectGuide() {
             setComments(prev => prev.map(c =>
                 c.id === id ? { ...c, admin_read: true } : c
             ));
+            refreshPendingDeleteCount?.();
         } catch (error) {
             console.error('Error marking read:', error);
         }

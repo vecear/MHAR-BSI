@@ -40,7 +40,7 @@ export default function AdminDeleteRequests() {
         try {
             await deleteRequestService.approve(id, user!.id);
             fetchDeleteRequests();
-            refreshPendingDeleteCount();
+            refreshPendingDeleteCount?.();
         } catch (err) {
             alert(err instanceof Error ? err.message : '操作失敗');
         }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { Users, Edit, Trash2, X, UserPlus, AlertCircle } from 'lucide-react';
 import { userService } from '../services/firestore';
 import type { FirestoreUser } from '../services/firestore';
@@ -36,6 +37,7 @@ const initialUserForm: UserFormData = {
 };
 
 export default function UserManagement() {
+    const { refreshPendingDeleteCount } = useOutletContext<{ refreshPendingDeleteCount: () => void }>();
     const [users, setUsers] = useState<FirestoreUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -87,48 +89,25 @@ export default function UserManagement() {
 
     const handleSaveUser = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!editingUser) return;
+
         setSavingUser(true);
         try {
-            if (editingUser) {
-                // Update existing user
-                await userService.update(editingUser.id, {
-                    username: userForm.username,
-                    hospital: userForm.hospital,
-                    display_name: userForm.display_name,
-                    gender: userForm.gender,
-                    phone: userForm.phone,
-                    address: userForm.address,
-                    line_id: userForm.line_id,
-                    allowed_projects: userForm.allowed_projects
-                });
-            } else {
-                // Create new user - NOTE: With Firebase, creating users should go through Auth
-                // For now, we'll just create a Firestore document with a placeholder
-                if (!userForm.email) throw new Error('請輸入 Email');
-                if (!userForm.password) throw new Error('請輸入密碼');
+            await userService.update(editingUser.id, {
+                username: userForm.username,
+                hospital: userForm.hospital,
+                display_name: userForm.display_name,
+                gender: userForm.gender,
+                phone: userForm.phone,
+                address: userForm.address,
+                line_id: userForm.line_id,
+                allowed_projects: userForm.allowed_projects
+            });
 
-                // This is a simplified version - in production, you'd use Firebase Admin SDK
-                // or a Cloud Function to create users properly
-                alert('注意：Firebase 環境下，建議使用者自行註冊帳號。\n此處僅新增 Firestore 使用者資料，不建立實際登入帳號。');
-
-                await userService.create({
-                    id: '', // Will be set by service
-                    email: userForm.email,
-                    username: userForm.username,
-                    hospital: userForm.hospital,
-                    role: 'user',
-                    display_name: userForm.display_name,
-                    gender: userForm.gender,
-                    phone: userForm.phone,
-                    address: userForm.address,
-                    line_id: userForm.line_id,
-                    allowed_projects: userForm.allowed_projects,
-                    created_at: new Date()
-                });
-            }
             setShowUserModal(false);
             setUserForm(initialUserForm);
             fetchUsers();
+            refreshPendingDeleteCount?.();
         } catch (err) {
             alert(err instanceof Error ? err.message : '儲存失敗');
         } finally {
@@ -141,6 +120,7 @@ export default function UserManagement() {
         try {
             await userService.delete(id);
             setUsers(prev => prev.filter(u => u.id !== id));
+            refreshPendingDeleteCount?.();
         } catch (err) {
             alert(err instanceof Error ? err.message : '刪除失敗');
         }
