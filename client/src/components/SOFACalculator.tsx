@@ -30,6 +30,45 @@ const calculateRespirationScore = (paO2: string, fiO2: string, hasVentilator: bo
     }
 };
 
+// Oxygen delivery device types
+type OxygenDevice = 'direct' | 'room_air' | 'nasal_cannula' | 'venturi_mask' | 'simple_mask' | 'non_rebreathing_mask';
+
+const OXYGEN_DEVICES: { value: OxygenDevice; label: string; needsFlow: boolean; flowRange?: [number, number] }[] = [
+    { value: 'direct', label: '直接輸入 FiO2', needsFlow: false },
+    { value: 'room_air', label: 'Room Air (室內空氣)', needsFlow: false },
+    { value: 'nasal_cannula', label: 'Nasal Cannula (鼻導管)', needsFlow: true, flowRange: [1, 6] },
+    { value: 'venturi_mask', label: 'Venturi Mask (文乳氏面罩)', needsFlow: true, flowRange: [4, 15] },
+    { value: 'simple_mask', label: 'Simple Mask (簡單面罩)', needsFlow: true, flowRange: [5, 10] },
+    { value: 'non_rebreathing_mask', label: 'Non-Rebreathing Mask (非再吸入面罩)', needsFlow: true, flowRange: [10, 15] },
+];
+
+// Venturi mask FiO2 options
+const VENTURI_FIO2_OPTIONS = [24, 28, 31, 35, 40, 50];
+
+// Calculate FiO2 based on device and flow rate
+const calculateFiO2FromDevice = (device: OxygenDevice, flowRate: number, venturiFiO2?: number): number | null => {
+    switch (device) {
+        case 'room_air':
+            return 21;
+        case 'nasal_cannula':
+            // ~21% + 4% per L/min (max ~44% at 6 L/min)
+            return Math.min(21 + (flowRate * 4), 44);
+        case 'venturi_mask':
+            // Fixed FiO2 based on color-coded adapter
+            return venturiFiO2 || null;
+        case 'simple_mask':
+            // ~35-50% depending on flow (5-10 L/min)
+            // Approx: 35% at 5L, +3% per L/min
+            return Math.min(35 + ((flowRate - 5) * 3), 50);
+        case 'non_rebreathing_mask':
+            // ~60-100% depending on flow (10-15 L/min)
+            // Approx: 60% at 10L, +8% per L/min
+            return Math.min(60 + ((flowRate - 10) * 8), 100);
+        default:
+            return null;
+    }
+};
+
 const COAGULATION_OPTIONS = [
     { value: 0, label: 'Platelets ≥ 150 ×10³/µL', shortLabel: '≥150' },
     { value: 1, label: 'Platelets < 150 ×10³/µL', shortLabel: '<150' },
@@ -127,6 +166,11 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
     const [fiO2, setFiO2] = useState<string>('');
     const [hasVentilator, setHasVentilator] = useState<boolean>(false);
 
+    // Oxygen device selection
+    const [oxygenDevice, setOxygenDevice] = useState<OxygenDevice>('direct');
+    const [flowRate, setFlowRate] = useState<string>('');
+    const [venturiFiO2, setVenturiFiO2] = useState<number>(24);
+
     // Other organ scores
     const [coagulation, setCoagulation] = useState<number | null>(null);
     const [liver, setLiver] = useState<number | null>(null);
@@ -134,16 +178,33 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
     const [cns, setCns] = useState<number | null>(null);
     const [renal, setRenal] = useState<number | null>(null);
 
+    // Get current device config
+    const currentDeviceConfig = OXYGEN_DEVICES.find(d => d.value === oxygenDevice);
+
+    // Auto-calculate FiO2 when device/flow changes
+    const calculatedFiO2 = useMemo(() => {
+        if (oxygenDevice === 'direct') return null;
+        if (oxygenDevice === 'room_air') return 21;
+
+        const flow = parseFloat(flowRate);
+        if (isNaN(flow)) return null;
+
+        return calculateFiO2FromDevice(oxygenDevice, flow, venturiFiO2);
+    }, [oxygenDevice, flowRate, venturiFiO2]);
+
+    // Update FiO2 field when calculated
+    const effectiveFiO2 = oxygenDevice === 'direct' ? fiO2 : (calculatedFiO2?.toString() || '');
+
     // Calculate respiration score from inputs
-    const respiration = useMemo(() => calculateRespirationScore(paO2, fiO2, hasVentilator), [paO2, fiO2, hasVentilator]);
+    const respiration = useMemo(() => calculateRespirationScore(paO2, effectiveFiO2, hasVentilator), [paO2, effectiveFiO2, hasVentilator]);
 
     // Calculate ratio for display
     const paO2FiO2Ratio = useMemo(() => {
         const p = parseFloat(paO2);
-        const f = parseFloat(fiO2);
+        const f = parseFloat(effectiveFiO2);
         if (isNaN(p) || isNaN(f) || f <= 0) return null;
         return p / (f / 100);
-    }, [paO2, fiO2]);
+    }, [paO2, effectiveFiO2]);
 
     const totalScore = useMemo(() => {
         const scores = [respiration, coagulation, liver, cardiovascular, cns, renal];
@@ -162,11 +223,24 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
         setPaO2('');
         setFiO2('');
         setHasVentilator(false);
+        setOxygenDevice('direct');
+        setFlowRate('');
+        setVenturiFiO2(24);
         setCoagulation(null);
         setLiver(null);
         setCardiovascular(null);
         setCns(null);
         setRenal(null);
+    };
+
+    const handleDeviceChange = (device: OxygenDevice) => {
+        setOxygenDevice(device);
+        setFlowRate('');
+        // Set default flow rate for device
+        const config = OXYGEN_DEVICES.find(d => d.value === device);
+        if (config?.flowRange) {
+            setFlowRate(config.flowRange[0].toString());
+        }
     };
 
     if (!isOpen) return null;
@@ -219,6 +293,26 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
                                             step="0.1"
                                         />
                                     </label>
+                                </div>
+
+                                {/* Oxygen Device Selector */}
+                                <div className="sofa-device-section">
+                                    <span className="sofa-device-label">氧氣來源</span>
+                                    <select
+                                        className="sofa-device-select"
+                                        value={oxygenDevice}
+                                        onChange={(e) => handleDeviceChange(e.target.value as OxygenDevice)}
+                                    >
+                                        {OXYGEN_DEVICES.map(device => (
+                                            <option key={device.value} value={device.value}>
+                                                {device.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Direct FiO2 Input */}
+                                {oxygenDevice === 'direct' && (
                                     <label className="sofa-input-group">
                                         <span>FiO2 (%)</span>
                                         <input
@@ -231,7 +325,60 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
                                             step="1"
                                         />
                                     </label>
-                                </div>
+                                )}
+
+                                {/* Flow Rate Input */}
+                                {currentDeviceConfig?.needsFlow && oxygenDevice !== 'venturi_mask' && (
+                                    <div className="sofa-input-row">
+                                        <label className="sofa-input-group">
+                                            <span>氧氣流量 (L/min)</span>
+                                            <input
+                                                type="number"
+                                                value={flowRate}
+                                                onChange={(e) => setFlowRate(e.target.value)}
+                                                min={currentDeviceConfig.flowRange?.[0]}
+                                                max={currentDeviceConfig.flowRange?.[1]}
+                                                step="0.5"
+                                                placeholder={`${currentDeviceConfig.flowRange?.[0]}-${currentDeviceConfig.flowRange?.[1]}`}
+                                            />
+                                        </label>
+                                        {calculatedFiO2 !== null && (
+                                            <div className="sofa-calculated-fio2">
+                                                計算 FiO2: <strong>{calculatedFiO2.toFixed(0)}%</strong>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Venturi Mask FiO2 Selector */}
+                                {oxygenDevice === 'venturi_mask' && (
+                                    <div className="sofa-venturi-section">
+                                        <span className="sofa-device-label">Venturi FiO2 設定</span>
+                                        <div className="sofa-venturi-options">
+                                            {VENTURI_FIO2_OPTIONS.map(fio2 => (
+                                                <label
+                                                    key={fio2}
+                                                    className={`sofa-venturi-option ${venturiFiO2 === fio2 ? 'selected' : ''}`}
+                                                >
+                                                    <input
+                                                        type="radio"
+                                                        name="venturiFiO2"
+                                                        checked={venturiFiO2 === fio2}
+                                                        onChange={() => setVenturiFiO2(fio2)}
+                                                    />
+                                                    {fio2}%
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Room Air Display */}
+                                {oxygenDevice === 'room_air' && (
+                                    <div className="sofa-calculated-fio2">
+                                        FiO2: <strong>21%</strong> (室內空氣)
+                                    </div>
+                                )}
                                 <label className="sofa-ventilator-checkbox">
                                     <input
                                         type="checkbox"

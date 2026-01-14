@@ -2544,6 +2544,97 @@ h3 {
   white-space: nowrap;
 }
 
+/* Oxygen Device Selector */
+.sofa-device-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sofa-device-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.sofa-device-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 0.85rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.sofa-device-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.sofa-calculated-fio2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-success-light, #d1fae5);
+  border-radius: var(--border-radius);
+  font-size: 0.85rem;
+  color: var(--color-success, #059669);
+}
+
+[data-theme='dark'] .sofa-calculated-fio2 {
+  background: #064e3b;
+  color: #6ee7b7;
+}
+
+.sofa-calculated-fio2 strong {
+  font-size: 1rem;
+}
+
+/* Venturi Mask Options */
+.sofa-venturi-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sofa-venturi-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sofa-venturi-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  min-width: 50px;
+}
+
+.sofa-venturi-option:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.sofa-venturi-option.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+}
+
+.sofa-venturi-option input {
+  display: none;
+}
+
 .sofa-result-section {
   margin-top: 1.5rem;
   padding: 1.5rem;
