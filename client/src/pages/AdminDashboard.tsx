@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { FileText, Trash2, Edit, AlertCircle, X, Filter, ArrowUp, ArrowDown, Upload, UserPlus } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { FileText, Trash2, Edit, AlertCircle, X, Filter, ArrowUp, ArrowDown, Upload } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { submissionService, exportService, userService } from '../services/firestore';
+import { submissionService, exportService } from '../services/firestore';
 import type { Submission } from '../services/firestore';
 import CsvUpload from '../components/CsvUpload';
 import DualDateRangePicker from '../components/DualDateRangePicker';
