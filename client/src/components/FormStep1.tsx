@@ -133,7 +133,14 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                             type="date"
                             className="form-input"
                             value={formData.admission_date}
-                            onChange={e => updateFormData({ admission_date: e.target.value })}
+                            onChange={e => {
+                                const newDate = e.target.value;
+                                if (!formData.positive_culture_date) {
+                                    updateFormData({ admission_date: newDate, positive_culture_date: newDate });
+                                } else {
+                                    updateFormData({ admission_date: newDate });
+                                }
+                            }}
                         />
                     </div>
                 </div>
@@ -142,8 +149,8 @@ export default function FormStep1({ formData, updateFormData }: Props) {
             {/* Patient Info */}
             <div className="form-section">
                 <h3 className="form-section-title">病人資料</h3>
-                <div className="form-grid-2">
-                    <div className="form-group">
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                    <div className="form-group" style={{ flex: '2 1 200px' }}>
                         <label className="form-label required">Name</label>
                         <input
                             type="text"
@@ -152,22 +159,19 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                             onChange={e => updateFormData({ name: e.target.value })}
                         />
                     </div>
-                    <div className="form-group">
+                    <div className="form-group" style={{ flex: '1 1 120px' }}>
                         <label className="form-label">Recorded By</label>
                         <div style={{ marginTop: '0.25rem' }}>
-                            <span className="badge badge-info" style={{ fontSize: '1rem', padding: '0.4rem 1rem' }}>
+                            <span className="badge badge-info" style={{ fontSize: '1rem', padding: '0.4rem 1rem', display: 'inline-block', width: '100%', textAlign: 'center', boxSizing: 'border-box' }}>
                                 {formData.recorded_by}
                             </span>
                         </div>
                     </div>
-                </div>
-
-                <div className="form-grid-3">
-                    <div className="form-group">
+                    <div className="form-group" style={{ flex: '1.5 1 220px' }}>
                         <label className="form-label">Sex</label>
-                        <div className="radio-group">
+                        <div className="radio-group" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem', height: '38px', alignItems: 'center' }}>
                             {['Male', 'Female'].map(opt => (
-                                <label key={opt} className="radio-label">
+                                <label key={opt} className="radio-label" style={{ margin: 0 }}>
                                     <input
                                         type="radio"
                                         name="sex"
@@ -179,7 +183,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                             ))}
                         </div>
                     </div>
-                    <div className="form-group">
+                    <div className="form-group" style={{ flex: '0.8 1 80px' }}>
                         <label className="form-label">Age</label>
                         <input
                             type="number"
@@ -188,7 +192,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                             onChange={e => updateFormData({ age: e.target.value })}
                         />
                     </div>
-                    <div className="form-group">
+                    <div className="form-group" style={{ flex: '1 1 100px' }}>
                         <label className="form-label">BW (kg)</label>
                         <input
                             type="text"
