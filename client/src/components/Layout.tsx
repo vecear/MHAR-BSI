@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight, Trash2, AlertTriangle, Users, RefreshCw, Upload, Download, BookOpen } from 'lucide-react';
+import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight, Trash2, AlertTriangle, Users, RefreshCw, Upload, Download, BookOpen, Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { deleteRequestService, exportService } from '../services/firestore';
+import { deleteRequestService, exportService, commentService } from '../services/firestore';
 import { useTheme, THEMES } from '../context/ThemeContext';
 import { PROJECTS } from '../constants/projects';
 import ProfileModal from './ProfileModal';
@@ -17,6 +17,7 @@ export default function Layout() {
     const [showSettingsMenu, setShowSettingsMenu] = useState(false);
     const [showThemeMenu, setShowThemeMenu] = useState(false);
     const [pendingDeleteCount, setPendingDeleteCount] = useState(0);
+    const [unreadCommentCount, setUnreadCommentCount] = useState(0);
     const [showImportModal, setShowImportModal] = useState(false);
     const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -43,19 +44,22 @@ export default function Layout() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Fetch pending delete requests count for admin
+    // Fetch pending counts for admin
     useEffect(() => {
         if (user?.role === 'admin') {
-            fetchPendingDeleteCount();
-            const interval = setInterval(fetchPendingDeleteCount, 30000);
+            fetchCounts();
+            const interval = setInterval(fetchCounts, 30000);
             return () => clearInterval(interval);
         }
     }, [user?.role]);
 
-    const fetchPendingDeleteCount = async () => {
+    const fetchCounts = async () => {
         try {
-            const count = await deleteRequestService.countPending();
-            setPendingDeleteCount(count);
+            const deleteCount = await deleteRequestService.countPending();
+            setPendingDeleteCount(deleteCount);
+
+            const commentCount = await commentService.countUnread();
+            setUnreadCommentCount(commentCount);
         } catch {
             // Silently fail
         }
@@ -68,7 +72,6 @@ export default function Layout() {
 
     const handleExportAllData = async () => {
         try {
-            // Export all data using Firestore service
             const csvContent = await exportService.exportToCSV();
             const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
             const downloadUrl = window.URL.createObjectURL(blob);
@@ -96,8 +99,9 @@ export default function Layout() {
                         </Link>
                     </div>
 
-                    {/* User info section - stays in first row */}
+                    {/* User info section */}
                     <div className="navbar-user">
+                        {/* Delete Request Notification */}
                         {user?.role === 'admin' && pendingDeleteCount > 0 && (
                             <span
                                 className="badge badge-danger navbar-badge"
@@ -117,6 +121,31 @@ export default function Layout() {
                                 申請刪除中 ({pendingDeleteCount})
                             </span>
                         )}
+
+                        {/* Comment Notification */}
+                        {user?.role === 'admin' && unreadCommentCount > 0 && (
+                            <span
+                                className="badge navbar-badge"
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    animation: 'pulse 2s infinite',
+                                    cursor: 'pointer',
+                                    padding: '0.4rem 0.8rem',
+                                    fontSize: '0.85rem',
+                                    backgroundColor: 'var(--color-warning)', // Orange/Yellow
+                                    color: '#fff',
+                                    marginLeft: '8px'
+                                }}
+                                onClick={() => navigate('/guide')}
+                                title="點擊查看未讀留言"
+                            >
+                                <Bell size={16} />
+                                新留言 ({unreadCommentCount})
+                            </span>
+                        )}
+
                         <div className="navbar-time" style={{ fontSize: '0.95rem', fontWeight: 500, opacity: 0.9 }}>
                             {currentTime.toLocaleString('zh-TW', {
                                 hour12: false,
@@ -184,7 +213,6 @@ export default function Layout() {
                                         修改基本資料
                                     </button>
 
-                                    {/* Export - available to all users */}
                                     <button
                                         className="dropdown-item"
                                         onClick={() => {
@@ -208,7 +236,6 @@ export default function Layout() {
                                         {user?.role === 'admin' ? '匯出整個資料庫' : '匯出我的資料'}
                                     </button>
 
-                                    {/* Import - available to all users */}
                                     <button
                                         className="dropdown-item"
                                         onClick={() => {
@@ -380,7 +407,7 @@ export default function Layout() {
 
             <main className="main-content">
                 <div className="container">
-                    <Outlet context={{ refreshPendingDeleteCount: fetchPendingDeleteCount }} />
+                    <Outlet context={{ refreshPendingDeleteCount: fetchCounts }} />
                 </div>
             </main>
 
