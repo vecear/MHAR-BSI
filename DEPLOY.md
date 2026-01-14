@@ -1,64 +1,72 @@
-# 部署到 Render.com
+# 部署到 Firebase Hosting
+
+本專案使用 Firebase Hosting 進行部署。以下是詳細步驟。
 
 ## 前置準備
 
-1. 確保專案已推送到 GitHub
-2. 註冊 [Render.com](https://render.com/) 帳號（可用 GitHub 登入）
+1. 確保已安裝 [Node.js](https://nodejs.org/)。
+2. 確保專案已連結至你的 Firebase Project。
 
 ## 部署步驟
 
-### 1. 建立新服務
+### 1. 安裝 Firebase CLI
 
-1. 登入 Render Dashboard
-2. 點擊 **New +** → **Web Service**
-3. 連結你的 GitHub 帳號並選擇 `MHAR-BSI` Repository
+如果你尚未安裝 Firebase CLI，請在終端機執行：
 
-### 2. 設定服務
-
-| 設定項目 | 值 |
-|----------|-----|
-| **Name** | `mhar-bsi`（或自訂名稱）|
-| **Region** | Singapore (Southeast Asia) |
-| **Branch** | `main` |
-| **Runtime** | Node |
-| **Build Command** | `npm run build` |
-| **Start Command** | `npm start` |
-
-### 3. 環境變數
-
-點擊 **Environment** 新增以下變數：
-
-| Key | Value |
-|-----|-------|
-| `NODE_ENV` | `production` |
-| `SESSION_SECRET` | （點擊 Generate 產生隨機值）|
-
-### 4. 部署
-
-點擊 **Create Web Service**，等待部署完成（約 3-5 分鐘）。
-
-## 部署完成後
-
-你的網站將可透過以下網址訪問：
-
-```text
-https://mhar-bsi.onrender.com
+```bash
+npm install -g firebase-tools
 ```
 
-（實際網址會根據你設定的名稱而不同）
+### 2. 登入 Firebase
 
-## 免費方案注意事項
+```bash
+firebase login
+```
 
-1. **服務休眠**：閒置 15 分鐘後會休眠，首次訪問需要 30 秒喚醒
-2. **資料不持久**：服務重啟後資料庫會重置（所有資料消失）
-3. **如需持久化資料**：升級到 Starter 方案（$7/月）並新增 Disk
+這將開啟瀏覽器進行認證。
 
-## 可選：新增持久化硬碟（付費方案）
+### 3. 建置專案
 
-如果升級到付費方案，可以新增硬碟讓資料持久化：
+在部署之前，必須先建置 React 專案：
 
-1. 在服務設定頁面找到 **Disks**
-2. 新增硬碟：
-   - **Name**: `data`
-   - **Mount Path**: `/opt/render/project/src/server/data`
-   - **Size**: `1 GB`
+```bash
+cd client
+npm run build
+```
+
+此指令會在 `client/dist` 目錄下產生生產環境的靜態檔案。
+
+### 4. 部署至 Firebase
+
+```bash
+# 確保你在 client 目錄下 (或是根目錄，視 firebase.json 位置而定，本專案建議在 client 目錄執行)
+cd client
+firebase deploy
+```
+
+若只想部署 Hosting 部分（不影響 Firestore 或 Functions 等其他服務）：
+
+```bash
+firebase deploy --only hosting
+```
+
+## 常見問題
+
+### 如何預覽部署？
+
+你可以使用 Firebase 本地模擬器進行預覽：
+
+```bash
+firebase hosting:channel:deploy preview_name
+```
+
+或是啟動本地開發伺服器：
+
+```bash
+npm run dev
+```
+
+### 部署後看不到更新？
+
+1. 請確保你有執行 `npm run build` 產生最新的 `dist` 檔案。
+2. 嘗試強制重新整理瀏覽器 (Ctrl+F5 / Cmd+Shift+R) 以清除快取。
