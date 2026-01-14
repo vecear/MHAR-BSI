@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight, Trash2, AlertTriangle, Users, RefreshCw, Upload, Download, BookOpen, Bell, UserPlus } from 'lucide-react';
+import { LogOut, FileText, Home, Settings, User, ChevronRight, Trash2, AlertTriangle, Users, RefreshCw, Upload, Download, BookOpen, Bell, UserPlus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { deleteRequestService, exportService, commentService, userService } from '../services/firestore';
 import { useTheme, THEMES } from '../context/ThemeContext';
@@ -25,13 +25,14 @@ export default function Layout() {
     // Get project name
     const projectName = PROJECTS.find(p => p.id === currentProject)?.name || currentProject;
 
-    // Clock state
-    const [currentTime, setCurrentTime] = useState(new Date());
+    // Theme helpers
+    const currentTheme = theme;
+    const handleThemeChange = (newTheme: any) => {
+        setTheme(newTheme);
+    };
 
-    useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
+    // Clock state
+
 
     // Close menu when clicking outside
     useEffect(() => {
@@ -174,17 +175,7 @@ export default function Layout() {
                             </span>
                         )}
 
-                        <div className="navbar-time" style={{ fontSize: '0.95rem', fontWeight: 500, opacity: 0.9 }}>
-                            {currentTime.toLocaleString('zh-TW', {
-                                hour12: false,
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                second: '2-digit'
-                            })}
-                        </div>
+
                         <div className="navbar-controls-row">
                             <div className="navbar-profile">
                                 {user?.username} ({user?.display_name || '未設定姓名'}|{user?.hospital})
@@ -196,246 +187,246 @@ export default function Layout() {
                                 </span>
                             </div>
 
-                            <div className="navbar-actions">
-                                <div className="settings-dropdown" ref={settingsRef} style={{ position: 'relative' }}>
-                                    <button
-                                        className={`btn btn-icon ${showSettingsMenu ? 'active' : ''}`}
-                                        onClick={() => setShowSettingsMenu(!showSettingsMenu)}
-                                        title="設定"
-                                    >
-                                        <Settings size={18} color="white" />
-                                    </button>
-
-                                    {showSettingsMenu && (
-                                        <div className="dropdown-menu" style={{
-                                            position: 'absolute',
-                                            top: '100%',
-                                            right: 0,
-                                            marginTop: '0.5rem',
-                                            backgroundColor: 'var(--bg-card)',
-                                            border: '1px solid var(--border-color)',
-                                            borderRadius: 'var(--border-radius)',
-                                            boxShadow: 'var(--shadow-lg)',
-                                            minWidth: '200px',
-                                            zIndex: 1000,
-                                            padding: '0.5rem 0'
-                                        }}>
-                                            <button
-                                                className="dropdown-item"
-                                                onClick={() => {
-                                                    setShowProfile(true);
-                                                    setShowSettingsMenu(false);
-                                                }}
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    width: '100%',
-                                                    padding: '0.75rem 1rem',
-                                                    border: 'none',
-                                                    background: 'none',
-                                                    cursor: 'pointer',
-                                                    color: 'var(--text-primary)',
-                                                    textAlign: 'left',
-                                                    fontSize: '0.95rem'
-                                                }}
-                                            >
-                                                <User size={16} style={{ marginRight: '0.75rem' }} />
-                                                修改基本資料
-                                            </button>
-
-                                            <button
-                                                className="dropdown-item"
-                                                onClick={() => {
-                                                    handleExportAllData();
-                                                    setShowSettingsMenu(false);
-                                                }}
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    width: '100%',
-                                                    padding: '0.75rem 1rem',
-                                                    border: 'none',
-                                                    background: 'none',
-                                                    cursor: 'pointer',
-                                                    color: 'var(--text-primary)',
-                                                    textAlign: 'left',
-                                                    fontSize: '0.95rem'
-                                                }}
-                                            >
-                                                <Upload size={16} style={{ marginRight: '0.75rem' }} />
-                                                {user?.role === 'admin' ? '匯出整個資料庫' : '匯出我的資料'}
-                                            </button>
-
-                                            <button
-                                                className="dropdown-item"
-                                                onClick={() => {
-                                                    setShowImportModal(true);
-                                                    setShowSettingsMenu(false);
-                                                }}
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    width: '100%',
-                                                    padding: '0.75rem 1rem',
-                                                    border: 'none',
-                                                    background: 'none',
-                                                    cursor: 'pointer',
-                                                    color: 'var(--text-primary)',
-                                                    textAlign: 'left',
-                                                    fontSize: '0.95rem'
-                                                }}
-                                            >
-                                                <Download size={16} style={{ marginRight: '0.75rem' }} />
-                                                匯入資料
-                                            </button>
-
-
-                                            <div
-                                                className="dropdown-item-submenu-trigger"
-                                                onMouseEnter={() => setShowThemeMenu(true)}
-                                                onMouseLeave={() => setShowThemeMenu(false)}
-                                                style={{ position: 'relative' }}
-                                            >
-                                                <button
-                                                    className="dropdown-item"
-                                                    style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'space-between',
-                                                        width: '100%',
-                                                        padding: '0.75rem 1rem',
-                                                        border: 'none',
-                                                        background: 'none',
-                                                        cursor: 'pointer',
-                                                        color: 'var(--text-primary)',
-                                                        textAlign: 'left',
-                                                        fontSize: '0.95rem'
-                                                    }}
-                                                >
-                                                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                        <Palette size={16} style={{ marginRight: '0.75rem' }} />
-                                                        頁面主題
-                                                    </div>
-                                                    <ChevronRight size={14} />
-                                                </button>
-
-                                                {showThemeMenu && (
-                                                    <div className="dropdown-submenu" style={{
-                                                        position: 'absolute',
-                                                        top: window.innerWidth <= 768 ? '100%' : 0,
-                                                        right: window.innerWidth <= 768 ? 0 : '100%',
-                                                        marginRight: window.innerWidth <= 768 ? 0 : '0.5rem',
-                                                        marginTop: window.innerWidth <= 768 ? '0.25rem' : 0,
-                                                        backgroundColor: 'var(--bg-card)',
-                                                        border: '1px solid var(--border-color)',
-                                                        borderRadius: 'var(--border-radius)',
-                                                        boxShadow: 'var(--shadow-lg)',
-                                                        width: window.innerWidth <= 480 ? '280px' : window.innerWidth <= 768 ? '400px' : '640px',
-                                                        maxWidth: '90vw',
-                                                        display: 'grid',
-                                                        gridTemplateColumns: window.innerWidth <= 480 ? 'repeat(2, 1fr)' : window.innerWidth <= 768 ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)',
-                                                        gap: '0.5rem',
-                                                        padding: '0.5rem'
-                                                    }}>
-                                                        {THEMES.map(t => (
-                                                            <button
-                                                                key={t.id}
-                                                                onClick={() => setTheme(t.id)}
-                                                                style={{
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    width: '100%',
-                                                                    padding: '0.5rem 1rem',
-                                                                    border: 'none',
-                                                                    background: theme === t.id ? 'var(--color-primary-light)' : 'none',
-                                                                    cursor: 'pointer',
-                                                                    color: theme === t.id ? 'var(--color-primary)' : 'var(--text-primary)',
-                                                                    textAlign: 'left',
-                                                                    fontSize: '0.9rem'
-                                                                }}
-                                                            >
-                                                                <div style={{
-                                                                    width: '12px',
-                                                                    height: '12px',
-                                                                    borderRadius: '50%',
-                                                                    backgroundColor: t.color,
-                                                                    marginRight: '0.75rem',
-                                                                    border: '1px solid var(--border-color)'
-                                                                }} />
-                                                                {t.name}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div style={{ borderTop: '1px solid var(--border-color)', margin: '0.25rem 0' }}></div>
-
-                                            <button
-                                                className="dropdown-item"
-                                                onClick={handleLogout}
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    width: '100%',
-                                                    padding: '0.75rem 1rem',
-                                                    border: 'none',
-                                                    background: 'none',
-                                                    cursor: 'pointer',
-                                                    color: 'var(--color-danger)',
-                                                    textAlign: 'left',
-                                                    fontSize: '0.95rem'
-                                                }}
-                                            >
-                                                <LogOut size={16} style={{ marginRight: '0.75rem' }} />
-                                                登出
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <button className="btn btn-icon" onClick={() => window.location.reload()} title="重新整理">
-                                    <RefreshCw size={18} color="white" />
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Second row: Navigation links */}
                 <div className="navbar-secondary-row">
-                    <Link to="/" className={`navbar-link ${location.pathname === '/' ? 'active' : ''}`}>
-                        <Home size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                        首頁
-                    </Link>
-                    <Link to="/guide" className={`navbar-link ${location.pathname === '/guide' ? 'active' : ''}`}>
-                        <BookOpen size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                        收案說明
-                    </Link>
-                    <Link to="/form" className={`navbar-link ${location.pathname.startsWith('/form') ? 'active' : ''}`}>
-                        <FileText size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                        新增表單
-                    </Link>
-                    {user?.role === 'admin' && (
-                        <Link to="/admin/delete-requests" className={`navbar-link ${location.pathname === '/admin/delete-requests' ? 'active' : ''}`}>
-                            <Trash2 size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                            刪除表單
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', overflowX: 'auto', flex: 1 }}>
+                        <Link to="/" className={`navbar-link ${location.pathname === '/' ? 'active' : ''}`}>
+                            <Home size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                            首頁
                         </Link>
-                    )}
-                    {user?.role === 'admin' && (
-                        <Link to="/users" className={`navbar-link ${location.pathname === '/users' ? 'active' : ''}`}>
-                            <Users size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                            使用者管理
+                        <Link to="/guide" className={`navbar-link ${location.pathname === '/guide' ? 'active' : ''}`}>
+                            <BookOpen size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                            收案說明
                         </Link>
-                    )}
-                    {user?.role !== 'admin' && (
-                        <Link to="/delete-requests" className={`navbar-link ${location.pathname === '/delete-requests' ? 'active' : ''}`}>
-                            <Trash2 size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                            刪除申請
+                        <Link to="/form" className={`navbar-link ${location.pathname.startsWith('/form') ? 'active' : ''}`}>
+                            <FileText size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                            新增表單
                         </Link>
-                    )}
-                </div>
-            </nav>
+                        {user?.role === 'admin' && (
+                            <Link to="/admin/delete-requests" className={`navbar-link ${location.pathname === '/admin/delete-requests' ? 'active' : ''}`}>
+                                <Trash2 size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                                刪除表單
+                            </Link>
+                        )}
+                        {user?.role === 'admin' && (
+                            <Link to="/users" className={`navbar-link ${location.pathname === '/users' ? 'active' : ''}`}>
+                                <Users size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                                使用者管理
+                            </Link>
+                        )}
+                        {user?.role !== 'admin' && (
+                            <Link to="/delete-requests" className={`navbar-link ${location.pathname === '/delete-requests' ? 'active' : ''}`}>
+                                <Trash2 size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                                刪除申請
+                            </Link>
+                        )}
+                    </div>
+
+                    {/* Moved Actions: Settings & Refresh */}
+                    <div className="navbar-actions" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+                        <div className="settings-dropdown" ref={settingsRef} style={{ position: 'relative' }}>
+                            <button
+                                className={`btn btn-icon ${showSettingsMenu ? 'active' : ''}`}
+                                onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+                                title="設定"
+                            >
+                                <Settings size={18} color="white" />
+                            </button>
+
+                            {showSettingsMenu && (
+                                <div className="dropdown-menu" style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    right: 0,
+                                    marginTop: '0.5rem',
+                                    backgroundColor: 'var(--bg-card)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: 'var(--border-radius)',
+                                    boxShadow: 'var(--shadow-lg)',
+                                    minWidth: '200px',
+                                    zIndex: 1000,
+                                    padding: '0.5rem 0'
+                                }}>
+                                    <button
+                                        className="dropdown-item"
+                                        onClick={() => {
+                                            setShowProfile(true);
+                                            setShowSettingsMenu(false);
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            width: '100%',
+                                            padding: '0.75rem 1rem',
+                                            border: 'none',
+                                            background: 'none',
+                                            cursor: 'pointer',
+                                            color: 'var(--text-primary)',
+                                            textAlign: 'left',
+                                            fontSize: '0.95rem'
+                                        }}
+                                    >
+                                        <User size={16} style={{ marginRight: '0.75rem' }} />
+                                        修改基本資料
+                                    </button>
+
+                                    <button
+                                        className="dropdown-item"
+                                        onClick={() => {
+                                            handleExportAllData();
+                                            setShowSettingsMenu(false);
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            width: '100%',
+                                            padding: '0.75rem 1rem',
+                                            border: 'none',
+                                            background: 'none',
+                                            cursor: 'pointer',
+                                            color: 'var(--text-primary)',
+                                            textAlign: 'left',
+                                            fontSize: '0.95rem'
+                                        }}
+                                    >
+                                        <Upload size={16} style={{ marginRight: '0.75rem' }} />
+                                        {user?.role === 'admin' ? '匯出整個資料庫' : '匯出我的資料'}
+                                    </button>
+
+                                    <button
+                                        className="dropdown-item"
+                                        onClick={() => {
+                                            setShowImportModal(true);
+                                            setShowSettingsMenu(false);
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            width: '100%',
+                                            padding: '0.75rem 1rem',
+                                            border: 'none',
+                                            background: 'none',
+                                            cursor: 'pointer',
+                                            color: 'var(--text-primary)',
+                                            textAlign: 'left',
+                                            fontSize: '0.95rem'
+                                        }}
+                                    >
+                                        <Download size={16} style={{ marginRight: '0.75rem' }} />
+                                        匯入資料
+                                    </button>
+
+
+                                    <div
+                                        className="dropdown-item-submenu-trigger"
+                                        onMouseEnter={() => setShowThemeMenu(true)}
+                                        onMouseLeave={() => setShowThemeMenu(false)}
+                                        style={{ position: 'relative' }}
+                                    >
+                                        <button
+                                            className="dropdown-item"
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                width: '100%',
+                                                padding: '0.75rem 1rem',
+                                                border: 'none',
+                                                background: 'none',
+                                                cursor: 'pointer',
+                                                color: 'var(--text-primary)',
+                                                textAlign: 'left',
+                                                fontSize: '0.95rem'
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                🎨
+                                                <span style={{ marginLeft: '0.75rem' }}>切換主題</span>
+                                            </div>
+                                            <ChevronRight size={16} />
+                                        </button>
+
+                                        {/* Theme Submenu */}
+                                        {showThemeMenu && (
+                                            <div className="submenu" style={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                right: '100%',
+                                                marginTop: 0,
+                                                backgroundColor: 'var(--bg-card)',
+                                                border: '1px solid var(--border-color)',
+                                                borderRadius: 'var(--border-radius)',
+                                                boxShadow: 'var(--shadow-lg)',
+                                                minWidth: '180px',
+                                                zIndex: 1001,
+                                                padding: '0.5rem 0'
+                                            }}>
+                                                {THEMES.map(t => (
+                                                    <button
+                                                        key={t.id}
+                                                        className={`dropdown-item ${currentTheme === t.id ? 'active' : ''}`}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleThemeChange(t.id);
+                                                            setShowThemeMenu(false);
+                                                            setShowSettingsMenu(false);
+                                                        }}
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            width: '100%',
+                                                            padding: '0.75rem 1rem',
+                                                            border: 'none',
+                                                            background: 'none',
+                                                            cursor: 'pointer',
+                                                            color: 'var(--text-primary)',
+                                                            textAlign: 'left',
+                                                            fontSize: '0.95rem'
+                                                        }}
+                                                    >
+                                                        <span style={{ marginRight: '0.5rem' }}>🎨</span>
+                                                        {t.name}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div style={{ borderTop: '1px solid var(--border-color)', margin: '0.25rem 0' }}></div>
+
+                                    <button
+                                        className="dropdown-item"
+                                        onClick={handleLogout}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            width: '100%',
+                                            padding: '0.75rem 1rem',
+                                            border: 'none',
+                                            background: 'none',
+                                            cursor: 'pointer',
+                                            color: 'var(--color-danger)',
+                                            textAlign: 'left',
+                                            fontSize: '0.95rem'
+                                        }}
+                                    >
+                                        <LogOut size={16} style={{ marginRight: '0.75rem' }} />
+                                        登出
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <button className="btn btn-icon" onClick={() => window.location.reload()} title="重新整理">
+                            <RefreshCw size={18} color="white" />
+                        </button>
+                    </div>
+                </div >
+            </nav >
 
             <main className="main-content">
                 <div className="container">
@@ -468,55 +459,57 @@ export default function Layout() {
             />
 
             {/* Import Modal */}
-            {showImportModal && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000
-                }}>
+            {
+                showImportModal && (
                     <div style={{
-                        backgroundColor: 'var(--bg-card)',
-                        borderRadius: 'var(--border-radius)',
-                        padding: '1.5rem',
-                        maxWidth: '600px',
-                        width: '90%',
-                        maxHeight: '80vh',
-                        overflow: 'auto'
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000
                     }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                            <h2 style={{ margin: 0 }}>匯入資料</h2>
-                            <button
-                                onClick={() => setShowImportModal(false)}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    fontSize: '1.5rem',
-                                    cursor: 'pointer',
-                                    color: 'var(--text-muted)'
+                        <div style={{
+                            backgroundColor: 'var(--bg-card)',
+                            borderRadius: 'var(--border-radius)',
+                            padding: '1.5rem',
+                            maxWidth: '600px',
+                            width: '90%',
+                            maxHeight: '80vh',
+                            overflow: 'auto'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                <h2 style={{ margin: 0 }}>匯入資料</h2>
+                                <button
+                                    onClick={() => setShowImportModal(false)}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        fontSize: '1.5rem',
+                                        cursor: 'pointer',
+                                        color: 'var(--text-muted)'
+                                    }}
+                                >
+                                    ×
+                                </button>
+                            </div>
+                            <CsvUpload
+                                variant="card"
+                                userHospital={user?.hospital || ''}
+                                onUploadComplete={() => {
+                                    setShowImportModal(false);
+                                    window.location.reload();
                                 }}
-                            >
-                                ×
-                            </button>
+                                onError={(msg) => alert(msg)}
+                            />
                         </div>
-                        <CsvUpload
-                            variant="card"
-                            userHospital={user?.hospital || ''}
-                            onUploadComplete={() => {
-                                setShowImportModal(false);
-                                window.location.reload();
-                            }}
-                            onError={(msg) => alert(msg)}
-                        />
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }
