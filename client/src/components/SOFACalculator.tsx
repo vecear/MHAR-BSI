@@ -8,14 +8,27 @@ interface Props {
     currentScore?: string;
 }
 
-// SOFA Score options for each organ system
-const RESPIRATION_OPTIONS = [
-    { value: 0, label: 'PaO2/FiO2 ≥ 400 mmHg', shortLabel: '≥400' },
-    { value: 1, label: 'PaO2/FiO2 < 400 mmHg', shortLabel: '<400' },
-    { value: 2, label: 'PaO2/FiO2 < 300 mmHg', shortLabel: '<300' },
-    { value: 3, label: 'PaO2/FiO2 < 200 mmHg + 呼吸器', shortLabel: '<200 + Vent' },
-    { value: 4, label: 'PaO2/FiO2 < 100 mmHg + 呼吸器', shortLabel: '<100 + Vent' },
-];
+// Calculate respiration score from PaO2, FiO2, and ventilator status
+const calculateRespirationScore = (paO2: string, fiO2: string, hasVentilator: boolean): number | null => {
+    const paO2Val = parseFloat(paO2);
+    const fiO2Val = parseFloat(fiO2);
+
+    if (isNaN(paO2Val) || isNaN(fiO2Val) || fiO2Val <= 0) return null;
+
+    const ratio = paO2Val / (fiO2Val / 100);
+
+    if (hasVentilator) {
+        if (ratio < 100) return 4;
+        if (ratio < 200) return 3;
+        if (ratio < 300) return 2;
+        if (ratio < 400) return 1;
+        return 0;
+    } else {
+        if (ratio < 300) return 2;
+        if (ratio < 400) return 1;
+        return 0;
+    }
+};
 
 const COAGULATION_OPTIONS = [
     { value: 0, label: 'Platelets ≥ 150 ×10³/µL', shortLabel: '≥150' },
@@ -72,7 +85,7 @@ const getMortalityEstimate = (score: number): string => {
 interface OrganSectionProps {
     title: string;
     icon: string;
-    options: typeof RESPIRATION_OPTIONS;
+    options: { value: number; label: string; shortLabel: string }[];
     value: number | null;
     onChange: (value: number) => void;
 }
@@ -109,12 +122,28 @@ function OrganSection({ title, icon, options, value, onChange }: OrganSectionPro
 }
 
 export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScore }: Props) {
-    const [respiration, setRespiration] = useState<number | null>(null);
+    // Respiration inputs
+    const [paO2, setPaO2] = useState<string>('');
+    const [fiO2, setFiO2] = useState<string>('');
+    const [hasVentilator, setHasVentilator] = useState<boolean>(false);
+
+    // Other organ scores
     const [coagulation, setCoagulation] = useState<number | null>(null);
     const [liver, setLiver] = useState<number | null>(null);
     const [cardiovascular, setCardiovascular] = useState<number | null>(null);
     const [cns, setCns] = useState<number | null>(null);
     const [renal, setRenal] = useState<number | null>(null);
+
+    // Calculate respiration score from inputs
+    const respiration = useMemo(() => calculateRespirationScore(paO2, fiO2, hasVentilator), [paO2, fiO2, hasVentilator]);
+
+    // Calculate ratio for display
+    const paO2FiO2Ratio = useMemo(() => {
+        const p = parseFloat(paO2);
+        const f = parseFloat(fiO2);
+        if (isNaN(p) || isNaN(f) || f <= 0) return null;
+        return p / (f / 100);
+    }, [paO2, fiO2]);
 
     const totalScore = useMemo(() => {
         const scores = [respiration, coagulation, liver, cardiovascular, cns, renal];
@@ -130,7 +159,9 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
     };
 
     const handleReset = () => {
-        setRespiration(null);
+        setPaO2('');
+        setFiO2('');
+        setHasVentilator(false);
         setCoagulation(null);
         setLiver(null);
         setCardiovascular(null);
@@ -166,13 +197,57 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
                     </div>
 
                     <div className="sofa-organs-grid">
-                        <OrganSection
-                            title="呼吸系統 (Respiration)"
-                            icon="🫁"
-                            options={RESPIRATION_OPTIONS}
-                            value={respiration}
-                            onChange={setRespiration}
-                        />
+                        {/* Respiration - custom input section */}
+                        <div className="sofa-organ-section">
+                            <div className="sofa-organ-header">
+                                <span className="sofa-organ-icon">🫁</span>
+                                <span className="sofa-organ-title">呼吸系統 (Respiration)</span>
+                                <span className="sofa-organ-score">
+                                    {respiration !== null ? `${respiration}分` : '-'}
+                                </span>
+                            </div>
+                            <div className="sofa-respiration-inputs">
+                                <div className="sofa-input-row">
+                                    <label className="sofa-input-group">
+                                        <span>PaO2 (mmHg)</span>
+                                        <input
+                                            type="number"
+                                            value={paO2}
+                                            onChange={(e) => setPaO2(e.target.value)}
+                                            placeholder="例: 80"
+                                            min="0"
+                                            step="0.1"
+                                        />
+                                    </label>
+                                    <label className="sofa-input-group">
+                                        <span>FiO2 (%)</span>
+                                        <input
+                                            type="number"
+                                            value={fiO2}
+                                            onChange={(e) => setFiO2(e.target.value)}
+                                            placeholder="例: 21"
+                                            min="0"
+                                            max="100"
+                                            step="1"
+                                        />
+                                    </label>
+                                </div>
+                                <label className="sofa-ventilator-checkbox">
+                                    <input
+                                        type="checkbox"
+                                        checked={hasVentilator}
+                                        onChange={(e) => setHasVentilator(e.target.checked)}
+                                    />
+                                    <span>使用呼吸器 (Mechanical Ventilation)</span>
+                                </label>
+                                {paO2FiO2Ratio !== null && (
+                                    <div className="sofa-ratio-display">
+                                        PaO2/FiO2 = <strong>{paO2FiO2Ratio.toFixed(0)}</strong> mmHg
+                                        {hasVentilator && ' + 呼吸器'}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
 
                         <OrganSection
                             title="凝血系統 (Coagulation)"
@@ -249,6 +324,6 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
                     </button>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
