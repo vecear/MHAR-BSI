@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Users, Edit, Trash2, X, UserPlus, AlertCircle } from 'lucide-react';
 import { userService } from '../services/firestore';
 import type { FirestoreUser } from '../services/firestore';
+import { PROJECTS } from '../constants/projects';
 
 interface UserFormData {
     email: string;
@@ -13,6 +14,7 @@ interface UserFormData {
     phone: string;
     address: string;
     line_id: string;
+    allowed_projects: string[];
 }
 
 const HOSPITALS = [
@@ -29,7 +31,8 @@ const initialUserForm: UserFormData = {
     gender: '',
     phone: '',
     address: '',
-    line_id: ''
+    line_id: '',
+    allowed_projects: ['CR-GNBSI']
 };
 
 export default function UserManagement() {
@@ -76,7 +79,8 @@ export default function UserManagement() {
             gender: user.gender || '',
             phone: user.phone || '',
             address: user.address || '',
-            line_id: user.line_id || ''
+            line_id: user.line_id || '',
+            allowed_projects: user.allowed_projects || ['CR-GNBSI']
         });
         setShowUserModal(true);
     };
@@ -94,7 +98,8 @@ export default function UserManagement() {
                     gender: userForm.gender,
                     phone: userForm.phone,
                     address: userForm.address,
-                    line_id: userForm.line_id
+                    line_id: userForm.line_id,
+                    allowed_projects: userForm.allowed_projects
                 });
             } else {
                 // Create new user - NOTE: With Firebase, creating users should go through Auth
@@ -117,6 +122,7 @@ export default function UserManagement() {
                     phone: userForm.phone,
                     address: userForm.address,
                     line_id: userForm.line_id,
+                    allowed_projects: userForm.allowed_projects,
                     created_at: new Date()
                 });
             }
@@ -138,6 +144,18 @@ export default function UserManagement() {
         } catch (err) {
             alert(err instanceof Error ? err.message : '刪除失敗');
         }
+    };
+
+    const toggleProjectPermission = (projectId: string) => {
+        setUserForm(prev => {
+            const current = new Set(prev.allowed_projects);
+            if (current.has(projectId)) {
+                current.delete(projectId);
+            } else {
+                current.add(projectId);
+            }
+            return { ...prev, allowed_projects: Array.from(current) };
+        });
     };
 
     return (
@@ -181,7 +199,7 @@ export default function UserManagement() {
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>帳號</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>姓名</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>醫院</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>電話</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>可存取專案</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>建立時間</th>
                                     </tr>
                                 </thead>
@@ -204,7 +222,15 @@ export default function UserManagement() {
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 <span className="badge badge-info">{u.hospital}</span>
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.phone || '-'}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                                    {(u.allowed_projects || ['CR-GNBSI']).map(pid => (
+                                                        <span key={pid} className="badge badge-success" style={{ fontSize: '0.75rem' }}>
+                                                            {PROJECTS.find(p => p.id === pid)?.name || pid}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.created_at?.toLocaleString('zh-TW', { hour12: false }) || '-'}</td>
                                         </tr>
                                     ))}
@@ -284,6 +310,23 @@ export default function UserManagement() {
                                                 <option key={h} value={h}>{h}</option>
                                             ))}
                                         </select>
+                                    </div>
+                                </div>
+
+                                <div className="form-group" style={{ marginTop: '1rem' }}>
+                                    <label className="form-label">專案存取權限</label>
+                                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', padding: '0.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius)' }}>
+                                        {PROJECTS.map(project => (
+                                            <label key={project.id} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '0.5rem' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={userForm.allowed_projects.includes(project.id)}
+                                                    onChange={() => toggleProjectPermission(project.id)}
+                                                    style={{ width: '16px', height: '16px' }}
+                                                />
+                                                {project.name}
+                                            </label>
+                                        ))}
                                     </div>
                                 </div>
 

@@ -9,6 +9,7 @@ import {
 import type { User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { DEFAULT_PROJECT_ID } from '../constants/projects';
 
 // Types
 export interface User {
@@ -16,6 +17,7 @@ export interface User {
     username: string;
     hospital: string;
     role: 'user' | 'admin';
+    allowed_projects?: string[]; // New field for project permissions
     email?: string;
     display_name?: string;
     phone?: string;
@@ -30,8 +32,9 @@ export interface User {
 interface AuthContextType {
     user: User | null;
     firebaseUser: FirebaseUser | null;
+    currentProject: string; // Track currently selected project
     loading: boolean;
-    login: (email: string, password: string) => Promise<void>;
+    login: (email: string, password: string, projectId?: string) => Promise<void>;
     register: (email: string, password: string, userData: Partial<User>) => Promise<void>;
     logout: () => Promise<void>;
     updateUserProfile: (data: Partial<User>) => Promise<void>;
@@ -54,6 +57,9 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
     const [user, setUser] = useState<User | null>(null);
     const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+    const [currentProject, setCurrentProject] = useState<string>(() => {
+        return localStorage.getItem('currentProject') || DEFAULT_PROJECT_ID;
+    });
     const [loading, setLoading] = useState(true);
 
     // Listen to auth state changes
@@ -72,6 +78,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                             username: userData.username,
                             hospital: userData.hospital,
                             role: userData.role,
+                            allowed_projects: userData.allowed_projects || [DEFAULT_PROJECT_ID], // Default to base project if undefined
                             email: userData.email,
                             display_name: userData.display_name,
                             phone: userData.phone,
@@ -89,6 +96,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                             username: fbUser.email?.split('@')[0] || 'user',
                             hospital: '',
                             role: 'user',
+                            allowed_projects: [DEFAULT_PROJECT_ID],
                             email: fbUser.email || '',
                             created_at: serverTimestamp()
                         };
@@ -98,6 +106,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                             username: newUserProfile.username,
                             hospital: newUserProfile.hospital,
                             role: 'user',
+                            allowed_projects: newUserProfile.allowed_projects,
                             email: newUserProfile.email,
                             created_at: new Date()
                         });
@@ -116,18 +125,38 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return () => unsubscribe();
     }, []);
 
-    const login = async (email: string, password: string) => {
+    const login = async (email: string, password: string, projectId: string = DEFAULT_PROJECT_ID) => {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
-        // Fetch user profile
+        // Fetch user profile to check permissions
         const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+
         if (userDoc.exists()) {
             const userData = userDoc.data();
+            const allowedProjects = userData.allowed_projects || [DEFAULT_PROJECT_ID];
+
+            // Check if user has access to the selected project
+            // Admin bypass check? Maybe not, keep it strict for now unless requested otherwise.
+            // But let's assume Admin also needs explicit permission or we implicitly allow ALL for admin?
+            // "針對不同使用者設定登入個別的次專案的權限" implies validation is needed.
+            // For now, let's treat admin as normal user for permission checks unless specified.
+            // Update: User requested "不同使用者設定", implies granular control, so check the list.
+
+            if (!allowedProjects.includes(projectId)) {
+                await firebaseSignOut(auth); // Logout immediately if unauthorized
+                throw new Error(`您沒有權限存取專案: ${projectId}`);
+            }
+
+            // Set current project
+            setCurrentProject(projectId);
+            localStorage.setItem('currentProject', projectId);
+
             setUser({
                 id: userCredential.user.uid,
                 username: userData.username,
                 hospital: userData.hospital,
                 role: userData.role,
+                allowed_projects: allowedProjects,
                 email: userData.email,
                 display_name: userData.display_name,
                 phone: userData.phone,
@@ -149,6 +178,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             username: userData.username || email.split('@')[0],
             hospital: userData.hospital || '',
             role: 'user',
+            allowed_projects: [DEFAULT_PROJECT_ID], // Default permission for new users
             email: email,
             created_at: serverTimestamp()
         };
@@ -169,6 +199,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             username: userData.username || email.split('@')[0],
             hospital: userData.hospital || '',
             role: 'user',
+            allowed_projects: [DEFAULT_PROJECT_ID],
             email: email,
             display_name: userData.display_name,
             phone: userData.phone,
@@ -179,11 +210,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             security_answer: userData.security_answer,
             created_at: new Date()
         });
+
+        // Set default project for newly registered user
+        setCurrentProject(DEFAULT_PROJECT_ID);
+        localStorage.setItem('currentProject', DEFAULT_PROJECT_ID);
     };
 
     const logout = async () => {
         await firebaseSignOut(auth);
         setUser(null);
+        localStorage.removeItem('currentProject');
     };
 
     const updateUserProfile = async (data: Partial<User>) => {
@@ -200,6 +236,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         <AuthContext.Provider value={{
             user,
             firebaseUser,
+            currentProject,
             loading,
             login,
             register,

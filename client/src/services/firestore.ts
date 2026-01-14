@@ -54,6 +54,7 @@ export interface UserProfile {
     username: string;
     hospital: string;
     role: 'user' | 'admin';
+    allowed_projects?: string[];
     email?: string;
     display_name?: string;
     phone?: string;
@@ -461,6 +462,7 @@ export const userService = {
                 username: data.username,
                 hospital: data.hospital,
                 role: data.role,
+                allowed_projects: data.allowed_projects,
                 email: data.email,
                 display_name: data.display_name,
                 phone: data.phone,
@@ -486,6 +488,7 @@ export const userService = {
             username: data.username,
             hospital: data.hospital,
             role: data.role,
+            allowed_projects: data.allowed_projects,
             email: data.email,
             display_name: data.display_name,
             phone: data.phone,
@@ -517,6 +520,7 @@ export const userService = {
             username: data.username,
             hospital: data.hospital,
             role: data.role,
+            allowed_projects: data.allowed_projects,
             email: data.email,
             display_name: data.display_name,
             phone: data.phone,
@@ -537,6 +541,7 @@ export const userService = {
         // Only include defined fields
         if (data.username !== undefined) updateData.username = data.username;
         if (data.hospital !== undefined) updateData.hospital = data.hospital;
+        if (data.allowed_projects !== undefined) updateData.allowed_projects = data.allowed_projects;
         if (data.email !== undefined) updateData.email = data.email;
         if (data.display_name !== undefined) updateData.display_name = data.display_name;
         if (data.phone !== undefined) updateData.phone = data.phone;
@@ -562,6 +567,7 @@ export const userService = {
             username: userData.username || '',
             hospital: userData.hospital || '',
             role: userData.role || 'user',
+            allowed_projects: userData.allowed_projects || ['CR-GNBSI'],
             email: userData.email || '',
             display_name: userData.display_name || null,
             phone: userData.phone || null,

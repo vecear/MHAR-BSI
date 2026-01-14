@@ -4,11 +4,12 @@ import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight, Trash2, 
 import { useAuth } from '../contexts/AuthContext';
 import { deleteRequestService, exportService } from '../services/firestore';
 import { useTheme, THEMES } from '../context/ThemeContext';
+import { PROJECTS } from '../constants/projects';
 import ProfileModal from './ProfileModal';
 import CsvUpload from './CsvUpload';
 
 export default function Layout() {
-    const { user, logout } = useAuth();
+    const { user, logout, currentProject } = useAuth();
     const { theme, setTheme } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
@@ -18,6 +19,9 @@ export default function Layout() {
     const [pendingDeleteCount, setPendingDeleteCount] = useState(0);
     const [showImportModal, setShowImportModal] = useState(false);
     const settingsRef = useRef<HTMLDivElement>(null);
+
+    // Get project name
+    const projectName = PROJECTS.find(p => p.id === currentProject)?.name || currentProject;
 
     // Clock state
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -88,7 +92,7 @@ export default function Layout() {
                 <div className="navbar-header">
                     <div className="navbar-brand">
                         <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>
-                            🏥 MHAR-BSI 菌血症研究表單
+                            🏥 MHAS | {projectName}
                         </Link>
                     </div>
 

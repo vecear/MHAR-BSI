@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
-import { LogIn, Building2 } from 'lucide-react';
+import { LogIn, Building2, FolderKanban } from 'lucide-react';
+import { PROJECTS, DEFAULT_PROJECT_ID } from '../constants/projects';
 
 const HOSPITALS = [
     '內湖總院',
@@ -20,6 +21,7 @@ export default function Login() {
     const { showError } = useToast();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [projectId, setProjectId] = useState(DEFAULT_PROJECT_ID);
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -27,7 +29,7 @@ export default function Login() {
         setLoading(true);
 
         try {
-            await login(email, password);
+            await login(email, password, projectId);
         } catch (err) {
             // Firebase error messages mapping
             const errorMessage = err instanceof Error ? err.message : '登入失敗';
@@ -48,8 +50,8 @@ export default function Login() {
             <div className="login-card animate-slideUp">
                 <div className="login-header">
                     <div className="login-logo">🏥</div>
-                    <h1 className="login-title">MHAR-BSI</h1>
-                    <p className="login-subtitle">菌血症研究表單系統</p>
+                    <h1 className="login-title">MHAS</h1>
+                    <p className="login-subtitle">Military Hospitals Antimicrobial-resistant Surveillance</p>
                 </div>
 
                 <form onSubmit={handleSubmit}>
@@ -76,6 +78,32 @@ export default function Login() {
                             placeholder="請輸入密碼"
                             required
                         />
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label required">選擇專案</label>
+                        <div className="select-wrapper" style={{ position: 'relative' }}>
+                            <FolderKanban size={18} style={{
+                                position: 'absolute',
+                                left: '10px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                color: 'var(--text-muted)'
+                            }} />
+                            <select
+                                className="form-select"
+                                value={projectId}
+                                onChange={(e) => setProjectId(e.target.value)}
+                                style={{ paddingLeft: '2.5rem' }}
+                                required
+                            >
+                                {PROJECTS.map(p => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
                     <button
