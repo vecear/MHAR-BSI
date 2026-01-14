@@ -38,7 +38,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                 <div className="form-grid-2">
                     <div className="form-group">
                         <label className="form-label required">紀錄時間</label>
-                        <div className="record-time-row">
+                        <div className="record-time-row" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'nowrap' }}>
                             <input
                                 type="date"
                                 className="form-input"
@@ -47,8 +47,9 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                                     const time = formData.record_time?.split('T')[1] || '00:00';
                                     updateFormData({ record_time: `${e.target.value}T${time}` });
                                 }}
+                                style={{ width: 'auto', flex: 1, minWidth: '130px' }}
                             />
-                            <div className="time-picker-group">
+                            <div className="time-picker-group" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                 <select
                                     className="form-select time-select"
                                     value={formData.record_time?.split('T')[1]?.split(':')[0] || '00'}
@@ -57,6 +58,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                                         const minute = formData.record_time?.split('T')[1]?.split(':')[1] || '00';
                                         updateFormData({ record_time: `${date}T${e.target.value}:${minute}` });
                                     }}
+                                    style={{ width: '65px', paddingRight: '0.5rem', paddingLeft: '0.5rem', textAlign: 'center' }}
                                 >
                                     {Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')).map(h => (
                                         <option key={h} value={h}>{h}</option>
@@ -71,6 +73,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                                         const hour = formData.record_time?.split('T')[1]?.split(':')[0] || '00';
                                         updateFormData({ record_time: `${date}T${hour}:${e.target.value}` });
                                     }}
+                                    style={{ width: '65px', paddingRight: '0.5rem', paddingLeft: '0.5rem', textAlign: 'center' }}
                                 >
                                     {Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0')).map(m => (
                                         <option key={m} value={m}>{m}</option>
@@ -86,24 +89,27 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                                     updateFormData({ record_time: local.toISOString().slice(0, 16) });
                                 }}
                                 type="button"
+                                style={{ whiteSpace: 'nowrap', padding: '0.5rem 0.75rem', height: '38px', display: 'flex', alignItems: 'center', gap: '4px' }}
                             >
                                 <Clock size={16} />
                                 現在時間
                             </button>
+
+                            <span style={{
+                                fontSize: '0.9rem',
+                                color: 'var(--text-secondary)',
+                                fontFamily: 'monospace',
+                                letterSpacing: '0.05em',
+                                whiteSpace: 'nowrap',
+                                marginLeft: '0.5rem'
+                            }}>
+                                編號：<strong style={{ color: 'var(--text-primary)' }}>
+                                    {formData.record_time ? formData.record_time.replace(/[-T:]/g, '') : '-'}
+                                </strong>
+                            </span>
                         </div>
                     </div>
-                    <div className="form-group" style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '0.5rem' }}>
-                        <span style={{
-                            fontSize: '1rem',
-                            color: 'var(--text-secondary)',
-                            fontFamily: 'monospace',
-                            letterSpacing: '0.05em'
-                        }}>
-                            紀錄編號：<strong style={{ color: 'var(--text-primary)' }}>
-                                {formData.record_time ? formData.record_time.replace(/[-T:]/g, '') : '-'}
-                            </strong>
-                        </span>
-                    </div>
+
                 </div>
             </div>
 

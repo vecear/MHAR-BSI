@@ -232,8 +232,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         });
 
         // Set default project for newly registered user
-        setCurrentProject(DEFAULT_PROJECT_ID);
-        localStorage.setItem('currentProject', DEFAULT_PROJECT_ID);
+        // Do not set default project for newly registered user - they need approval
+        setCurrentProject('');
+        localStorage.removeItem('currentProject');
     };
 
     const logout = async () => {

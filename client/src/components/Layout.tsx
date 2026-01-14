@@ -95,7 +95,7 @@ export default function Layout() {
                 <div className="navbar-header">
                     <div className="navbar-brand">
                         <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>
-                            🏥 MHAS | {projectName}
+                            🏥 MHAS | {projectName || '待審核'}
                         </Link>
                     </div>
 
@@ -407,7 +407,26 @@ export default function Layout() {
 
             <main className="main-content">
                 <div className="container">
-                    <Outlet context={{ refreshPendingDeleteCount: fetchCounts }} />
+                    {(!user?.allowed_projects || user.allowed_projects.length === 0) ? (
+                        <div className="card animate-fadeIn" style={{ textAlign: 'center', padding: '4rem 2rem', marginTop: '2rem' }}>
+                            <div style={{ fontSize: '4rem', marginBottom: '1.5rem', animation: 'pulse 2s infinite' }}>⏳</div>
+                            <h2 style={{ marginBottom: '1rem' }}>帳號待審核</h2>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: '1.6' }}>
+                                您的帳號已成功建立，但尚未開通任何專案權限。<br />
+                                請聯繫系統管理員協助開通，開通後請重新整理頁面。
+                            </p>
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => window.location.reload()}
+                                style={{ marginTop: '2rem' }}
+                            >
+                                <RefreshCw size={18} style={{ marginRight: '8px' }} />
+                                重新整理狀態
+                            </button>
+                        </div>
+                    ) : (
+                        <Outlet context={{ refreshPendingDeleteCount: fetchCounts }} />
+                    )}
                 </div>
             </main>
 
