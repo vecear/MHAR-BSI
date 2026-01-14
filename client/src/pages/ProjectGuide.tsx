@@ -8,7 +8,7 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import EmojiPicker, { Theme } from 'emoji-picker-react';
 import type { EmojiClickData } from 'emoji-picker-react';
-import { useTheme } from '../context/ThemeContext';
+
 
 export default function ProjectGuide() {
     const { user } = useAuth();
