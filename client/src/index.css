@@ -2517,6 +2517,33 @@ h3 {
   font-size: 1rem;
 }
 
+/* Score Hint */
+.sofa-score-hint {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-primary);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.sofa-score-hint-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--text-primary);
+}
+
+.sofa-score-hint-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.sofa-score-hint-row span {
+  white-space: nowrap;
+}
+
 .sofa-result-section {
   margin-top: 1.5rem;
   padding: 1.5rem;

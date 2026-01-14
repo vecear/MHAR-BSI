@@ -246,6 +246,18 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
                                         {hasVentilator && ' + 呼吸器'}
                                     </div>
                                 )}
+                                <div className="sofa-score-hint">
+                                    <div className="sofa-score-hint-title">評分標準：</div>
+                                    <div className="sofa-score-hint-row">
+                                        <span>0分: ≥400</span>
+                                        <span>1分: &lt;400</span>
+                                        <span>2分: &lt;300</span>
+                                    </div>
+                                    <div className="sofa-score-hint-row">
+                                        <span>3分: &lt;200 + 呼吸器</span>
+                                        <span>4分: &lt;100 + 呼吸器</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
