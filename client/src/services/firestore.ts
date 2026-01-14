@@ -10,7 +10,8 @@ import {
     where,
     orderBy,
     serverTimestamp,
-    Timestamp
+    Timestamp,
+    setDoc
 } from 'firebase/firestore';
 import type { DocumentData } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -759,5 +760,29 @@ export const exportService = {
         ];
 
         return csvLines.join('\n');
+    }
+};
+
+// ==================== Project Guide Service ====================
+
+export const projectGuideService = {
+    // Get project guide content
+    async get(id: string = 'project_guide'): Promise<string> {
+        const docRef = doc(db, 'settings', id);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            return docSnap.data().content || '';
+        }
+        return '';
+    },
+
+    // Update project guide content (admin only)
+    async update(content: string, id: string = 'project_guide'): Promise<void> {
+        const docRef = doc(db, 'settings', id);
+        await setDoc(docRef, {
+            content,
+            updated_at: serverTimestamp()
+        }, { merge: true });
     }
 };

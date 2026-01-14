@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight, Trash2, AlertTriangle, Users, RefreshCw, Upload, Download } from 'lucide-react';
+import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight, Trash2, AlertTriangle, Users, RefreshCw, Upload, Download, BookOpen } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { deleteRequestService, exportService } from '../services/firestore';
 import { useTheme, THEMES } from '../context/ThemeContext';
@@ -348,6 +348,10 @@ export default function Layout() {
                     <Link to="/" className={`navbar-link ${location.pathname === '/' ? 'active' : ''}`}>
                         <Home size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
                         首頁
+                    </Link>
+                    <Link to="/guide" className={`navbar-link ${location.pathname === '/guide' ? 'active' : ''}`}>
+                        <BookOpen size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                        收案說明
                     </Link>
                     <Link to="/form" className={`navbar-link ${location.pathname.startsWith('/form') ? 'active' : ''}`}>
                         <FileText size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />

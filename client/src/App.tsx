@@ -11,6 +11,7 @@ import FormPage from './pages/FormPage';
 import DeleteRequests from './pages/DeleteRequests';
 import AdminDeleteRequests from './pages/AdminDeleteRequests';
 import UserManagement from './pages/UserManagement';
+import ProjectGuide from './pages/ProjectGuide';
 import Layout from './components/Layout';
 import { ToastProvider } from './components/Toast';
 
@@ -48,6 +49,7 @@ function AppRoutes() {
         } />
         <Route path="form" element={<FormPage />} />
         <Route path="form/:id" element={<FormPage />} />
+        <Route path="guide" element={<ProjectGuide />} />
         <Route path="delete-requests" element={<DeleteRequests />} />
         <Route path="admin/delete-requests" element={<AdminDeleteRequests />} />
         <Route path="users" element={<UserManagement />} />
