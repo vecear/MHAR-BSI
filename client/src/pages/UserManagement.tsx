@@ -226,10 +226,15 @@ export default function UserManagement() {
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 {/* Check for no permissions */}
                                                 {(!u.allowed_projects || u.allowed_projects.length === 0) && (
-                                                    <span className="badge badge-error animate-pulse" style={{
+                                                    <span className="badge animate-pulse" style={{
                                                         marginRight: '8px',
                                                         verticalAlign: 'middle',
-                                                        animation: 'pulse 1.5s infinite'
+                                                        animation: 'pulse 1.5s infinite',
+                                                        backgroundColor: '#e63946', // Bright red
+                                                        color: 'white',
+                                                        fontWeight: 'bold',
+                                                        border: '1px solid #d62828',
+                                                        boxShadow: '0 0 4px rgba(230, 57, 70, 0.5)'
                                                     }}>
                                                         未開通
                                                     </span>
