@@ -4,7 +4,7 @@
   --color-primary: #2563eb;
   --color-primary-hover: #1d4ed8;
   --color-primary-light: #dbeafe;
-  --bg-primary: #f8fafc;
+  --bg-primary: #ffffff;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
   --text-primary: #1e293b;
@@ -428,7 +428,7 @@ html {
 
 body {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-color: var(--bg-primary);
 }
 
 #root {
@@ -635,6 +635,13 @@ h3 {
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-xl);
+
+  /* Feature: Card Style Page Header */
+  background: var(--bg-card) !important;
+  border-radius: var(--border-radius-lg) !important;
+  box-shadow: var(--shadow-md) !important;
+  padding: var(--spacing-lg) !important;
+  border: 1px solid var(--border-color) !important;
 }
 
 /* Navbar */
@@ -1055,6 +1062,17 @@ h3 {
   margin-top: var(--spacing-xs);
 }
 
+/* Cards - Generic container styling */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--border-color);
+  width: 100%;
+  box-sizing: border-box;
+}
+
 /* Table */
 .table-container {
   overflow-x: auto;
@@ -1118,11 +1136,19 @@ h3 {
 }
 
 /* Form Steps */
+/* Form Steps */
 .form-steps {
   display: flex;
   justify-content: center;
   gap: var(--spacing-sm);
   margin-bottom: var(--spacing-xl);
+
+  /* Feature: Card Style Removed (Transparent) */
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+  border: none;
+  max-width: 100%;
 }
 
 .form-step {
@@ -1308,7 +1334,29 @@ h3 {
   }
 
   .form-steps {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: space-between;
+    /* Distribute evenly */
+    width: 100%;
+    padding-bottom: 0;
+    /* Remove scrollbar padding if we hope to not scroll */
+    gap: 2px;
+    /* Very tight gap between buttons */
+  }
+
+  .form-step {
+    flex: 1 1 auto;
+    /* Allow shrinking/growing */
+    white-space: nowrap;
+    padding: 0.25rem 0.4rem;
+    /* Minimal padding */
+    font-size: 0.7rem;
+    /* Smaller font */
+    gap: 0.25rem;
+    /* Minimal gap */
+    min-width: auto;
+    justify-content: center;
   }
 
   /* Navbar mobile */
@@ -2895,12 +2943,406 @@ h3 {
     gap: 0.5rem;
   }
 
-  .sofa-input-group input[type="number"] {
-    font-size: 16px;
-    /* Prevent iOS zoom */
+
+  .sofa-score-hint-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--text-primary);
   }
 
-  .sofa-ventilator-checkbox span {
-    font-size: 0.8rem;
+  .sofa-score-hint-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
   }
-}
+
+  .sofa-score-hint-row span {
+    white-space: nowrap;
+  }
+
+  /* Oxygen Device Selector */
+  .sofa-device-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .sofa-device-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .sofa-device-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 0.85rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .sofa-device-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+
+  .sofa-calculated-fio2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-success-light, #d1fae5);
+    border-radius: var(--border-radius);
+    font-size: 0.85rem;
+    color: var(--color-success, #059669);
+  }
+
+  [data-theme='dark'] .sofa-calculated-fio2 {
+    background: #064e3b;
+    color: #6ee7b7;
+  }
+
+  .sofa-calculated-fio2 strong {
+    font-size: 1rem;
+  }
+
+  /* Venturi Mask Options */
+  .sofa-venturi-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .sofa-venturi-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .sofa-venturi-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    min-width: 50px;
+  }
+
+  .sofa-venturi-option:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
+  }
+
+  .sofa-venturi-option.selected {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--text-on-primary);
+  }
+
+  .sofa-venturi-option input {
+    display: none;
+  }
+
+  .sofa-result-section {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--bg-secondary) 100%);
+    border-radius: var(--border-radius-lg);
+    text-align: center;
+  }
+
+  .sofa-total-score {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+
+  .sofa-total-label {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-right: 0.5rem;
+  }
+
+  .sofa-total-value {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  .sofa-total-max {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+  }
+
+  .sofa-mortality {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+
+  .sofa-mortality strong {
+    color: var(--color-danger);
+    font-size: 1rem;
+  }
+
+  /* SOFA Calculator Responsive */
+  @media (max-width: 768px) {
+    .sofa-calculator-modal {
+      max-height: 95vh;
+    }
+
+    .sofa-organs-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .sofa-option {
+      padding: 0.4rem 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .sofa-option-value {
+      width: 20px;
+      height: 20px;
+      font-size: 0.7rem;
+    }
+
+    .sofa-organ-header {
+      flex-wrap: wrap;
+    }
+
+    .sofa-total-value {
+      font-size: 2.5rem;
+    }
+
+    .modal-footer {
+      flex-wrap: wrap;
+    }
+
+    .modal-footer .btn {
+      flex: 1;
+      min-width: 80px;
+    }
+
+    /* Respiration inputs mobile */
+    .sofa-input-row {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sofa-input-group input[type="number"] {
+      font-size: 16px;
+      /* Prevent iOS zoom */
+    }
+
+  }
+
+  .sofa-score-hint-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+  }
+
+  .sofa-score-hint-row span {
+    white-space: nowrap;
+  }
+
+  /* Oxygen Device Selector */
+  .sofa-device-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .sofa-device-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .sofa-device-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 0.85rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .sofa-device-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+
+  .sofa-calculated-fio2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-success-light, #d1fae5);
+    border-radius: var(--border-radius);
+    font-size: 0.85rem;
+    color: var(--color-success, #059669);
+  }
+
+  [data-theme='dark'] .sofa-calculated-fio2 {
+    background: #064e3b;
+    color: #6ee7b7;
+  }
+
+  .sofa-calculated-fio2 strong {
+    font-size: 1rem;
+  }
+
+  /* Venturi Mask Options */
+  .sofa-venturi-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .sofa-venturi-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .sofa-venturi-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    min-width: 50px;
+  }
+
+  .sofa-venturi-option:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
+  }
+
+  .sofa-venturi-option.selected {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--text-on-primary);
+  }
+
+  .sofa-venturi-option input {
+    display: none;
+  }
+
+  .sofa-result-section {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--bg-secondary) 100%);
+    border-radius: var(--border-radius-lg);
+    text-align: center;
+  }
+
+  .sofa-total-score {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+
+  .sofa-total-label {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-right: 0.5rem;
+  }
+
+  .sofa-total-value {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  .sofa-total-max {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+  }
+
+  .sofa-mortality {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+
+  .sofa-mortality strong {
+    color: var(--color-danger);
+    font-size: 1rem;
+  }
+
+  /* SOFA Calculator Responsive */
+  @media (max-width: 768px) {
+    .sofa-calculator-modal {
+      max-height: 95vh;
+    }
+
+    .sofa-organs-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .sofa-option {
+      padding: 0.4rem 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .sofa-option-value {
+      width: 20px;
+      height: 20px;
+      font-size: 0.7rem;
+    }
+
+    .sofa-organ-header {
+      flex-wrap: wrap;
+    }
+
+    .sofa-total-value {
+      font-size: 2.5rem;
+    }
+
+    .modal-footer {
+      flex-wrap: wrap;
+    }
+
+    .modal-footer .btn {
+      flex: 1;
+      min-width: 80px;
+    }
+
+    /* Respiration inputs mobile */
+    .sofa-input-row {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sofa-input-group input[type="number"] {
+      font-size: 16px;
+      /* Prevent iOS zoom */
+    }
+
+    .sofa-ventilator-checkbox span {
+      font-size: 0.8rem;
+    }
+  }
+
+  .animate-fadeIn {
+    background: transparent !important;
+  }
