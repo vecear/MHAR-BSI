@@ -564,6 +564,17 @@ export const userService = {
         await deleteDoc(doc(db, 'users', id));
     },
 
+    // Count pending users (admin only)
+    async countPending(): Promise<number> {
+        // Find users with empty allowed_projects array
+        const q = query(
+            collection(db, 'users'),
+            where('allowed_projects', '==', [])
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.size;
+    },
+
     // Create user (for admin)
     async create(userData: Partial<UserProfile>): Promise<string> {
         const docRef = await addDoc(collection(db, 'users'), {
