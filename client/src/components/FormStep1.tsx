@@ -1,5 +1,7 @@
-import { Clock } from 'lucide-react';
+import { useState } from 'react';
+import { Clock, Calculator } from 'lucide-react';
 import { type FormData, HOSPITALS } from '../pages/FormPage';
+import SOFACalculator from './SOFACalculator';
 
 interface Props {
     formData: FormData;
@@ -21,6 +23,8 @@ const CHRONIC_DISEASES = [
 ];
 
 export default function FormStep1({ formData, updateFormData }: Props) {
+    const [showSOFACalculator, setShowSOFACalculator] = useState(false);
+
     const handleCheckboxChange = (field: 'primary_source' | 'chronic_diseases', value: string) => {
         const current = formData[field] || [];
         if (current.includes(value)) {
@@ -381,12 +385,25 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                 <div className="form-grid-3">
                     <div className="form-group">
                         <label className="form-label">SOFA Score at Bacteremia</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            value={formData.sofa_score}
-                            onChange={e => updateFormData({ sofa_score: e.target.value })}
-                        />
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <input
+                                type="text"
+                                className="form-input"
+                                value={formData.sofa_score}
+                                onChange={e => updateFormData({ sofa_score: e.target.value })}
+                                style={{ flex: 1 }}
+                                placeholder="0-24"
+                            />
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={() => setShowSOFACalculator(true)}
+                                style={{ whiteSpace: 'nowrap', padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            >
+                                <Calculator size={16} />
+                                計算
+                            </button>
+                        </div>
                     </div>
                     <div className="form-group">
                         <label className="form-label">SEPTIC Shock at Bacteremia</label>
@@ -415,6 +432,15 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                     </div>
                 </div>
             </div>
+
+            {/* SOFA Calculator Modal */}
+            <SOFACalculator
+                isOpen={showSOFACalculator}
+                onClose={() => setShowSOFACalculator(false)}
+                onConfirm={(score) => updateFormData({ sofa_score: String(score) })}
+                currentScore={formData.sofa_score}
+            />
         </div>
     );
 }
+

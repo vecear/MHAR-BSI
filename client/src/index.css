@@ -2233,3 +2233,286 @@ h3 {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 }
+
+/* ===========================================
+   Modal Styles
+   =========================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* ===========================================
+   SOFA Calculator Styles
+   =========================================== */
+.sofa-calculator-modal {
+  max-width: 900px;
+}
+
+.sofa-calculator-body {
+  padding: 1rem 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.sofa-current-score {
+  background: var(--color-primary-light);
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.sofa-info-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+}
+
+[data-theme='dark'] .sofa-info-banner {
+  background: #422006;
+  color: #fcd34d;
+}
+
+.sofa-organs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.sofa-organ-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+}
+
+.sofa-organ-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sofa-organ-icon {
+  font-size: 1.25rem;
+}
+
+.sofa-organ-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.sofa-organ-score {
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.sofa-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sofa-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.8rem;
+}
+
+.sofa-option:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.sofa-option.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.sofa-option input {
+  display: none;
+}
+
+.sofa-option-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--bg-primary);
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.sofa-option.selected .sofa-option-value {
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+}
+
+.sofa-option-label {
+  flex: 1;
+  line-height: 1.3;
+}
+
+.sofa-result-section {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--bg-secondary) 100%);
+  border-radius: var(--border-radius-lg);
+  text-align: center;
+}
+
+.sofa-total-score {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.sofa-total-label {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin-right: 0.5rem;
+}
+
+.sofa-total-value {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.sofa-total-max {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+}
+
+.sofa-mortality {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.sofa-mortality strong {
+  color: var(--color-danger);
+  font-size: 1rem;
+}
+
+/* SOFA Calculator Responsive */
+@media (max-width: 768px) {
+  .sofa-calculator-modal {
+    max-height: 95vh;
+  }
+
+  .sofa-organs-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sofa-option {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .sofa-option-value {
+    width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+  }
+
+  .sofa-organ-header {
+    flex-wrap: wrap;
+  }
+
+  .sofa-total-value {
+    font-size: 2.5rem;
+  }
+
+  .modal-footer {
+    flex-wrap: wrap;
+  }
+
+  .modal-footer .btn {
+    flex: 1;
+    min-width: 80px;
+  }
+}
