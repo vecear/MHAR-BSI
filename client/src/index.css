@@ -635,6 +635,11 @@ h3 {
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-xl);
+  background: var(--bg-card);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--border-color);
 }
 
 /* Navbar */
