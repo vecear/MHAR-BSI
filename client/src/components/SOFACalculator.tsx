@@ -31,7 +31,7 @@ const calculateRespirationScore = (paO2: string, fiO2: string, hasVentilator: bo
 };
 
 // Oxygen delivery device types
-type OxygenDevice = 'direct' | 'room_air' | 'nasal_cannula' | 'venturi_mask' | 'simple_mask' | 'non_rebreathing_mask';
+type OxygenDevice = 'direct' | 'room_air' | 'nasal_cannula' | 'venturi_mask' | 'simple_mask' | 'non_rebreathing_mask' | 'mechanical_ventilation';
 
 const OXYGEN_DEVICES: { value: OxygenDevice; label: string; needsFlow: boolean; flowRange?: [number, number] }[] = [
     { value: 'direct', label: '直接輸入 FiO2', needsFlow: false },
@@ -40,6 +40,7 @@ const OXYGEN_DEVICES: { value: OxygenDevice; label: string; needsFlow: boolean; 
     { value: 'venturi_mask', label: 'Venturi Mask (文乳氏面罩)', needsFlow: true, flowRange: [4, 15] },
     { value: 'simple_mask', label: 'Simple Mask (簡單面罩)', needsFlow: true, flowRange: [5, 10] },
     { value: 'non_rebreathing_mask', label: 'Non-Rebreathing Mask (非再吸入面罩)', needsFlow: true, flowRange: [10, 15] },
+    { value: 'mechanical_ventilation', label: '使用呼吸器 (Mechanical Ventilation)', needsFlow: false },
 ];
 
 // Venturi mask FiO2 options
@@ -164,7 +165,7 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
     // Respiration inputs
     const [paO2, setPaO2] = useState<string>('');
     const [fiO2, setFiO2] = useState<string>('');
-    const [hasVentilator, setHasVentilator] = useState<boolean>(false);
+    // const [hasVentilator, setHasVentilator] = useState<boolean>(false); // Removed separate state
 
     // Oxygen device selection
     const [oxygenDevice, setOxygenDevice] = useState<OxygenDevice>('direct');
@@ -181,9 +182,12 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
     // Get current device config
     const currentDeviceConfig = OXYGEN_DEVICES.find(d => d.value === oxygenDevice);
 
+    // Derive ventilator status from device
+    const hasVentilator = oxygenDevice === 'mechanical_ventilation';
+
     // Auto-calculate FiO2 when device/flow changes
     const calculatedFiO2 = useMemo(() => {
-        if (oxygenDevice === 'direct') return null;
+        if (oxygenDevice === 'direct' || oxygenDevice === 'mechanical_ventilation') return null;
         if (oxygenDevice === 'room_air') return 21;
 
         const flow = parseFloat(flowRate);
@@ -193,7 +197,7 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
     }, [oxygenDevice, flowRate, venturiFiO2]);
 
     // Update FiO2 field when calculated
-    const effectiveFiO2 = oxygenDevice === 'direct' ? fiO2 : (calculatedFiO2?.toString() || '');
+    const effectiveFiO2 = (oxygenDevice === 'direct' || oxygenDevice === 'mechanical_ventilation') ? fiO2 : (calculatedFiO2?.toString() || '');
 
     // Calculate respiration score from inputs
     const respiration = useMemo(() => calculateRespirationScore(paO2, effectiveFiO2, hasVentilator), [paO2, effectiveFiO2, hasVentilator]);
@@ -222,7 +226,7 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
     const handleReset = () => {
         setPaO2('');
         setFiO2('');
-        setHasVentilator(false);
+        // setHasVentilator(false); // Removed
         setOxygenDevice('direct');
         setFlowRate('');
         setVenturiFiO2(24);
@@ -311,8 +315,8 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
                                     </select>
                                 </div>
 
-                                {/* Direct FiO2 Input */}
-                                {oxygenDevice === 'direct' && (
+                                {/* Direct FiO2 Input (for Direct or Mechanical Ventilation) */}
+                                {(oxygenDevice === 'direct' || oxygenDevice === 'mechanical_ventilation') && (
                                     <label className="sofa-input-group">
                                         <span>FiO2 (%)</span>
                                         <input
@@ -379,14 +383,7 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
                                         FiO2: <strong>21%</strong> (室內空氣)
                                     </div>
                                 )}
-                                <label className="sofa-ventilator-checkbox">
-                                    <input
-                                        type="checkbox"
-                                        checked={hasVentilator}
-                                        onChange={(e) => setHasVentilator(e.target.checked)}
-                                    />
-                                    <span>使用呼吸器 (Mechanical Ventilation)</span>
-                                </label>
+                                {/* Removed separate ventilator checkbox */}
                                 {paO2FiO2Ratio !== null && (
                                     <div className="sofa-ratio-display">
                                         PaO2/FiO2 = <strong>{paO2FiO2Ratio.toFixed(0)}</strong> mmHg
