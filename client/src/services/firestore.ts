@@ -11,7 +11,9 @@ import {
     orderBy,
     serverTimestamp,
     Timestamp,
-    setDoc
+    setDoc,
+    arrayUnion,
+    arrayRemove
 } from 'firebase/firestore';
 import type { DocumentData } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -789,6 +791,15 @@ export const projectGuideService = {
 
 // ==================== Comment Service ====================
 
+export interface CommentReply {
+    id: string;
+    user_id: string;
+    username: string;
+    hospital: string;
+    content: string;
+    created_at: Date;
+}
+
 export interface GuideComment {
     id: string;
     content: string;
@@ -798,6 +809,7 @@ export interface GuideComment {
     created_at?: Date;
     notify_admin: boolean;
     admin_read: boolean;
+    replies?: CommentReply[];
 }
 
 export const commentService = {
@@ -816,6 +828,7 @@ export const commentService = {
             content,
             notify_admin: notifyAdmin,
             admin_read: false,
+            replies: [],
             created_at: serverTimestamp()
         });
         return docRef.id;
@@ -833,6 +846,12 @@ export const commentService = {
 
         for (const docSnap of snapshot.docs) {
             const data = docSnap.data();
+            // Process replies if they exist
+            const replies = (data.replies || []).map((r: any) => ({
+                ...r,
+                created_at: r.created_at?.toDate ? r.created_at.toDate() : new Date(r.created_at)
+            }));
+
             comments.push({
                 id: docSnap.id,
                 content: data.content,
@@ -841,10 +860,42 @@ export const commentService = {
                 hospital: data.hospital,
                 notify_admin: data.notify_admin || false,
                 admin_read: data.admin_read || false,
+                replies: replies,
                 created_at: convertTimestamp(data.created_at)
             });
         }
         return comments;
+    },
+
+    // Add reply to a comment
+    async addReply(
+        commentId: string,
+        userId: string,
+        username: string,
+        hospital: string,
+        content: string
+    ): Promise<void> {
+        const docRef = doc(db, 'guide_comments', commentId);
+        const newReply: CommentReply = {
+            id: crypto.randomUUID(),
+            user_id: userId,
+            username,
+            hospital,
+            content,
+            created_at: new Date() // Firestore will convert to timestamp usually, but arrayUnion needs explicit object. We'll stick to Date for client side mostly.
+        };
+
+        await updateDoc(docRef, {
+            replies: arrayUnion(newReply)
+        });
+    },
+
+    // Delete a reply
+    async deleteReply(commentId: string, reply: CommentReply): Promise<void> {
+        const docRef = doc(db, 'guide_comments', commentId);
+        await updateDoc(docRef, {
+            replies: arrayRemove(reply)
+        });
     },
 
     // Count unread notifications for admin

@@ -1,36 +1,19 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { projectGuideService, commentService } from '../services/firestore';
-import type { GuideComment } from '../services/firestore';
+import type { GuideComment, CommentReply } from '../services/firestore';
 import { useToast } from '../components/Toast';
-import { Edit, Save, X, BookOpen, Send, MessageSquare, Trash2, Bell, Check, User } from 'lucide-react';
+import { Edit, Save, X, BookOpen, Send, MessageSquare, Trash2, Bell, Check, User, Smile, Reply as ReplyIcon } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import EmojiPicker, { Theme } from 'emoji-picker-react';
+import type { EmojiClickData } from 'emoji-picker-react';
+import { useTheme } from '../context/ThemeContext';
 
 export default function ProjectGuide() {
     const { user } = useAuth();
-    // ... (rest of state)
-
-    // ... (fetch functions)
-
-    const modules = useMemo(() => ({
-        toolbar: [
-            [{ 'header': [1, 2, 3, false] }],
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ 'color': [] }, { 'background': [] }],
-            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-            ['link', 'clean']
-        ],
-    }), []);
-
-    const formats = useMemo(() => [
-        'header',
-        'bold', 'italic', 'underline', 'strike',
-        'color', 'background',
-        'list', 'bullet',
-        'link'
-    ], []);
     const { showSuccess, showError } = useToast();
+    // const { theme } = useTheme(); // Removed unused variable
 
     // Content State
     const [content, setContent] = useState('');
@@ -45,8 +28,30 @@ export default function ProjectGuide() {
     const [notifyAdmin, setNotifyAdmin] = useState(false);
     const [submittingComment, setSubmittingComment] = useState(false);
 
+    // Emoji & Reply State
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [replyingTo, setReplyingTo] = useState<string | null>(null); // ID of comment being replied to
+    const [replyContent, setReplyContent] = useState('');
+    const [showReplyEmoji, setShowReplyEmoji] = useState(false);
+
+    // Click outside to close emoji picker
+    const emojiRef = useRef<HTMLDivElement>(null);
+    const replyEmojiRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
         Promise.all([fetchContent(), fetchComments()]).finally(() => setLoading(false));
+
+        const handleClickOutside = (event: MouseEvent) => {
+            if (emojiRef.current && !emojiRef.current.contains(event.target as Node)) {
+                setShowEmojiPicker(false);
+            }
+            if (replyEmojiRef.current && !replyEmojiRef.current.contains(event.target as Node)) {
+                setShowReplyEmoji(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const fetchContent = async () => {
@@ -69,6 +74,25 @@ export default function ProjectGuide() {
         }
     };
 
+    const modules = useMemo(() => ({
+        toolbar: [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+            ['link', 'clean']
+        ],
+    }), []);
+
+    const formats = useMemo(() => [
+        'header',
+        'bold', 'italic', 'underline', 'strike',
+        'color', 'background',
+        'list', 'bullet',
+        'link'
+    ], []);
+
+    // ... (handleSave and handleCancel as before)
     const handleSave = async () => {
         setSaving(true);
         try {
@@ -103,6 +127,7 @@ export default function ProjectGuide() {
             );
             setNewComment('');
             setNotifyAdmin(false);
+            setShowEmojiPicker(false);
             showSuccess('留言已送出');
             fetchComments();
         } catch (error) {
@@ -110,6 +135,28 @@ export default function ProjectGuide() {
             showError('留言失敗');
         } finally {
             setSubmittingComment(false);
+        }
+    };
+
+    const handleSubmitReply = async (commentId: string) => {
+        if (!replyContent.trim() || !user) return;
+
+        try {
+            await commentService.addReply(
+                commentId,
+                user.id,
+                user.username || 'Unknown',
+                user.hospital || '',
+                replyContent.trim()
+            );
+            setReplyingTo(null);
+            setReplyContent('');
+            setShowReplyEmoji(false);
+            showSuccess('回覆已送出');
+            fetchComments();
+        } catch (error) {
+            console.error('Error replying:', error);
+            showError('回覆失敗');
         }
     };
 
@@ -125,10 +172,21 @@ export default function ProjectGuide() {
         }
     };
 
+    const handleDeleteReply = async (commentId: string, reply: CommentReply) => {
+        if (!window.confirm('確定要刪除此回覆嗎？')) return;
+        try {
+            await commentService.deleteReply(commentId, reply);
+            showSuccess('回覆已刪除');
+            fetchComments();
+        } catch (error) {
+            console.error('Error deleting reply:', error);
+            showError('刪除失敗');
+        }
+    };
+
     const handleMarkRead = async (id: string) => {
         try {
             await commentService.markRead(id);
-            // Refresh comments to update UI
             setComments(prev => prev.map(c =>
                 c.id === id ? { ...c, admin_read: true } : c
             ));
@@ -137,7 +195,13 @@ export default function ProjectGuide() {
         }
     };
 
+    const onEmojiClick = (emojiData: EmojiClickData) => {
+        setNewComment(prev => prev + emojiData.emoji);
+    };
 
+    const onReplyEmojiClick = (emojiData: EmojiClickData) => {
+        setReplyContent(prev => prev + emojiData.emoji);
+    };
 
     if (loading) {
         return (
@@ -269,19 +333,49 @@ export default function ProjectGuide() {
                 </h3>
 
                 {/* Comment Input */}
-                <div style={{ marginBottom: '2rem' }}>
-                    <textarea
-                        className="form-input"
-                        placeholder="輸入您的留言..."
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        style={{
-                            width: '100%',
-                            minHeight: '80px',
-                            resize: 'vertical',
-                            marginBottom: '0.75rem'
-                        }}
-                    />
+                <div style={{ marginBottom: '2rem', position: 'relative' }}>
+                    <div style={{ position: 'relative' }}>
+                        <textarea
+                            className="form-input"
+                            placeholder="輸入您的留言..."
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            style={{
+                                width: '100%',
+                                minHeight: '80px',
+                                resize: 'vertical',
+                                marginBottom: '0.75rem',
+                                paddingRight: '40px'
+                            }}
+                        />
+                        <button
+                            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                            style={{
+                                position: 'absolute',
+                                right: '10px',
+                                top: '10px',
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: 'var(--text-muted)'
+                            }}
+                            title="插入表情符號"
+                        >
+                            <Smile size={20} />
+                        </button>
+                    </div>
+
+                    {showEmojiPicker && (
+                        <div ref={emojiRef} style={{ position: 'absolute', top: '100%', right: '0', zIndex: 100 }}>
+                            <EmojiPicker
+                                onEmojiClick={onEmojiClick}
+                                theme={Theme.AUTO}
+                                width={300}
+                                height={400}
+                            />
+                        </div>
+                    )}
+
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <label style={{
                             display: 'flex',
@@ -378,34 +472,55 @@ export default function ProjectGuide() {
                                     {comment.content}
                                 </div>
 
-                                {/* Admin Actions */}
-                                {(user?.role === 'admin' || user?.id === comment.user_id) && (
-                                    <div style={{
-                                        display: 'flex',
-                                        justifyContent: 'flex-end',
-                                        gap: '0.5rem',
-                                        marginTop: '0.5rem',
-                                        borderTop: '1px dashed var(--border-color)',
-                                        paddingTop: '0.5rem'
-                                    }}>
-                                        {user?.role === 'admin' && comment.notify_admin && !comment.admin_read && (
-                                            <button
-                                                onClick={() => handleMarkRead(comment.id)}
-                                                style={{
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    color: 'var(--color-success)',
-                                                    cursor: 'pointer',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '4px',
-                                                    fontSize: '0.85rem'
-                                                }}
-                                            >
-                                                <Check size={14} />
-                                                標示為已讀
-                                            </button>
-                                        )}
+                                {/* Action Buttons (Apply, Delete) */}
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'flex-end',
+                                    gap: '0.5rem',
+                                    marginTop: '0.5rem',
+                                    borderTop: '1px dashed var(--border-color)',
+                                    paddingTop: '0.5rem'
+                                }}>
+                                    <button
+                                        onClick={() => {
+                                            setReplyingTo(replyingTo === comment.id ? null : comment.id);
+                                            setReplyContent('');
+                                        }}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            color: 'var(--color-primary)',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                            fontSize: '0.85rem'
+                                        }}
+                                    >
+                                        <ReplyIcon size={14} />
+                                        回覆
+                                    </button>
+
+                                    {user?.role === 'admin' && comment.notify_admin && !comment.admin_read && (
+                                        <button
+                                            onClick={() => handleMarkRead(comment.id)}
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                color: 'var(--color-success)',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                fontSize: '0.85rem'
+                                            }}
+                                        >
+                                            <Check size={14} />
+                                            標示為已讀
+                                        </button>
+                                    )}
+
+                                    {(user?.role === 'admin' || user?.id === comment.user_id) && (
                                         <button
                                             onClick={() => handleDeleteComment(comment.id)}
                                             style={{
@@ -422,6 +537,126 @@ export default function ProjectGuide() {
                                             <Trash2 size={14} />
                                             刪除
                                         </button>
+                                    )}
+                                </div>
+
+                                {/* Replies Section */}
+                                {(comment.replies && comment.replies.length > 0) && (
+                                    <div style={{
+                                        marginLeft: '1.5rem',
+                                        marginTop: '1rem',
+                                        paddingLeft: '1rem',
+                                        borderLeft: '2px solid var(--border-color)'
+                                    }}>
+                                        {comment.replies.map(reply => (
+                                            <div key={reply.id} style={{
+                                                marginBottom: '0.75rem',
+                                                padding: '0.75rem',
+                                                background: 'var(--bg-card)',
+                                                borderRadius: 'var(--border-radius)',
+                                                border: '1px solid var(--border-color)'
+                                            }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{reply.username}</span>
+                                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{reply.hospital}</span>
+                                                    </div>
+                                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                        {new Date(reply.created_at).toLocaleString('zh-TW')}
+                                                    </span>
+                                                </div>
+                                                <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+                                                    {reply.content}
+                                                </div>
+                                                {(user?.role === 'admin' || user?.id === reply.user_id) && (
+                                                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                        <button
+                                                            onClick={() => handleDeleteReply(comment.id, reply)}
+                                                            style={{
+                                                                background: 'none',
+                                                                border: 'none',
+                                                                color: 'var(--text-muted)',
+                                                                fontSize: '0.8rem',
+                                                                cursor: 'pointer',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '2px'
+                                                            }}
+                                                        >
+                                                            <Trash2 size={12} /> 刪除
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Reply Input */}
+                                {replyingTo === comment.id && (
+                                    <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--bg-card)', borderRadius: 'var(--border-radius)' }}>
+                                        <div style={{ position: 'relative' }}>
+                                            <textarea
+                                                className="form-input"
+                                                placeholder={`回覆 ${comment.username}...`}
+                                                value={replyContent}
+                                                onChange={(e) => setReplyContent(e.target.value)}
+                                                autoFocus
+                                                style={{
+                                                    width: '100%',
+                                                    minHeight: '60px',
+                                                    marginBottom: '0.5rem',
+                                                    fontSize: '0.9rem',
+                                                    paddingRight: '35px'
+                                                }}
+                                            />
+                                            <button
+                                                onClick={() => setShowReplyEmoji(!showReplyEmoji)}
+                                                style={{
+                                                    position: 'absolute',
+                                                    right: '8px',
+                                                    top: '8px',
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    color: 'var(--text-muted)'
+                                                }}
+                                                title="插入表情符號"
+                                            >
+                                                <Smile size={18} />
+                                            </button>
+                                            {showReplyEmoji && (
+                                                <div ref={replyEmojiRef} style={{ position: 'absolute', top: '100%', right: '0', zIndex: 100 }}>
+                                                    <EmojiPicker
+                                                        onEmojiClick={onReplyEmojiClick}
+                                                        theme={Theme.AUTO}
+                                                        width={300}
+                                                        height={350}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                            <button
+                                                className="btn btn-secondary"
+                                                onClick={() => {
+                                                    setReplyingTo(null);
+                                                    setReplyContent('');
+                                                }}
+                                                style={{ padding: '0.25rem 0.75rem', fontSize: '0.9rem' }}
+                                            >
+                                                取消
+                                            </button>
+                                            <button
+                                                className="btn btn-primary"
+                                                onClick={() => handleSubmitReply(comment.id)}
+                                                disabled={!replyContent.trim()}
+                                                style={{ padding: '0.25rem 0.75rem', fontSize: '0.9rem' }}
+                                            >
+                                                <Send size={14} style={{ marginRight: '4px' }} />
+                                                送出回覆
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>

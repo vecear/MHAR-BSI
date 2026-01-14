@@ -32,7 +32,7 @@ const initialUserForm: UserFormData = {
     phone: '',
     address: '',
     line_id: '',
-    allowed_projects: ['CR-GNBSI']
+    allowed_projects: []
 };
 
 export default function UserManagement() {
@@ -80,7 +80,7 @@ export default function UserManagement() {
             phone: user.phone || '',
             address: user.address || '',
             line_id: user.line_id || '',
-            allowed_projects: user.allowed_projects || ['CR-GNBSI']
+            allowed_projects: user.allowed_projects || []
         });
         setShowUserModal(true);
     };
@@ -160,6 +160,13 @@ export default function UserManagement() {
 
     return (
         <div className="animate-fadeIn">
+            <style>{`
+                @keyframes pulse {
+                    0% { opacity: 1; transform: scale(1); }
+                    50% { opacity: 0.5; transform: scale(0.95); }
+                    100% { opacity: 1; transform: scale(1); }
+                }
+            `}</style>
             <div className="page-header">
                 <h1>使用者管理</h1>
                 <button className="btn btn-primary" onClick={openAddUser}>
@@ -216,15 +223,29 @@ export default function UserManagement() {
                                                     </button>
                                                 </div>
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.email || '-'}</td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.username}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                {/* Check for no permissions */}
+                                                {(!u.allowed_projects || u.allowed_projects.length === 0) && (
+                                                    <span className="badge badge-error animate-pulse" style={{
+                                                        marginRight: '8px',
+                                                        verticalAlign: 'middle',
+                                                        animation: 'pulse 1.5s infinite'
+                                                    }}>
+                                                        未開通
+                                                    </span>
+                                                )}
+                                                {u.email || '-'}
+                                            </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                {u.username}
+                                            </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.display_name || '-'}</td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 <span className="badge badge-info">{u.hospital}</span>
                                             </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                                                    {(u.allowed_projects || ['CR-GNBSI']).map(pid => (
+                                                    {(u.allowed_projects || []).map(pid => (
                                                         <span key={pid} className="badge badge-success" style={{ fontSize: '0.75rem' }}>
                                                             {PROJECTS.find(p => p.id === pid)?.name || pid}
                                                         </span>

@@ -96,7 +96,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                             username: fbUser.email?.split('@')[0] || 'user',
                             hospital: '',
                             role: 'user',
-                            allowed_projects: [DEFAULT_PROJECT_ID],
+                            allowed_projects: [], // Default to no access for cleanup/verification
                             email: fbUser.email || '',
                             created_at: serverTimestamp()
                         };
@@ -106,7 +106,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                             username: newUserProfile.username,
                             hospital: newUserProfile.hospital,
                             role: 'user',
-                            allowed_projects: newUserProfile.allowed_projects,
+                            allowed_projects: [],
                             email: newUserProfile.email,
                             created_at: new Date()
                         });
@@ -198,7 +198,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             username: userData.username || email.split('@')[0],
             hospital: userData.hospital || '',
             role: 'user',
-            allowed_projects: [DEFAULT_PROJECT_ID], // Default permission for new users
+            allowed_projects: [], // Default permission for new users (wait for admin/owner approval)
             email: email,
             created_at: serverTimestamp()
         };
@@ -219,7 +219,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             username: userData.username || email.split('@')[0],
             hospital: userData.hospital || '',
             role: 'user',
-            allowed_projects: [DEFAULT_PROJECT_ID],
+            allowed_projects: [],
             email: email,
             display_name: userData.display_name,
             phone: userData.phone,
