@@ -577,63 +577,171 @@ export const userService = {
 // ==================== Export Service ====================
 
 export const exportService = {
-    // Export submissions to CSV
-    // If ids provided, export only those; otherwise export all
+    // Export submissions to CSV with proper structured format
     async exportToCSV(ids?: string[]): Promise<string> {
         let submissions: Submission[];
 
         if (ids && ids.length > 0) {
-            // Fetch specific submissions
             const fetchPromises = ids.map(id => submissionService.getById(id));
             const results = await Promise.all(fetchPromises);
             submissions = results.filter((s): s is Submission => s !== null);
         } else {
-            // Fetch all submissions (admin mode)
             submissions = await submissionService.getAll(undefined, true);
         }
 
         if (submissions.length === 0) return '';
 
-        // Get all form_data keys
-        const allKeys = new Set<string>();
-        submissions.forEach(s => {
-            Object.keys(s.form_data || {}).forEach(key => allKeys.add(key));
-        });
-
-        const formDataKeys = Array.from(allKeys).sort();
-
-        // Headers
-        const headers = [
-            'id', 'username', 'hospital', 'medical_record_number',
-            'admission_date', 'data_status', 'update_count',
-            ...formDataKeys
+        // Define constants for structured export
+        const PRIMARY_SOURCES = ['Lung', 'Blood', 'Wound', 'GI', 'Urine', 'CLABSI'];
+        const CHRONIC_DISEASES = [
+            'MI', 'HCVD', 'OLD CVA', 'Dementia', 'Liver Cirrhosis',
+            'Diabetes Mellitus', 'Renal disease', 'Autoimmune',
+            'Leukemia', 'Lymphoma', 'Solid Tumor', 'AIDS',
+            'COPD', 'Connective tissue disease', 'PUD', 'None'
+        ];
+        const ANTIBIOTICS_MIC = [
+            'ampicillin', 'cefazolin', 'gentamicin', 'amikacin', 'trimeth_sulfame',
+            'piperacillin_taz', 'cefuroxime', 'ceftriaxone', 'meropenem', 'doripenem',
+            'imipenem', 'ertapenem', 'cefepime', 'tigecycline', 'levofloxacin',
+            'colistin', 'flomoxef', 'cefoperazo_sulba', 'caz_avibactam', 'ceftolozane'
+        ];
+        const ANTIBIOTIC_DRUGS = [
+            'Amikacin', 'Gentamicin', 'Tobramycin',
+            'Meropenem', 'Imipenem', 'Ertapenem', 'Doripenem',
+            'Ceftriaxone', 'Cefepime', 'Ceftazidime', 'Cefazolin',
+            'Levofloxacin', 'Ciprofloxacin', 'Moxifloxacin',
+            'Colistin', 'Polymyxin B',
+            'Tigecycline',
+            'Piperacillin-Tazobactam', 'Ampicillin-Sulbactam', 'Ceftazidime-Avibactam', 'Ceftolozane-Tazobactam',
+            'Trimethoprim-Sulfamethoxazole',
+            'Fosfomycin', 'Aztreonam'
+        ];
+        const YES_NO_FIELDS = [
+            'thrombocytopenia', 'icu_at_onset', 'septic_shock',
+            'infection_control', 'poly_microbial', 'clinical_response_14days'
         ];
 
-        // Rows
-        const rows = submissions.map(s => {
-            const baseRow = [
-                s.id,
-                s.username || '',
-                s.hospital || '',
-                s.medical_record_number,
-                s.admission_date,
-                s.data_status,
-                String(s.update_count)
-            ];
+        // Build headers
+        const headers: string[] = [
+            // Basic info
+            'id', 'username', 'hospital', 'medical_record_number', 'admission_date',
+            'data_status', 'update_count', 'record_time', 'name', 'recorded_by',
+            'sex', 'age', 'bw', 'pathogen', 'positive_culture_date',
+            // Checkbox: Primary Source
+            'primary_source',
+            ...PRIMARY_SOURCES.map(s => `primary_source_${s}`),
+            // Radio single choice
+            'type_of_infection',
+            // Checkbox: Chronic Diseases
+            'chronic_diseases',
+            ...CHRONIC_DISEASES.map(d => `chronic_diseases_${d.replace(/[^a-zA-Z0-9]/g, '_')}`),
+            // Yes/No fields as 0/1
+            ...YES_NO_FIELDS,
+            // Text fields
+            'duration_before_bacteremia', 'renal_function_admission',
+            'sofa_score', 'renal_function_bacteremia',
+            // MIC data - one column per antibiotic
+            ...ANTIBIOTICS_MIC.map(a => `mic_${a}`),
+            // Antibiotic usage - one column per drug with date range
+            ...ANTIBIOTIC_DRUGS.map(d => `antibiotic_${d.replace(/[^a-zA-Z0-9]/g, '_')}`),
+            // Outcome
+            'crude_mortality', 'hospital_stay_days', 'negative_bc', 'remarks'
+        ];
 
-            const formDataValues = formDataKeys.map(key => {
-                const value = s.form_data?.[key];
-                if (value === null || value === undefined) return '';
-                if (typeof value === 'object') return JSON.stringify(value);
-                return String(value);
+        // Helper to convert Yes/No to 1/0
+        const yesNoTo01 = (val: unknown): string => {
+            if (val === 'Yes' || val === 'yes' || val === true) return '1';
+            if (val === 'No' || val === 'no' || val === false) return '0';
+            return '';
+        };
+
+        // Build rows
+        const rows = submissions.map(s => {
+            const fd = s.form_data || {};
+            const row: string[] = [];
+
+            // Basic info
+            row.push(s.id);
+            row.push(s.username || '');
+            row.push(s.hospital || '');
+            row.push(s.medical_record_number);
+            row.push(s.admission_date);
+            row.push(s.data_status);
+            row.push(String(s.update_count || 1));
+            row.push(String(fd.record_time || ''));
+            row.push(String(fd.name || ''));
+            row.push(String(fd.recorded_by || ''));
+            row.push(String(fd.sex || ''));
+            row.push(String(fd.age || ''));
+            row.push(String(fd.bw || ''));
+            row.push(String(fd.pathogen || ''));
+            row.push(String(fd.positive_culture_date || ''));
+
+            // Primary Source - combined value, then individual 0/1
+            const primarySources = (fd.primary_source as string[]) || [];
+            row.push(primarySources.join(';'));
+            PRIMARY_SOURCES.forEach(source => {
+                row.push(primarySources.includes(source) ? '1' : '0');
             });
 
-            return [...baseRow, ...formDataValues];
+            // Type of infection
+            row.push(String(fd.type_of_infection || ''));
+
+            // Chronic Diseases - combined value, then individual 0/1
+            const chronicDiseases = (fd.chronic_diseases as string[]) || [];
+            row.push(chronicDiseases.join(';'));
+            CHRONIC_DISEASES.forEach(disease => {
+                row.push(chronicDiseases.includes(disease) ? '1' : '0');
+            });
+
+            // Yes/No fields
+            YES_NO_FIELDS.forEach(field => {
+                row.push(yesNoTo01(fd[field]));
+            });
+
+            // Text fields
+            row.push(String(fd.duration_before_bacteremia || ''));
+            row.push(String(fd.renal_function_admission || ''));
+            row.push(String(fd.sofa_score || ''));
+            row.push(String(fd.renal_function_bacteremia || ''));
+
+            // MIC data
+            const micData = (fd.mic_data as Record<string, string>) || {};
+            ANTIBIOTICS_MIC.forEach(ab => {
+                row.push(micData[ab] || '');
+            });
+
+            // Antibiotic usage - format as date range
+            const abDetails = (fd.antibiotic_details as Record<string, { drugs: string[]; usage: Record<string, { start_date: string; end_date: string; second_use: boolean; second_start_date?: string; second_end_date?: string }> }>) || {};
+            ANTIBIOTIC_DRUGS.forEach(drug => {
+                let usageStr = '';
+                // Find this drug in any antibiotic class
+                Object.values(abDetails).forEach(classDetail => {
+                    if (classDetail.drugs?.includes(drug) && classDetail.usage?.[drug]) {
+                        const usage = classDetail.usage[drug];
+                        if (usage.start_date || usage.end_date) {
+                            usageStr = `${usage.start_date || ''}~${usage.end_date || ''}`;
+                            if (usage.second_use && (usage.second_start_date || usage.second_end_date)) {
+                                usageStr += `; ${usage.second_start_date || ''}~${usage.second_end_date || ''}`;
+                            }
+                        }
+                    }
+                });
+                row.push(usageStr);
+            });
+
+            // Outcome
+            row.push(String(fd.crude_mortality || ''));
+            row.push(String(fd.hospital_stay_days || ''));
+            row.push(String(fd.negative_bc || ''));
+            row.push(String(fd.remarks || ''));
+
+            return row;
         });
 
         // Convert to CSV
         const escapeCSV = (value: string) => {
-            if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+            if (value.includes(',') || value.includes('"') || value.includes('\n') || value.includes(';')) {
                 return `"${value.replace(/"/g, '""')}"`;
             }
             return value;

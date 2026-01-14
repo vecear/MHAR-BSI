@@ -83,9 +83,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                             created_at: userData.created_at?.toDate()
                         });
                     } else {
-                        // User exists in Auth but not in Firestore (shouldn't happen normally)
-                        console.error('User document not found in Firestore');
-                        setUser(null);
+                        // User exists in Auth but not in Firestore - create basic profile
+                        console.log('Creating user profile in Firestore...');
+                        const newUserProfile = {
+                            username: fbUser.email?.split('@')[0] || 'user',
+                            hospital: '',
+                            role: 'user',
+                            email: fbUser.email || '',
+                            created_at: serverTimestamp()
+                        };
+                        await setDoc(doc(db, 'users', fbUser.uid), newUserProfile);
+                        setUser({
+                            id: fbUser.uid,
+                            username: newUserProfile.username,
+                            hospital: newUserProfile.hospital,
+                            role: 'user',
+                            email: newUserProfile.email,
+                            created_at: new Date()
+                        });
                     }
                 } catch (error) {
                     console.error('Error fetching user profile:', error);
@@ -129,37 +144,39 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const register = async (email: string, password: string, userData: Partial<User>) => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-        // Create user profile in Firestore
-        const userProfile = {
+        // Create user profile in Firestore - filter out undefined values
+        const userProfile: Record<string, unknown> = {
             username: userData.username || email.split('@')[0],
             hospital: userData.hospital || '',
-            role: 'user' as const,
+            role: 'user',
             email: email,
-            display_name: userData.display_name || undefined,
-            phone: userData.phone || undefined,
-            address: userData.address || undefined,
-            gender: userData.gender || undefined,
-            line_id: userData.line_id || undefined,
-            security_question: userData.security_question || undefined,
-            security_answer: userData.security_answer || undefined,
             created_at: serverTimestamp()
         };
+
+        // Only add optional fields if they have values
+        if (userData.display_name) userProfile.display_name = userData.display_name;
+        if (userData.phone) userProfile.phone = userData.phone;
+        if (userData.address) userProfile.address = userData.address;
+        if (userData.gender) userProfile.gender = userData.gender;
+        if (userData.line_id) userProfile.line_id = userData.line_id;
+        if (userData.security_question) userProfile.security_question = userData.security_question;
+        if (userData.security_answer) userProfile.security_answer = userData.security_answer;
 
         await setDoc(doc(db, 'users', userCredential.user.uid), userProfile);
 
         setUser({
             id: userCredential.user.uid,
-            username: userProfile.username,
-            hospital: userProfile.hospital,
-            role: userProfile.role,
-            email: userProfile.email,
-            display_name: userProfile.display_name,
-            phone: userProfile.phone,
-            address: userProfile.address,
-            gender: userProfile.gender,
-            line_id: userProfile.line_id,
-            security_question: userProfile.security_question,
-            security_answer: userProfile.security_answer,
+            username: userData.username || email.split('@')[0],
+            hospital: userData.hospital || '',
+            role: 'user',
+            email: email,
+            display_name: userData.display_name,
+            phone: userData.phone,
+            address: userData.address,
+            gender: userData.gender,
+            line_id: userData.line_id,
+            security_question: userData.security_question,
+            security_answer: userData.security_answer,
             created_at: new Date()
         });
     };
