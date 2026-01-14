@@ -1508,6 +1508,13 @@ h3 {
     margin: 0;
   }
 
+  /* Fix for Reason columns having limited width due to inline styles */
+  .data-table td[data-label="申請原因"],
+  .data-table td[data-label="拒絕原因"] {
+    max-width: none !important;
+    width: 100%;
+  }
+
   /* Adjust action buttons container */
   .data-table td:first-child {
     justify-content: flex-end;
