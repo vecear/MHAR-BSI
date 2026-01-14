@@ -1,43 +1,33 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { Trash2, AlertCircle, Check, XCircle, FileText } from 'lucide-react';
-import { API_URL } from '../App';
-
-interface DeleteRequest {
-    id: number;
-    submission_id: number;
-    medical_record_number: string;
-    admission_date: string;
-    requester_username: string;
-    requester_hospital: string;
-    status: 'pending' | 'approved' | 'rejected';
-    created_at: string;
-    reject_reason?: string;
-    request_reason?: string;
-}
+import { deleteRequestService } from '../services/firestore';
+import type { DeleteRequest } from '../services/firestore';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function AdminDeleteRequests() {
+    const { user } = useAuth();
     const [deleteRequests, setDeleteRequests] = useState<DeleteRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const { refreshPendingDeleteCount } = useOutletContext<{ refreshPendingDeleteCount: () => void }>();
 
     // Only decided (approved/rejected) requests can be selected for deletion
     const decidedRequests = useMemo(() => deleteRequests.filter(req => req.status !== 'pending'), [deleteRequests]);
 
     useEffect(() => {
-        fetchDeleteRequests();
-    }, []);
+        if (user) {
+            fetchDeleteRequests();
+        }
+    }, [user]);
 
     const fetchDeleteRequests = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_URL}/delete-requests`, { credentials: 'include' });
-            if (!res.ok) throw new Error('取得删除申請失敗');
-            const data = await res.json();
+            const data = await deleteRequestService.getAll(user!.id, user!.role === 'admin');
             setDeleteRequests(data);
-            setSelectedIds(new Set()); // Reset selection on refresh
+            setSelectedIds(new Set());
         } catch (err) {
             setError(err instanceof Error ? err.message : '發生錯誤');
         } finally {
@@ -45,16 +35,10 @@ export default function AdminDeleteRequests() {
         }
     };
 
-    const handleApproveDelete = async (id: number) => {
+    const handleApproveDelete = async (id: string) => {
         if (!confirm('確定要核准此删除申請？資料將永久删除。')) return;
         try {
-            const res = await fetch(`${API_URL}/delete-requests/${id}/approve`, {
-                method: 'PUT',
-                credentials: 'include'
-            });
-            if (!res.ok) throw new Error('操作失敗');
-
-            // Refresh counts and current view
+            await deleteRequestService.approve(id, user!.id);
             fetchDeleteRequests();
             refreshPendingDeleteCount();
         } catch (err) {
@@ -62,17 +46,11 @@ export default function AdminDeleteRequests() {
         }
     };
 
-    const handleRejectDelete = async (id: number) => {
+    const handleRejectDelete = async (id: string) => {
         const reason = prompt('請輸入拒絕理由（可留空）：');
-        if (reason === null) return; // User cancelled
+        if (reason === null) return;
         try {
-            const res = await fetch(`${API_URL}/delete-requests/${id}/reject`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ reason })
-            });
-            if (!res.ok) throw new Error('操作失敗');
+            await deleteRequestService.reject(id, user!.id, reason || undefined);
             fetchDeleteRequests();
             refreshPendingDeleteCount();
         } catch (err) {
@@ -86,20 +64,14 @@ export default function AdminDeleteRequests() {
 
         try {
             const ids = Array.from(selectedIds);
-            await Promise.all(ids.map(id =>
-                fetch(`${API_URL}/delete-requests/${id}`, {
-                    method: 'DELETE',
-                    credentials: 'include'
-                })
-            ));
-
+            await Promise.all(ids.map(id => deleteRequestService.delete(id)));
             fetchDeleteRequests();
         } catch (err) {
             alert(err instanceof Error ? err.message : '操作失敗');
         }
     };
 
-    const toggleSelect = (id: number) => {
+    const toggleSelect = (id: string) => {
         setSelectedIds(prev => {
             const n = new Set(prev);
             if (n.has(id)) n.delete(id);
@@ -114,6 +86,11 @@ export default function AdminDeleteRequests() {
         } else {
             setSelectedIds(new Set(decidedRequests.map(r => r.id)));
         }
+    };
+
+    const formatDateTime = (date: Date | undefined) => {
+        if (!date) return '-';
+        return date.toLocaleString('zh-TW', { hour12: false });
     };
 
     return (
@@ -196,7 +173,7 @@ export default function AdminDeleteRequests() {
                                             </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.85em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
                                                 {req.status === 'approved' ? (
-                                                    (req as any).submission_record_time?.replace(/[-T:]/g, '') || '-'
+                                                    req.record_time?.replace(/[-T:]/g, '') || '-'
                                                 ) : (
                                                     <Link to={`/form/${req.submission_id}`} style={{ textDecoration: 'none', color: 'var(--color-primary)' }}>
                                                         <FileText size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
@@ -209,12 +186,12 @@ export default function AdminDeleteRequests() {
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle', maxWidth: '150px', whiteSpace: 'normal', fontSize: '0.9rem', color: '#444' }}>
                                                 {req.request_reason || <span style={{ color: '#aaa', fontStyle: 'italic' }}>無</span>}
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.requester_username}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.requester_username || '-'}</td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                <span className="badge badge-info">{req.requester_hospital}</span>
+                                                <span className="badge badge-info">{req.requester_hospital || '-'}</span>
                                             </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                {new Date(req.created_at + (req.created_at.includes('Z') ? '' : 'Z')).toLocaleString('zh-TW', { hour12: false })}
+                                                {formatDateTime(req.created_at)}
                                             </td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 {req.status === 'pending' && (

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X, User, AlertCircle, Check } from 'lucide-react';
-import { API_URL } from '../App';
+import { useAuth } from '../contexts/AuthContext';
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { auth } from '../firebase';
 
 interface ProfileData {
     username: string;
@@ -11,8 +13,6 @@ interface ProfileData {
     phone: string;
     address: string;
     line_id: string;
-    security_question: string;
-    security_answer: string;
 }
 
 interface Props {
@@ -22,6 +22,7 @@ interface Props {
 }
 
 export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
+    const { user, updateUserProfile } = useAuth();
     const [profile, setProfile] = useState<ProfileData>({
         username: '',
         hospital: '',
@@ -30,9 +31,7 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
         gender: '',
         phone: '',
         address: '',
-        line_id: '',
-        security_question: '',
-        security_answer: ''
+        line_id: ''
     });
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -43,38 +42,20 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
     const [success, setSuccess] = useState('');
 
     useEffect(() => {
-        if (isOpen) {
-            fetchProfile();
-        }
-    }, [isOpen]);
-
-    const fetchProfile = async () => {
-        setLoading(true);
-        setError('');
-        try {
-            const res = await fetch(`${API_URL}/users/profile`, {
-                credentials: 'include'
-            });
-            if (!res.ok) throw new Error('載入個人資料失敗');
-            const data = await res.json();
+        if (isOpen && user) {
             setProfile({
-                username: data.username || '',
-                hospital: data.hospital || '',
-                email: data.email || '',
-                display_name: data.display_name || '',
-                gender: data.gender || '',
-                phone: data.phone || '',
-                address: data.address || '',
-                line_id: data.line_id || '',
-                security_question: data.security_question || '',
-                security_answer: data.security_answer || ''
+                username: user.username || '',
+                hospital: user.hospital || '',
+                email: user.email || '',
+                display_name: user.display_name || '',
+                gender: user.gender || '',
+                phone: user.phone || '',
+                address: user.address || '',
+                line_id: user.line_id || ''
             });
-        } catch (err) {
-            setError(err instanceof Error ? err.message : '載入失敗');
-        } finally {
             setLoading(false);
         }
-    };
+    }, [isOpen, user]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -91,31 +72,40 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
                 setError('新密碼至少需要6個字元');
                 return;
             }
+            if (!currentPassword) {
+                setError('請輸入目前密碼');
+                return;
+            }
         }
 
         setSaving(true);
         try {
-            const res = await fetch(`${API_URL}/users/profile`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    email: profile.email,
-                    display_name: profile.display_name,
-                    gender: profile.gender,
-                    phone: profile.phone,
-                    address: profile.address,
-                    line_id: profile.line_id,
-                    security_question: profile.security_question || undefined,
-                    security_answer: profile.security_answer || undefined,
-                    currentPassword: newPassword ? currentPassword : undefined,
-                    newPassword: newPassword || undefined
-                })
+            // Update profile in Firestore
+            await updateUserProfile({
+                display_name: profile.display_name,
+                gender: profile.gender,
+                phone: profile.phone,
+                address: profile.address,
+                line_id: profile.line_id
             });
 
-            if (!res.ok) {
-                const errData = await res.json();
-                throw new Error(errData.error || '更新失敗');
+            // Update password in Firebase Auth if provided
+            if (newPassword && auth.currentUser) {
+                try {
+                    // Re-authenticate user first
+                    const credential = EmailAuthProvider.credential(
+                        auth.currentUser.email!,
+                        currentPassword
+                    );
+                    await reauthenticateWithCredential(auth.currentUser, credential);
+                    await updatePassword(auth.currentUser, newPassword);
+                } catch (authError) {
+                    const errMsg = authError instanceof Error ? authError.message : '密碼更新失敗';
+                    if (errMsg.includes('wrong-password')) {
+                        throw new Error('目前密碼錯誤');
+                    }
+                    throw new Error(errMsg);
+                }
             }
 
             setSuccess('個人資料已更新');
@@ -174,11 +164,11 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
                                 <h4 style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>帳號資訊（唯讀）</h4>
                                 <div className="form-grid-2">
                                     <div className="form-group">
-                                        <label className="form-label">帳號</label>
+                                        <label className="form-label">Email</label>
                                         <input
                                             type="text"
                                             className="form-input"
-                                            value={profile.username}
+                                            value={profile.email}
                                             disabled
                                             style={{ backgroundColor: 'var(--bg-primary)' }}
                                         />
@@ -225,16 +215,6 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
                                 </div>
                                 <div className="form-grid-2">
                                     <div className="form-group">
-                                        <label className="form-label">E-mail</label>
-                                        <input
-                                            type="email"
-                                            className="form-input"
-                                            value={profile.email}
-                                            onChange={e => setProfile({ ...profile, email: e.target.value })}
-                                            placeholder="your@email.com"
-                                        />
-                                    </div>
-                                    <div className="form-group">
                                         <label className="form-label">電話</label>
                                         <input
                                             type="tel"
@@ -244,16 +224,16 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
                                             placeholder="0912-345-678"
                                         />
                                     </div>
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">Line ID</label>
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        value={profile.line_id}
-                                        onChange={e => setProfile({ ...profile, line_id: e.target.value })}
-                                        placeholder="Line ID"
-                                    />
+                                    <div className="form-group">
+                                        <label className="form-label">Line ID</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={profile.line_id}
+                                            onChange={e => setProfile({ ...profile, line_id: e.target.value })}
+                                            placeholder="Line ID"
+                                        />
+                                    </div>
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">地址</label>
@@ -300,46 +280,6 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
                                             placeholder="再次輸入新密碼"
                                         />
                                     </div>
-                                </div>
-                            </div>
-
-                            <div className="form-section">
-                                <h4 style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>忘記密碼設定</h4>
-                                <div className="form-group">
-                                    <label className="form-label">安全問題</label>
-                                    <select
-                                        className="form-select"
-                                        value={profile.security_question}
-                                        onChange={e => setProfile({ ...profile, security_question: e.target.value })}
-                                    >
-                                        <option value="">請選擇安全提問</option>
-                                        <option value="生日">生日</option>
-                                        <option value="身分證">身分證</option>
-                                        <option value="畢業國小">畢業國小</option>
-                                        <option value="爸爸姓名">爸爸姓名</option>
-                                        <option value="媽媽姓名">媽媽姓名</option>
-                                        <option value="結婚紀念日">結婚紀念日</option>
-                                        <option value="寵物名字">寵物名字</option>
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">安全問題答案</label>
-                                    {profile.security_question === '生日' || profile.security_question === '結婚紀念日' ? (
-                                        <input
-                                            type="date"
-                                            className="form-input"
-                                            value={profile.security_answer}
-                                            onChange={e => setProfile({ ...profile, security_answer: e.target.value })}
-                                        />
-                                    ) : (
-                                        <input
-                                            type="text"
-                                            className="form-input"
-                                            value={profile.security_answer}
-                                            onChange={e => setProfile({ ...profile, security_answer: e.target.value })}
-                                            placeholder="請輸入答案"
-                                        />
-                                    )}
                                 </div>
                             </div>
                         </div>

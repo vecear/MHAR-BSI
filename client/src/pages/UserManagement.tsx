@@ -1,26 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Users, Edit, Trash2, X, UserPlus, AlertCircle } from 'lucide-react';
-import { API_URL } from '../App';
-
-interface User {
-    id: number;
-    username: string;
-    hospital: string;
-    role: string;
-    email?: string;
-    display_name?: string;
-    gender?: string;
-    phone?: string;
-    address?: string;
-    line_id?: string;
-    created_at: string;
-}
+import { userService } from '../services/firestore';
+import type { FirestoreUser } from '../services/firestore';
 
 interface UserFormData {
-    username: string;
-    password: string;
-    hospital: string;
     email: string;
+    password: string;
+    username: string;
+    hospital: string;
     display_name: string;
     gender: string;
     phone: string;
@@ -34,10 +21,10 @@ const HOSPITALS = [
 ];
 
 const initialUserForm: UserFormData = {
-    username: '',
-    password: '',
-    hospital: HOSPITALS[0],
     email: '',
+    password: '',
+    username: '',
+    hospital: HOSPITALS[0],
     display_name: '',
     gender: '',
     phone: '',
@@ -46,13 +33,13 @@ const initialUserForm: UserFormData = {
 };
 
 export default function UserManagement() {
-    const [users, setUsers] = useState<User[]>([]);
+    const [users, setUsers] = useState<FirestoreUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
     // Modal states
     const [showUserModal, setShowUserModal] = useState(false);
-    const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [editingUser, setEditingUser] = useState<FirestoreUser | null>(null);
     const [userForm, setUserForm] = useState<UserFormData>(initialUserForm);
     const [savingUser, setSavingUser] = useState(false);
 
@@ -63,9 +50,7 @@ export default function UserManagement() {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_URL}/users`, { credentials: 'include' });
-            if (!res.ok) throw new Error('取得使用者失敗');
-            const data = await res.json();
+            const data = await userService.getAll();
             setUsers(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : '發生錯誤');
@@ -80,13 +65,13 @@ export default function UserManagement() {
         setShowUserModal(true);
     };
 
-    const openEditUser = (user: User) => {
+    const openEditUser = (user: FirestoreUser) => {
         setEditingUser(user);
         setUserForm({
-            username: user.username,
-            password: '',
-            hospital: user.hospital,
             email: user.email || '',
+            password: '',
+            username: user.username,
+            hospital: user.hospital,
             display_name: user.display_name || '',
             gender: user.gender || '',
             phone: user.phone || '',
@@ -101,31 +86,39 @@ export default function UserManagement() {
         setSavingUser(true);
         try {
             if (editingUser) {
-                const res = await fetch(`${API_URL}/users/${editingUser.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                        ...userForm,
-                        newPassword: userForm.password || undefined
-                    })
+                // Update existing user
+                await userService.update(editingUser.id, {
+                    username: userForm.username,
+                    hospital: userForm.hospital,
+                    display_name: userForm.display_name,
+                    gender: userForm.gender,
+                    phone: userForm.phone,
+                    address: userForm.address,
+                    line_id: userForm.line_id
                 });
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.error || '更新失敗');
-                }
             } else {
+                // Create new user - NOTE: With Firebase, creating users should go through Auth
+                // For now, we'll just create a Firestore document with a placeholder
+                if (!userForm.email) throw new Error('請輸入 Email');
                 if (!userForm.password) throw new Error('請輸入密碼');
-                const res = await fetch(`${API_URL}/users`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(userForm)
+
+                // This is a simplified version - in production, you'd use Firebase Admin SDK
+                // or a Cloud Function to create users properly
+                alert('注意：Firebase 環境下，建議使用者自行註冊帳號。\n此處僅新增 Firestore 使用者資料，不建立實際登入帳號。');
+
+                await userService.create({
+                    id: '', // Will be set by service
+                    email: userForm.email,
+                    username: userForm.username,
+                    hospital: userForm.hospital,
+                    role: 'user',
+                    display_name: userForm.display_name,
+                    gender: userForm.gender,
+                    phone: userForm.phone,
+                    address: userForm.address,
+                    line_id: userForm.line_id,
+                    created_at: new Date()
                 });
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.error || '新增失敗');
-                }
             }
             setShowUserModal(false);
             setUserForm(initialUserForm);
@@ -137,14 +130,10 @@ export default function UserManagement() {
         }
     };
 
-    const handleDeleteUser = async (id: number) => {
+    const handleDeleteUser = async (id: string) => {
         if (!confirm('確定要刪除此使用者嗎？（該使用者建立的表單資料將會保留）')) return;
         try {
-            const res = await fetch(`${API_URL}/users/${id}`, {
-                method: 'DELETE',
-                credentials: 'include'
-            });
-            if (!res.ok) throw new Error('刪除失敗');
+            await userService.delete(id);
             setUsers(prev => prev.filter(u => u.id !== id));
         } catch (err) {
             alert(err instanceof Error ? err.message : '刪除失敗');
@@ -188,10 +177,10 @@ export default function UserManagement() {
                                 <thead>
                                     <tr>
                                         <th style={{ minWidth: '80px', textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1.5rem' }}>修改</th>
+                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>Email</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>帳號</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>姓名</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>醫院</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>E-mail</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>電話</th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>建立時間</th>
                                     </tr>
@@ -209,14 +198,14 @@ export default function UserManagement() {
                                                     </button>
                                                 </div>
                                             </td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.email || '-'}</td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.username}</td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.display_name || '-'}</td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 <span className="badge badge-info">{u.hospital}</span>
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.email || '-'}</td>
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.phone || '-'}</td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{new Date(u.created_at + (u.created_at.includes('Z') ? '' : 'Z')).toLocaleString('zh-TW', { hour12: false })}</td>
+                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.created_at?.toLocaleString('zh-TW', { hour12: false }) || '-'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -238,9 +227,44 @@ export default function UserManagement() {
                         </div>
                         <form onSubmit={handleSaveUser}>
                             <div className="modal-body">
+                                {!editingUser && (
+                                    <div className="alert alert-info" style={{ marginBottom: '1rem' }}>
+                                        注意：建議使用者自行透過註冊頁面建立帳號，此處僅供管理員建立 Firestore 使用者資料。
+                                    </div>
+                                )}
+
                                 <div className="form-grid-2">
                                     <div className="form-group">
-                                        <label className="form-label required">帳號</label>
+                                        <label className="form-label required">Email</label>
+                                        <input
+                                            type="email"
+                                            className="form-input"
+                                            value={userForm.email}
+                                            onChange={e => setUserForm({ ...userForm, email: e.target.value })}
+                                            required
+                                            disabled={!!editingUser}
+                                            style={editingUser ? { backgroundColor: 'var(--bg-primary)' } : {}}
+                                        />
+                                    </div>
+                                    {!editingUser && (
+                                        <div className="form-group">
+                                            <label className="form-label required">密碼</label>
+                                            <input
+                                                type="password"
+                                                className="form-input"
+                                                value={userForm.password}
+                                                onChange={e => setUserForm({ ...userForm, password: e.target.value })}
+                                                minLength={6}
+                                                required
+                                                placeholder="至少6個字元"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="form-grid-2">
+                                    <div className="form-group">
+                                        <label className="form-label required">帳號（顯示名稱）</label>
                                         <input
                                             type="text"
                                             className="form-input"
@@ -250,32 +274,17 @@ export default function UserManagement() {
                                         />
                                     </div>
                                     <div className="form-group">
-                                        <label className={`form-label ${editingUser ? '' : 'required'}`}>
-                                            {editingUser ? '新密碼（留空不變更）' : '密碼'}
-                                        </label>
-                                        <input
-                                            type="password"
-                                            className="form-input"
-                                            value={userForm.password}
-                                            onChange={e => setUserForm({ ...userForm, password: e.target.value })}
-                                            minLength={6}
-                                            required={!editingUser}
-                                            placeholder={editingUser ? '留空保持原密碼' : '至少6個字元'}
-                                        />
+                                        <label className="form-label required">所屬醫院</label>
+                                        <select
+                                            className="form-select"
+                                            value={userForm.hospital}
+                                            onChange={e => setUserForm({ ...userForm, hospital: e.target.value })}
+                                        >
+                                            {HOSPITALS.map(h => (
+                                                <option key={h} value={h}>{h}</option>
+                                            ))}
+                                        </select>
                                     </div>
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label required">所屬醫院</label>
-                                    <select
-                                        className="form-select"
-                                        value={userForm.hospital}
-                                        onChange={e => setUserForm({ ...userForm, hospital: e.target.value })}
-                                    >
-                                        {HOSPITALS.map(h => (
-                                            <option key={h} value={h}>{h}</option>
-                                        ))}
-                                    </select>
                                 </div>
 
                                 <hr style={{ margin: '1.5rem 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
@@ -308,16 +317,6 @@ export default function UserManagement() {
 
                                 <div className="form-grid-2">
                                     <div className="form-group">
-                                        <label className="form-label">E-mail</label>
-                                        <input
-                                            type="email"
-                                            className="form-input"
-                                            value={userForm.email}
-                                            onChange={e => setUserForm({ ...userForm, email: e.target.value })}
-                                            placeholder="user@example.com"
-                                        />
-                                    </div>
-                                    <div className="form-group">
                                         <label className="form-label">電話</label>
                                         <input
                                             type="tel"
@@ -325,19 +324,6 @@ export default function UserManagement() {
                                             value={userForm.phone}
                                             onChange={e => setUserForm({ ...userForm, phone: e.target.value })}
                                             placeholder="0912-345-678"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="form-grid-2">
-                                    <div className="form-group">
-                                        <label className="form-label">地址</label>
-                                        <input
-                                            type="text"
-                                            className="form-input"
-                                            value={userForm.address}
-                                            onChange={e => setUserForm({ ...userForm, address: e.target.value })}
-                                            placeholder="通訊地址"
                                         />
                                     </div>
                                     <div className="form-group">
@@ -350,6 +336,17 @@ export default function UserManagement() {
                                             placeholder="Line ID"
                                         />
                                     </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label">地址</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        value={userForm.address}
+                                        onChange={e => setUserForm({ ...userForm, address: e.target.value })}
+                                        placeholder="通訊地址"
+                                    />
                                 </div>
                             </div>
                             <div className="modal-footer">

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { User, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useToast } from '../components/Toast';
-import { API_URL } from '../App';
+import { userService } from '../services/firestore';
 
 export default function ForgotUsername() {
     const { showError } = useToast();
@@ -17,19 +17,17 @@ export default function ForgotUsername() {
         setLoading(true);
 
         try {
-            const res = await fetch(`${API_URL}/auth/forgot-username`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, phone })
-            });
+            // Query all users and find matching email + phone
+            const allUsers = await userService.getAll();
+            const matchedUser = allUsers.find(
+                u => u.email?.toLowerCase() === email.toLowerCase() && u.phone === phone
+            );
 
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.error || '查詢失敗');
+            if (!matchedUser) {
+                throw new Error('找不到符合的帳號，請確認電子郵件和電話是否正確');
             }
 
-            setFoundUsername(data.username);
+            setFoundUsername(matchedUser.username);
         } catch (err) {
             showError(err instanceof Error ? err.message : '查詢失敗');
         } finally {

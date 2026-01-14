@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, ArrowLeft } from 'lucide-react';
 import { useToast } from '../components/Toast';
-import { API_URL } from '../App';
+import { useAuth } from '../contexts/AuthContext';
 
 const HOSPITALS = [
     '內湖總院',
@@ -28,7 +28,9 @@ const SECURITY_QUESTIONS = [
 export default function Register() {
     const navigate = useNavigate();
     const { showError, showSuccess } = useToast();
+    const { register } = useAuth();
     const [formData, setFormData] = useState({
+        email: '',
         username: '',
         password: '',
         confirmPassword: '',
@@ -54,28 +56,26 @@ export default function Register() {
         setLoading(true);
 
         try {
-            const res = await fetch(`${API_URL}/auth/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: formData.username,
-                    password: formData.password,
-                    hospital: formData.hospital,
-                    security_question: formData.security_question,
-                    security_answer: formData.security_answer
-                })
+            await register(formData.email, formData.password, {
+                username: formData.username,
+                hospital: formData.hospital,
+                security_question: formData.security_question,
+                security_answer: formData.security_answer
             });
 
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.error || '註冊失敗');
-            }
-
-            showSuccess('註冊成功！請使用新帳號登入。');
-            setTimeout(() => navigate('/'), 1500);
+            showSuccess('註冊成功！');
+            navigate('/');
         } catch (err) {
-            showError(err instanceof Error ? err.message : '註冊失敗');
+            const errorMessage = err instanceof Error ? err.message : '註冊失敗';
+            if (errorMessage.includes('email-already-in-use')) {
+                showError('此 Email 已被使用');
+            } else if (errorMessage.includes('invalid-email')) {
+                showError('Email 格式錯誤');
+            } else if (errorMessage.includes('weak-password')) {
+                showError('密碼強度不足');
+            } else {
+                showError(errorMessage);
+            }
         } finally {
             setLoading(false);
         }
@@ -92,15 +92,27 @@ export default function Register() {
 
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label className="form-label required">帳號</label>
+                        <label className="form-label required">Email</label>
+                        <input
+                            type="email"
+                            className="form-input"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            placeholder="請輸入 Email（作為登入帳號）"
+                            required
+                            autoFocus
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label required">顯示名稱</label>
                         <input
                             type="text"
                             className="form-input"
                             value={formData.username}
                             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                            placeholder="請輸入帳號"
+                            placeholder="請輸入顯示名稱"
                             required
-                            autoFocus
                         />
                     </div>
 

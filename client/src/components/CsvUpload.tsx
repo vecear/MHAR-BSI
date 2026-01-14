@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Download, Upload, FileSpreadsheet, AlertCircle, Check } from 'lucide-react';
-import { API_URL } from '../App';
+import { submissionService, userService } from '../services/firestore';
+import { useAuth } from '../contexts/AuthContext';
 
 // Options for one-hot encoding columns
 const PRIMARY_SOURCES = ['Lung', 'Blood', 'Wound', 'GI', 'Urine', 'CLABSI'];
@@ -316,6 +317,7 @@ const CSV_HEADER_ALIASES: Record<string, string[]> = {
 };
 
 export default function CsvUpload({ onUploadComplete, onError, userHospital: _userHospital, variant = 'card' }: CsvUploadProps) {
+    const { user } = useAuth();
     const [uploading, setUploading] = useState(false);
     const [result, setResult] = useState<UploadResult | null>(null);
     const [error, setError] = useState('');
@@ -670,30 +672,29 @@ export default function CsvUpload({ onUploadComplete, onError, userHospital: _us
                     const rawStatus = (formData.data_status || '').toString().trim().toLowerCase();
                     const status = ['complete', 'completed', '完成'].includes(rawStatus) ? 'complete' : 'incomplete';
 
-                    // 發送到後端
-                    const payload: any = {
-                        medical_record_number: formData.medical_record_number,
-                        admission_date: formData.admission_date,
-                        form_data: formData,
-                        data_status: status
-                    };
+                    // Get user ID for the submission
+                    let userId = user?.id || '';
 
-                    // 如果有 username，傳給後端 (後端會檢查是否為 admin)
-                    if (ownerUsername) {
-                        payload.owner_username = ownerUsername;
+                    // If admin is importing with username, try to find that user
+                    if (ownerUsername && user?.role === 'admin') {
+                        try {
+                            const targetUser = await userService.getByUsername(ownerUsername);
+                            if (targetUser) {
+                                userId = targetUser.id;
+                            }
+                        } catch {
+                            // Use current user if not found
+                        }
                     }
 
-                    const res = await fetch(`${API_URL}/forms`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!res.ok) {
-                        const errData = await res.json();
-                        throw new Error(errData.error || '儲存失敗');
-                    }
+                    // Create submission using Firestore service
+                    await submissionService.create(
+                        userId,
+                        formData.medical_record_number as string,
+                        formData.admission_date as string,
+                        formData,
+                        status as 'complete' | 'incomplete'
+                    );
 
                     results.success++;
                 } catch (err) {

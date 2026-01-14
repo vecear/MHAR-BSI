@@ -1,37 +1,25 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, AlertCircle, Clock, CheckCircle, XCircle } from 'lucide-react';
-import { API_URL } from '../App';
-
-interface DeleteRequest {
-    id: number;
-    submission_id: number;
-    medical_record_number: string;
-    admission_date: string;
-    status: 'pending' | 'approved' | 'rejected';
-    reject_reason: string | null;
-    created_at: string;
-    resolved_at: string | null;
-    record_time?: string;
-    request_reason?: string;
-}
+import { useAuth } from '../contexts/AuthContext';
+import { deleteRequestService } from '../services/firestore';
+import type { DeleteRequest } from '../services/firestore';
 
 export default function DeleteRequests() {
+    const { user } = useAuth();
     const [requests, setRequests] = useState<DeleteRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
     useEffect(() => {
-        fetchRequests();
-    }, []);
+        if (user) {
+            fetchRequests();
+        }
+    }, [user]);
 
     const fetchRequests = async () => {
         try {
-            const res = await fetch(`${API_URL}/delete-requests`, {
-                credentials: 'include'
-            });
-            if (!res.ok) throw new Error('取得資料失敗');
-            const data = await res.json();
+            const data = await deleteRequestService.getAll(user!.id, false);
             setRequests(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : '發生錯誤');
@@ -68,9 +56,8 @@ export default function DeleteRequests() {
         }
     };
 
-    const formatDateTime = (dateStr: string) => {
-        if (!dateStr) return '-';
-        const date = new Date(dateStr);
+    const formatDateTime = (date: Date | undefined) => {
+        if (!date) return '-';
         const y = date.getFullYear();
         const m = date.getMonth() + 1;
         const d = date.getDate();

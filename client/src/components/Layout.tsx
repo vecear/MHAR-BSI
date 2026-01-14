@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight, Trash2, AlertTriangle, Users } from 'lucide-react';
-import { useAuth, API_URL } from '../App';
+import { useAuth } from '../contexts/AuthContext';
+import { deleteRequestService } from '../services/firestore';
 import { useTheme, THEMES } from '../context/ThemeContext';
 import ProfileModal from './ProfileModal';
 
@@ -40,7 +41,6 @@ export default function Layout() {
     useEffect(() => {
         if (user?.role === 'admin') {
             fetchPendingDeleteCount();
-            // Refresh every 30 seconds
             const interval = setInterval(fetchPendingDeleteCount, 30000);
             return () => clearInterval(interval);
         }
@@ -48,12 +48,8 @@ export default function Layout() {
 
     const fetchPendingDeleteCount = async () => {
         try {
-            const res = await fetch(`${API_URL}/delete-requests`, { credentials: 'include' });
-            if (res.ok) {
-                const data = await res.json();
-                const pendingCount = data.filter((r: { status: string }) => r.status === 'pending').length;
-                setPendingDeleteCount(pendingCount);
-            }
+            const count = await deleteRequestService.countPending();
+            setPendingDeleteCount(count);
         } catch {
             // Silently fail
         }
@@ -295,4 +291,3 @@ export default function Layout() {
         </div>
     );
 }
-

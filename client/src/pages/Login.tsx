@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../App';
+import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
 import { LogIn, Building2 } from 'lucide-react';
 
@@ -18,7 +18,7 @@ const HOSPITALS = [
 export default function Login() {
     const { login } = useAuth();
     const { showError } = useToast();
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -27,9 +27,17 @@ export default function Login() {
         setLoading(true);
 
         try {
-            await login(username, password);
+            await login(email, password);
         } catch (err) {
-            showError(err instanceof Error ? err.message : '登入失敗');
+            // Firebase error messages mapping
+            const errorMessage = err instanceof Error ? err.message : '登入失敗';
+            if (errorMessage.includes('user-not-found') || errorMessage.includes('wrong-password') || errorMessage.includes('invalid-credential')) {
+                showError('帳號或密碼錯誤');
+            } else if (errorMessage.includes('invalid-email')) {
+                showError('Email 格式錯誤');
+            } else {
+                showError(errorMessage);
+            }
         } finally {
             setLoading(false);
         }
@@ -46,13 +54,13 @@ export default function Login() {
 
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label className="form-label required">帳號</label>
+                        <label className="form-label required">Email</label>
                         <input
-                            type="text"
+                            type="email"
                             className="form-input"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            placeholder="請輸入帳號"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="請輸入 Email"
                             required
                             autoFocus
                         />
@@ -93,12 +101,6 @@ export default function Login() {
                     </Link>
                     <Link to="/forgot-password" className="btn btn-secondary" style={{ flex: 1 }}>
                         忘記密碼
-                    </Link>
-                </div>
-
-                <div style={{ marginTop: '0.5rem' }}>
-                    <Link to="/forgot-username" className="btn btn-secondary" style={{ width: '100%' }}>
-                        忘記帳號
                     </Link>
                 </div>
 

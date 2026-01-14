@@ -2,22 +2,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, Trash2, Edit, AlertCircle, X, Filter, ArrowUp, ArrowDown, Plus, Upload } from 'lucide-react';
-import { API_URL, useAuth } from '../App';
+import { useAuth } from '../contexts/AuthContext';
+import { submissionService, exportService } from '../services/firestore';
+import type { Submission } from '../services/firestore';
 import CsvUpload from '../components/CsvUpload';
 import DualDateRangePicker from '../components/DualDateRangePicker';
-
-interface Submission {
-    id: number;
-    medical_record_number: string;
-    admission_date: string;
-    form_data: Record<string, unknown>;
-    data_status: string;
-    created_at: string;
-    updated_at: string;
-    update_count?: number;
-    username: string;
-    hospital: string;
-}
 
 const HOSPITALS = [
     '內湖總院', '松山分院', '澎湖分院', '桃園總院',
@@ -58,27 +47,27 @@ export default function AdminDashboard() {
     const [filterMRN, setFilterMRN] = useState('');
     const [sortField, setSortField] = useState<string>('updated_at');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     const handleSort = (field: string) => {
         if (sortField === field) {
             setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
         } else {
             setSortField(field);
-            setSortDirection('desc'); // Default to new updates first generally
+            setSortDirection('desc');
         }
     };
 
     useEffect(() => {
-        fetchSubmissions();
-    }, []);
+        if (user) {
+            fetchSubmissions();
+        }
+    }, [user]);
 
     const fetchSubmissions = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_URL}/forms`, { credentials: 'include' });
-            if (!res.ok) throw new Error('取得資料失敗');
-            const data = await res.json();
+            const data = await submissionService.getAll();
             setSubmissions(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : '發生錯誤');
@@ -87,28 +76,20 @@ export default function AdminDashboard() {
         }
     };
 
-
-
     // Filter submissions
     const filteredSubmissions = useMemo(() => {
         return submissions.filter(sub => {
             const cultureDate = (sub.form_data?.positive_culture_date as string) || '';
             const admissionDate = sub.admission_date || '';
 
-            // Admission date filter
             if (admissionStartDate && admissionDate < admissionStartDate) return false;
             if (admissionEndDate && admissionDate > admissionEndDate) return false;
-
-            // Positive culture date filter
             if (cultureStartDate && cultureDate < cultureStartDate) return false;
             if (cultureEndDate && cultureDate > cultureEndDate) return false;
-
             if (filterHospital && sub.hospital !== filterHospital) return false;
 
             const pathogen = (sub.form_data?.pathogen as string) || '';
             if (filterPathogens.length > 0 && !filterPathogens.includes(pathogen)) return false;
-
-            // Medical record number search (case-insensitive partial match)
             if (filterMRN && !sub.medical_record_number.toLowerCase().includes(filterMRN.toLowerCase())) return false;
 
             return true;
@@ -120,11 +101,11 @@ export default function AdminDashboard() {
                     case 'medical_record_number': return item.medical_record_number;
                     case 'admission_date': return item.admission_date;
                     case 'positive_culture_date': return (item.form_data?.positive_culture_date as string) || '';
-                    case 'username': return item.username;
-                    case 'hospital': return item.hospital;
+                    case 'username': return item.username || '';
+                    case 'hospital': return item.hospital || '';
                     case 'data_status': return item.data_status;
-                    case 'created_at': return item.created_at;
-                    case 'updated_at': return item.updated_at;
+                    case 'created_at': return item.created_at?.getTime() || 0;
+                    case 'updated_at': return item.updated_at?.getTime() || 0;
                     case 'update_count': return (item.update_count || 0);
                     default: return '';
                 }
@@ -139,11 +120,9 @@ export default function AdminDashboard() {
         });
     }, [submissions, admissionStartDate, admissionEndDate, cultureStartDate, cultureEndDate, filterHospital, filterPathogens, filterMRN, sortField, sortDirection]);
 
-    // Check if any filter is active
     const hasActiveFilters = admissionStartDate || admissionEndDate || cultureStartDate || cultureEndDate ||
         filterHospital || filterPathogens.length > 0 || filterMRN;
 
-    // Clear all filters
     const clearAllFilters = () => {
         setAdmissionStartDate('');
         setAdmissionEndDate('');
@@ -156,18 +135,8 @@ export default function AdminDashboard() {
 
     const handleExportCSV = async () => {
         try {
-            const res = await fetch(`${API_URL}/export/csv`, { credentials: 'include' });
-            if (!res.ok) throw new Error('匯出失敗');
-
-            const blob = await res.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `mhar-bsi-all-data-${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            const csvContent = await exportService.exportToCSV();
+            downloadCSV(csvContent, `mhar-bsi-all-data-${new Date().toISOString().split('T')[0]}.csv`);
         } catch (err) {
             alert(err instanceof Error ? err.message : '匯出失敗');
         }
@@ -175,116 +144,57 @@ export default function AdminDashboard() {
 
     const handleExportFilteredCSV = async () => {
         try {
-            const params = new URLSearchParams();
-            if (admissionStartDate) params.append('admission_start', admissionStartDate);
-            if (admissionEndDate) params.append('admission_end', admissionEndDate);
-            if (cultureStartDate) params.append('culture_start', cultureStartDate);
-            if (cultureEndDate) params.append('culture_end', cultureEndDate);
-            if (filterHospital) params.append('hospital', filterHospital); // Admin can filter by hospital
-            if (filterPathogens.length > 0) params.append('pathogens', filterPathogens.join(','));
-            if (filterMRN) params.append('mrn', filterMRN);
-
-            const res = await fetch(`${API_URL}/export/csv?${params.toString()}`, {
-                credentials: 'include'
-            });
-
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.error || '匯出失敗');
-            }
-
-            const blob = await res.blob();
-            const defaultFileName = `mhar-bsi-filtered-${new Date().toISOString().split('T')[0]}.csv`;
-
-            // Try File System Access API
-            if ('showSaveFilePicker' in window) {
-                try {
-                    const handle = await (window as any).showSaveFilePicker({
-                        suggestedName: defaultFileName,
-                        types: [{
-                            description: 'CSV 檔案',
-                            accept: { 'text/csv': ['.csv'] }
-                        }]
-                    });
-                    const writable = await handle.createWritable();
-                    await writable.write(blob);
-                    await writable.close();
-                    return;
-                } catch (err) {
-                    if ((err as Error).name === 'AbortError') return;
-                }
-            }
-
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = defaultFileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            const ids = filteredSubmissions.map(s => s.id);
+            const csvContent = await exportService.exportToCSV(ids);
+            downloadCSV(csvContent, `mhar-bsi-filtered-${new Date().toISOString().split('T')[0]}.csv`);
         } catch (err) {
             alert(err instanceof Error ? err.message : '匯出失敗');
         }
     };
 
-    // Export Selected CSV
     const handleExportSelectedCSV = async () => {
         if (selectedIds.size === 0) return;
-
         try {
-            const params = new URLSearchParams();
             const ids = Array.from(selectedIds);
-            params.append('ids', ids.join(','));
-
-            const res = await fetch(`${API_URL}/export/csv?${params.toString()}`, {
-                credentials: 'include'
-            });
-
-            if (!res.ok) throw new Error('匯出失敗');
-
-            const blob = await res.blob();
-            const defaultFileName = `mhar-bsi-selected-${new Date().toISOString().split('T')[0]}.csv`;
-
-            if ('showSaveFilePicker' in window) {
-                try {
-                    const handle = await (window as any).showSaveFilePicker({
-                        suggestedName: defaultFileName,
-                        types: [{
-                            description: 'CSV 檔案',
-                            accept: { 'text/csv': ['.csv'] }
-                        }]
-                    });
-                    const writable = await handle.createWritable();
-                    await writable.write(blob);
-                    await writable.close();
-                    return;
-                } catch (err) {
-                    if ((err as Error).name === 'AbortError') return;
-                }
-            }
-
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = defaultFileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            const csvContent = await exportService.exportToCSV(ids);
+            downloadCSV(csvContent, `mhar-bsi-selected-${new Date().toISOString().split('T')[0]}.csv`);
         } catch (err) {
             alert(err instanceof Error ? err.message : '匯出失敗');
         }
     };
 
-    const handleDeleteSubmission = async (id: number) => {
+    const downloadCSV = async (content: string, defaultFileName: string) => {
+        const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+
+        if ('showSaveFilePicker' in window) {
+            try {
+                const handle = await (window as any).showSaveFilePicker({
+                    suggestedName: defaultFileName,
+                    types: [{ description: 'CSV 檔案', accept: { 'text/csv': ['.csv'] } }]
+                });
+                const writable = await handle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                return;
+            } catch (err) {
+                if ((err as Error).name === 'AbortError') return;
+            }
+        }
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = defaultFileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    };
+
+    const handleDeleteSubmission = async (id: string) => {
         if (!confirm('確定要刪除此筆資料嗎？')) return;
         try {
-            const res = await fetch(`${API_URL}/forms/${id}`, {
-                method: 'DELETE',
-                credentials: 'include'
-            });
-            if (!res.ok) throw new Error('刪除失敗');
+            await submissionService.delete(id);
             setSubmissions(prev => prev.filter(s => s.id !== id));
             setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
         } catch (err) {
@@ -297,9 +207,7 @@ export default function AdminDashboard() {
         if (!confirm(`確定要刪除這 ${selectedIds.size} 筆資料嗎？`)) return;
         try {
             const ids = Array.from(selectedIds);
-            await Promise.all(ids.map(id =>
-                fetch(`${API_URL}/forms/${id}`, { method: 'DELETE', credentials: 'include' })
-            ));
+            await Promise.all(ids.map(id => submissionService.delete(id)));
             setSubmissions(prev => prev.filter(s => !selectedIds.has(s.id)));
             setSelectedIds(new Set());
         } catch (err) {
@@ -307,7 +215,7 @@ export default function AdminDashboard() {
         }
     };
 
-    const toggleSelect = (id: number) => {
+    const toggleSelect = (id: string) => {
         setSelectedIds(prev => {
             const n = new Set(prev);
             if (n.has(id)) n.delete(id);
@@ -357,7 +265,6 @@ export default function AdminDashboard() {
                     {/* Filter Section */}
                     <div className="card" style={{ marginBottom: 'var(--spacing-lg)', padding: 'var(--spacing-md)' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
-                            {/* Line 1: Hospital, MRN, Clear button */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <Filter size={18} color="var(--text-muted)" />
@@ -392,14 +299,10 @@ export default function AdminDashboard() {
 
                                 <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                     <button
-                                        className={`btn btn-secondary`}
+                                        className="btn btn-secondary"
                                         onClick={handleExportFilteredCSV}
                                         disabled={filteredSubmissions.length === 0}
-                                        style={{
-                                            padding: '0.4rem 0.8rem',
-                                            fontSize: '0.9rem',
-                                            marginRight: '0.5rem'
-                                        }}
+                                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem', marginRight: '0.5rem' }}
                                     >
                                         <Upload size={14} style={{ marginRight: '4px' }} />
                                         匯出篩選表單
@@ -424,7 +327,6 @@ export default function AdminDashboard() {
                                 </div>
                             </div>
 
-                            {/* Line 2: Date Filters */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', paddingLeft: '1.5rem' }}>
                                 <DualDateRangePicker
                                     admissionRange={{ start: admissionStartDate, end: admissionEndDate }}
@@ -440,7 +342,6 @@ export default function AdminDashboard() {
                                 />
                             </div>
 
-                            {/* Line 3: Pathogen Tags */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '1.5rem' }}>
                                 <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>菌種：</label>
                                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -486,7 +387,6 @@ export default function AdminDashboard() {
 
                     {/* Submissions Table */}
                     <div className="card">
-                        {/* Bulk delete button above table */}
                         {selectedIds.size > 0 && (
                             <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                 <button className="btn btn-success" onClick={handleExportSelectedCSV} style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
@@ -516,7 +416,6 @@ export default function AdminDashboard() {
                         ) : (
                             <div className="table-container">
                                 <table className="data-table">
-
                                     <thead>
                                         <tr>
                                             <th style={{ width: '30px', textAlign: 'center', verticalAlign: 'middle' }}>
@@ -587,7 +486,6 @@ export default function AdminDashboard() {
                                                     {(() => {
                                                         const pathogen = (sub.form_data?.pathogen as string) || '';
                                                         const config = PATHOGEN_CONFIG.find(p => p.id === pathogen);
-
                                                         return pathogen ? (
                                                             <span className="badge" style={{ backgroundColor: config?.bg || '#f0f0f0', color: config?.text || '#666' }}>
                                                                 {pathogen}
@@ -598,11 +496,11 @@ export default function AdminDashboard() {
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.medical_record_number}</td>
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.admission_date}</td>
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{(sub.form_data?.positive_culture_date as string) || '-'}</td>
-                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{`${sub.username}|${sub.hospital}`}</td>
+                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{`${sub.username || ''}|${sub.hospital || ''}`}</td>
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                     {(() => {
-                                                        const displayHospital = (sub.form_data?.hospital as string) || sub.hospital;
-                                                        const hConfig = HOSPITAL_CONFIG[displayHospital] || HOSPITAL_CONFIG[sub.hospital];
+                                                        const displayHospital = (sub.form_data?.hospital as string) || sub.hospital || '';
+                                                        const hConfig = HOSPITAL_CONFIG[displayHospital] || HOSPITAL_CONFIG[sub.hospital || ''];
                                                         return (
                                                             <span className="badge" style={{ backgroundColor: hConfig?.bg || '#f0f0f0', color: hConfig?.text || '#666' }}>
                                                                 {displayHospital}
@@ -616,9 +514,9 @@ export default function AdminDashboard() {
                                                     </span>
                                                 </td>
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                    <div>{new Date(sub.updated_at).toLocaleDateString('zh-TW')}</div>
+                                                    <div>{sub.updated_at?.toLocaleDateString('zh-TW') || '-'}</div>
                                                     <div style={{ fontSize: '0.85em', color: 'var(--text-muted)' }}>
-                                                        {new Date(sub.updated_at).toLocaleTimeString('zh-TW', { hour12: false })}
+                                                        {sub.updated_at?.toLocaleTimeString('zh-TW', { hour12: false }) || ''}
                                                     </div>
                                                 </td>
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>

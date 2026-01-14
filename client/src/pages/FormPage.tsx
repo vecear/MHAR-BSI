@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Save, Check } from 'lucide-react';
-import { API_URL, useAuth } from '../App';
+import { useAuth } from '../contexts/AuthContext';
+import { submissionService } from '../services/firestore';
 import { useToast } from '../components/Toast';
 import FormStep1 from '../components/FormStep1';
 import FormStep2 from '../components/FormStep2';
@@ -120,7 +121,7 @@ export default function FormPage() {
     const [formData, setFormData] = useState<FormData>(initialFormData);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [submissionId, setSubmissionId] = useState<number | null>(id ? parseInt(id) : null);
+    const [submissionId, setSubmissionId] = useState<string | null>(id || null);
     const { showError, showSuccess } = useToast();
 
     // Load existing data if editing
@@ -133,19 +134,17 @@ export default function FormPage() {
     const loadSubmission = async (submissionId: string) => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_URL}/forms/${submissionId}`, {
-                credentials: 'include'
-            });
-            if (!res.ok) throw new Error('載入資料失敗');
-            const data = await res.json();
+            const submission = await submissionService.getById(submissionId);
+            if (!submission) throw new Error('載入資料失敗');
+
             setFormData({
                 ...initialFormData,
-                ...data.form_data,
-                medical_record_number: data.medical_record_number,
-                admission_date: data.admission_date,
-                data_status: data.data_status
+                ...(submission.form_data as unknown as FormData),
+                medical_record_number: submission.medical_record_number,
+                admission_date: submission.admission_date,
+                data_status: submission.data_status
             });
-            setSubmissionId(data.id);
+            setSubmissionId(submission.id);
         } catch (err) {
             showError(err instanceof Error ? err.message : '發生錯誤');
         } finally {
@@ -158,16 +157,13 @@ export default function FormPage() {
         if (!id && user) {
             const updates: Partial<FormData> = {};
 
-            // Auto-fill recorded_by
             if (!formData.recorded_by && user.username) {
                 updates.recorded_by = user.display_name
                     ? `${user.username} (${user.display_name})`
                     : user.username;
             }
 
-            // Auto-fill hospital
             if (!formData.hospital && user.hospital) {
-                // Check if user's hospital is in our list, if so use it
                 if (HOSPITALS.includes(user.hospital)) {
                     updates.hospital = user.hospital;
                 }
@@ -190,18 +186,20 @@ export default function FormPage() {
             return;
         }
 
+        if (!user) {
+            showError('請先登入');
+            return;
+        }
+
         // Determine final status
-        let finalStatus = formData.data_status;
+        let finalStatus: 'complete' | 'incomplete' = 'incomplete';
 
         if (!isSubmit) {
-            // "Save Draft": Always mark as incomplete
             finalStatus = 'incomplete';
         } else {
-            // "Submit" or "Modify": Ask the user if it's complete
             const isComplete = window.confirm('該筆資料是否已完成？\n\n按下「確定」標記為「已完成」\n按下「取消」標記為「未完成」');
             finalStatus = isComplete ? 'complete' : 'incomplete';
 
-            // Basic validation if marking as complete
             if (finalStatus === 'complete') {
                 const requiredFields: (keyof FormData)[] = ['name', 'sex', 'hospital', 'pathogen', 'type_of_infection'];
                 const missingFields = requiredFields.filter(field => !formData[field]);
@@ -213,47 +211,25 @@ export default function FormPage() {
             }
         }
 
-        // Update local state and prepare for save
         const updatedFormData = { ...formData, data_status: finalStatus };
         setFormData(updatedFormData);
 
         setSaving(true);
 
-        const payload = {
-            medical_record_number: formData.medical_record_number,
-            admission_date: formData.admission_date,
-            form_data: updatedFormData,
-            data_status: finalStatus
-        };
-
         try {
-            let res;
             if (submissionId) {
                 // Update existing
-                res = await fetch(`${API_URL}/forms/${submissionId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(payload)
-                });
+                await submissionService.update(submissionId, updatedFormData, finalStatus);
             } else {
                 // Create new
-                res = await fetch(`${API_URL}/forms`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(payload)
-                });
-            }
-
-            if (!res.ok) {
-                const errData = await res.json();
-                throw new Error(errData.error || '儲存失敗');
-            }
-
-            const result = await res.json();
-            if (result.id) {
-                setSubmissionId(result.id);
+                const newId = await submissionService.create(
+                    user.id,
+                    formData.medical_record_number,
+                    formData.admission_date,
+                    updatedFormData,
+                    finalStatus
+                );
+                setSubmissionId(newId);
             }
 
             showSuccess('資料已儲存');
