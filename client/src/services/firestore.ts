@@ -449,11 +449,10 @@ export const deleteRequestService = {
 // ==================== User Service ====================
 
 export const userService = {
-    // Get all users (admin only, excludes admins)
+    // Get all users (admin only)
     async getAll(): Promise<UserProfile[]> {
         const q = query(
-            collection(db, 'users'),
-            where('role', '!=', 'admin')
+            collection(db, 'users')
         );
 
         const snapshot = await getDocs(q);
