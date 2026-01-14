@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Users, Edit, Trash2, X, AlertCircle } from 'lucide-react';
 import { userService } from '../services/firestore';
@@ -64,6 +64,56 @@ export default function UserManagement() {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Sorting state
+    const [sortConfig, setSortConfig] = useState<{ key: keyof FirestoreUser; direction: 'asc' | 'desc' } | null>(null);
+
+    const sortedUsers = useMemo(() => {
+        const pinnedEmail = 'sasak0308@gmail.com';
+        let sortableUsers = [...users];
+        const pinnedUser = sortableUsers.find(u => u.email === pinnedEmail);
+
+        // Remove pinned user from sortable list if exists
+        if (pinnedUser) {
+            sortableUsers = sortableUsers.filter(u => u.email !== pinnedEmail);
+        }
+
+        if (sortConfig) {
+            sortableUsers.sort((a, b) => {
+                const aValue = a[sortConfig.key];
+                const bValue = b[sortConfig.key];
+
+                if (aValue === bValue) return 0;
+
+                // Handle null/undefined values
+                if (aValue === undefined || aValue === null) return 1;
+                if (bValue === undefined || bValue === null) return -1;
+
+                if (aValue < bValue) {
+                    return sortConfig.direction === 'asc' ? -1 : 1;
+                } else {
+                    return sortConfig.direction === 'asc' ? 1 : -1;
+                }
+            });
+        } else {
+            // Default sort by created_at desc if no config
+            sortableUsers.sort((a, b) => {
+                const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                return dateB - dateA;
+            });
+        }
+
+        return pinnedUser ? [pinnedUser, ...sortableUsers] : sortableUsers;
+    }, [users, sortConfig]);
+
+    const handleSort = (key: keyof FirestoreUser) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
     };
 
 
@@ -185,19 +235,49 @@ export default function UserManagement() {
                                 <thead>
                                     <tr>
                                         <th style={{ minWidth: '80px', textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1.5rem' }}>修改</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>Email</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>身分</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>帳號</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>姓名</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>醫院</th>
+                                        <th
+                                            style={{ textAlign: 'center', verticalAlign: 'middle', cursor: 'pointer', userSelect: 'none' }}
+                                            onClick={() => handleSort('email')}
+                                        >
+                                            Email {sortConfig?.key === 'email' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                        </th>
+                                        <th
+                                            style={{ textAlign: 'center', verticalAlign: 'middle', cursor: 'pointer', userSelect: 'none' }}
+                                            onClick={() => handleSort('role')}
+                                        >
+                                            身分 {sortConfig?.key === 'role' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                        </th>
+                                        <th
+                                            style={{ textAlign: 'center', verticalAlign: 'middle', cursor: 'pointer', userSelect: 'none' }}
+                                            onClick={() => handleSort('username')}
+                                        >
+                                            帳號 {sortConfig?.key === 'username' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                        </th>
+                                        <th
+                                            style={{ textAlign: 'center', verticalAlign: 'middle', cursor: 'pointer', userSelect: 'none' }}
+                                            onClick={() => handleSort('display_name')}
+                                        >
+                                            姓名 {sortConfig?.key === 'display_name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                        </th>
+                                        <th
+                                            style={{ textAlign: 'center', verticalAlign: 'middle', cursor: 'pointer', userSelect: 'none' }}
+                                            onClick={() => handleSort('hospital')}
+                                        >
+                                            醫院 {sortConfig?.key === 'hospital' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                        </th>
                                         <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>可存取專案</th>
-                                        <th style={{ textAlign: 'center', verticalAlign: 'middle' }}>建立時間</th>
+                                        <th
+                                            style={{ textAlign: 'center', verticalAlign: 'middle', cursor: 'pointer', userSelect: 'none' }}
+                                            onClick={() => handleSort('created_at')}
+                                        >
+                                            建立時間 {sortConfig?.key === 'created_at' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {users.map(u => (
+                                    {sortedUsers.map(u => (
                                         <tr key={u.id}>
-                                            <td style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1rem' }}>
+                                            <td data-label="修改" style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '1rem' }}>
                                                 <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-start', width: '100%' }}>
                                                     <button className="btn btn-icon" onClick={() => openEditUser(u)} title="編輯">
                                                         <Edit size={16} color="var(--color-primary)" />
@@ -207,7 +287,7 @@ export default function UserManagement() {
                                                     </button>
                                                 </div>
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <td data-label="Email" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 {/* Check for no permissions */}
                                                 {(!u.allowed_projects || u.allowed_projects.length === 0) && (
                                                     <span className="badge animate-pulse" style={{
@@ -223,9 +303,9 @@ export default function UserManagement() {
                                                         未開通
                                                     </span>
                                                 )}
-                                                {u.email || '-'}
+                                                <span style={{ wordBreak: 'break-all' }}>{u.email || '-'}</span>
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <td data-label="身分" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 <span
                                                     className="badge"
                                                     style={{
@@ -237,14 +317,14 @@ export default function UserManagement() {
                                                     {u.role === 'admin' ? '管理員' : '成員'}
                                                 </span>
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <td data-label="帳號" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 {u.username}
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.display_name || '-'}</td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <td data-label="姓名" style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.display_name || '-'}</td>
+                                            <td data-label="醫院" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 <span className="badge badge-info">{u.hospital}</span>
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <td data-label="可存取專案" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap' }}>
                                                     {(u.allowed_projects || []).map(pid => (
                                                         <span key={pid} className="badge badge-success" style={{ fontSize: '0.75rem' }}>
@@ -253,7 +333,7 @@ export default function UserManagement() {
                                                     ))}
                                                 </div>
                                             </td>
-                                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.created_at?.toLocaleString('zh-TW', { hour12: false }) || '-'}</td>
+                                            <td data-label="建立時間" style={{ textAlign: 'center', verticalAlign: 'middle' }}>{u.created_at?.toLocaleString('zh-TW', { hour12: false }) || '-'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
