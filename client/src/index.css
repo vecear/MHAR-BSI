@@ -1403,15 +1403,14 @@ h3 {
 
   .data-table td {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
-    text-align: right;
+    text-align: left;
     padding: 0.75rem 0.5rem;
     border-bottom: 1px solid var(--border-color);
     font-size: 0.9rem;
     min-height: 40px;
     white-space: normal;
-    /* Allow text wrapping */
   }
 
   .data-table td:last-child {
@@ -1426,8 +1425,32 @@ h3 {
     color: var(--text-secondary);
     margin-right: 1rem;
     text-align: left;
-    flex: 0 0 40%;
-    /* Label takes 40% width */
+    flex: 0 0 35%;
+    min-width: 100px;
+  }
+
+  /* Checkbox logic for mobile card view */
+  .data-table td:first-child {
+    justify-content: flex-end;
+    /* Keep checkbox on right or left? User screenshot had it top right. */
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .data-table td:first-child::before {
+    display: none;
+  }
+
+  /* Actions logic */
+  .data-table td:nth-child(2) {
+    justify-content: flex-end;
+    padding-top: 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .data-table td:nth-child(2)::before {
+    display: none;
   }
 
   /* Adjust badge alignment in card view */

@@ -454,7 +454,7 @@ export default function AdminDashboard() {
                                                         onChange={() => toggleSelect(sub.id)}
                                                     />
                                                 </td>
-                                                <td style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '0.5rem' }}>
+                                                <td data-label="修改" style={{ textAlign: 'left', verticalAlign: 'middle', paddingLeft: '0.5rem' }}>
                                                     <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-start', width: '100%' }}>
                                                         <Link to={`/form/${sub.id}`} className="btn btn-icon" title="修改">
                                                             <Edit size={16} color="var(--color-primary)" />
@@ -464,10 +464,10 @@ export default function AdminDashboard() {
                                                         </button>
                                                     </div>
                                                 </td>
-                                                <td style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.8em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                                                <td data-label="紀錄編號" style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.8em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
                                                     {(sub.form_data?.record_time as string)?.replace(/[-T:]/g, '') || '-'}
                                                 </td>
-                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <td data-label="菌種" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                     {(() => {
                                                         const pathogen = (sub.form_data?.pathogen as string) || '';
                                                         const config = PATHOGEN_CONFIG.find(p => p.id === pathogen);
@@ -478,11 +478,11 @@ export default function AdminDashboard() {
                                                         ) : '-';
                                                     })()}
                                                 </td>
-                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.medical_record_number}</td>
-                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.admission_date}</td>
-                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{(sub.form_data?.positive_culture_date as string) || '-'}</td>
-                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{`${sub.username || ''}|${sub.hospital || ''}`}</td>
-                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <td data-label="病歷號" style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.medical_record_number}</td>
+                                                <td data-label="住院日期" style={{ textAlign: 'center', verticalAlign: 'middle' }}>{sub.admission_date}</td>
+                                                <td data-label="陽性日期" style={{ textAlign: 'center', verticalAlign: 'middle' }}>{(sub.form_data?.positive_culture_date as string) || '-'}</td>
+                                                <td data-label="填寫者" style={{ textAlign: 'center', verticalAlign: 'middle' }}>{`${sub.username || ''}|${sub.hospital || ''}`}</td>
+                                                <td data-label="醫院" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                     {(() => {
                                                         const displayHospital = (sub.form_data?.hospital as string) || sub.hospital || '';
                                                         const hConfig = HOSPITAL_CONFIG[displayHospital] || HOSPITAL_CONFIG[sub.hospital || ''];
@@ -493,18 +493,18 @@ export default function AdminDashboard() {
                                                         );
                                                     })()}
                                                 </td>
-                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <td data-label="狀態" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                     <span className={`badge ${['complete', 'completed', '完成'].includes(sub.data_status?.toLowerCase() || '') ? 'badge-success' : 'badge-warning'}`}>
                                                         {['complete', 'completed', '完成'].includes(sub.data_status?.toLowerCase() || '') ? '已完成' : '未完成'}
                                                     </span>
                                                 </td>
-                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <td data-label="最後更新" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                     <div>{sub.updated_at?.toLocaleDateString('zh-TW') || '-'}</div>
                                                     <div style={{ fontSize: '0.85em', color: 'var(--text-muted)' }}>
                                                         {sub.updated_at?.toLocaleTimeString('zh-TW', { hour12: false }) || ''}
                                                     </div>
                                                 </td>
-                                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                <td data-label="更新次數" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                     <span className="badge badge-secondary" style={{ backgroundColor: '#f0f0f0', color: '#666' }}>
                                                         {sub.update_count || 1} 次
                                                     </span>
