@@ -94,7 +94,7 @@ export default function Layout() {
 
     return (
         <div className="app-layout">
-            <nav className="navbar navbar-stacked" style={{ paddingTop: '50px' }}>
+            <nav className="navbar navbar-stacked">
                 {/* First row: brand + user info */}
                 <div className="navbar-header">
                     <div className="navbar-brand">
