@@ -1484,6 +1484,7 @@ h3 {
   }
 
   /* Actions Column - Top Left */
+  /* Actions Column - Top Left */
   .data-table td.mobile-col-actions {
     grid-column: 1;
     grid-row: 1;
@@ -1493,8 +1494,13 @@ h3 {
     justify-content: flex-start;
   }
 
+  /* User requested label to be visible */
   .data-table td.mobile-col-actions::before {
-    display: none;
+    /* display: none; - Removed to show label */
+    content: attr(data-label);
+    margin-right: 0.5rem;
+    min-width: auto;
+    flex: 0 0 auto;
   }
 
   /* Adjust badge alignment in card view */
