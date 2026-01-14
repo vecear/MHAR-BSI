@@ -32,9 +32,7 @@ const PATHOGEN_CONFIG = [
 
 export default function AdminDashboard() {
     const { user } = useAuth();
-    const navigate = useNavigate();
     const [submissions, setSubmissions] = useState<Submission[]>([]);
-    const [pendingUserCount, setPendingUserCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -62,7 +60,6 @@ export default function AdminDashboard() {
     useEffect(() => {
         if (user) {
             fetchSubmissions();
-            userService.countPending().then(setPendingUserCount);
         }
     }, [user]);
 
@@ -228,35 +225,7 @@ export default function AdminDashboard() {
     return (
         <div className="animate-fadeIn">
             <div className="page-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <h1>管理員儀表板</h1>
-                    {pendingUserCount > 0 && (
-                        <button
-                            onClick={() => navigate('/users')}
-                            className="badge"
-                            title="前往審核"
-                            style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                animation: 'pulse 1.5s infinite',
-                                background: 'linear-gradient(90deg, #FF0000, #FF7F00, #eab308, #22c55e, #3b82f6, #a855f7, #ec4899)',
-                                color: 'white',
-                                border: '2px solid white',
-                                fontSize: '1rem',
-                                padding: '0.4rem 0.8rem',
-                                cursor: 'pointer',
-                                fontWeight: 'bold',
-                                boxShadow: '0 4px 6px rgba(0,0,0,0.2)',
-                                textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                                borderRadius: '9999px'
-                            }}
-                        >
-                            <UserPlus size={18} />
-                            開通新成員 ({pendingUserCount})
-                        </button>
-                    )}
-                </div>
+                <h1>管理員儀表板</h1>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <CsvUpload variant="buttons" onUploadComplete={fetchSubmissions} userHospital={user?.hospital || ''} onError={setError} />
                 </div>

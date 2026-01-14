@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight, Trash2, AlertTriangle, Users, RefreshCw, Upload, Download, BookOpen, Bell } from 'lucide-react';
+import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight, Trash2, AlertTriangle, Users, RefreshCw, Upload, Download, BookOpen, Bell, UserPlus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { deleteRequestService, exportService, commentService } from '../services/firestore';
+import { deleteRequestService, exportService, commentService, userService } from '../services/firestore';
 import { useTheme, THEMES } from '../context/ThemeContext';
 import { PROJECTS } from '../constants/projects';
 import ProfileModal from './ProfileModal';
@@ -18,6 +18,7 @@ export default function Layout() {
     const [showThemeMenu, setShowThemeMenu] = useState(false);
     const [pendingDeleteCount, setPendingDeleteCount] = useState(0);
     const [unreadCommentCount, setUnreadCommentCount] = useState(0);
+    const [pendingUserCount, setPendingUserCount] = useState(0);
     const [showImportModal, setShowImportModal] = useState(false);
     const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -60,6 +61,9 @@ export default function Layout() {
 
             const commentCount = await commentService.countUnread();
             setUnreadCommentCount(commentCount);
+
+            const userCount = await userService.countPending();
+            setPendingUserCount(userCount);
         } catch {
             // Silently fail
         }
@@ -119,6 +123,30 @@ export default function Layout() {
                             >
                                 <AlertTriangle size={16} />
                                 申請刪除中 ({pendingDeleteCount})
+                            </span>
+                        )}
+
+                        {/* Pending Users Notification */}
+                        {user?.role === 'admin' && pendingUserCount > 0 && (
+                            <span
+                                className="badge navbar-badge"
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    animation: 'pulse 2s infinite',
+                                    cursor: 'pointer',
+                                    padding: '0.4rem 0.8rem',
+                                    fontSize: '0.85rem',
+                                    backgroundColor: '#fca5a5', // Light Red
+                                    color: '#7f1d1d', // Dark Red Text
+                                    marginLeft: '8px'
+                                }}
+                                onClick={() => navigate('/users')}
+                                title="點擊前往審核"
+                            >
+                                <UserPlus size={16} />
+                                開通新成員 ({pendingUserCount})
                             </span>
                         )}
 
