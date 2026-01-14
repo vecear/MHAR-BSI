@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
-import { LogIn, Building2, FolderKanban } from 'lucide-react';
+import { LogIn, FolderKanban } from 'lucide-react';
 import { PROJECTS, DEFAULT_PROJECT_ID } from '../constants/projects';
 
 const HOSPITALS = [
@@ -133,10 +133,7 @@ export default function Login() {
                 </div>
 
                 <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '1rem' }}>
-                        <Building2 size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-                        國軍醫院認證系統
-                    </p>
+
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', justifyContent: 'center' }}>
                         {HOSPITALS.map(h => (
                             <span key={h} className="badge badge-info" style={{ fontSize: '0.65rem' }}>
