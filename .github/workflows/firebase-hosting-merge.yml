@@ -11,10 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: npm
+      - name: Install and Build
+        run: |
+            cd client
+            npm ci
+            npm run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MHAR_BSI }}
           channelId: live
           projectId: mhar-bsi
+          entryPoint: ./client
