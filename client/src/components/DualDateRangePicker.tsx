@@ -153,17 +153,17 @@ export default function DualDateRangePicker({
     const hasCulture = cultureRange.start || cultureRange.end;
 
     return (
-        <div ref={containerRef} style={{ position: 'relative', display: 'inline-block' }}>
+        <div ref={containerRef} className="dual-date-picker" style={{ position: 'relative' }}>
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="btn btn-secondary"
+                className="btn btn-secondary dual-date-picker-btn"
                 style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem',
                     padding: '0.5rem 1rem',
-                    minWidth: '280px',
+                    width: '100%',
                     justifyContent: 'flex-start',
                     border: (hasAdmission || hasCulture) ? '2px solid var(--color-primary)' : undefined
                 }}

@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight, Trash2, AlertTriangle, Users } from 'lucide-react';
+import { LogOut, FileText, Home, Settings, User, Palette, ChevronRight, Trash2, AlertTriangle, Users, RefreshCw, Upload, Download } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { deleteRequestService } from '../services/firestore';
+import { deleteRequestService, exportService } from '../services/firestore';
 import { useTheme, THEMES } from '../context/ThemeContext';
 import ProfileModal from './ProfileModal';
+import CsvUpload from './CsvUpload';
 
 export default function Layout() {
     const { user, logout } = useAuth();
@@ -15,6 +16,7 @@ export default function Layout() {
     const [showSettingsMenu, setShowSettingsMenu] = useState(false);
     const [showThemeMenu, setShowThemeMenu] = useState(false);
     const [pendingDeleteCount, setPendingDeleteCount] = useState(0);
+    const [showImportModal, setShowImportModal] = useState(false);
     const settingsRef = useRef<HTMLDivElement>(null);
 
     // Clock state
@@ -60,6 +62,25 @@ export default function Layout() {
         navigate('/login');
     };
 
+    const handleExportAllData = async () => {
+        try {
+            // Export all data using Firestore service
+            const csvContent = await exportService.exportToCSV();
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            const prefix = user?.role === 'admin' ? 'all-data' : (user?.hospital || 'data');
+            a.download = `mhar-bsi-${prefix}-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(downloadUrl);
+        } catch (err) {
+            alert(err instanceof Error ? err.message : '匯出失敗');
+        }
+    };
+
     return (
         <div className="app-layout">
             <nav className="navbar navbar-stacked">
@@ -75,14 +96,13 @@ export default function Layout() {
                     <div className="navbar-user">
                         {user?.role === 'admin' && pendingDeleteCount > 0 && (
                             <span
-                                className="badge badge-danger"
+                                className="badge badge-danger navbar-badge"
                                 style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: '6px',
                                     animation: 'pulse 2s infinite',
                                     cursor: 'pointer',
-                                    marginRight: '2rem',
                                     padding: '0.4rem 0.8rem',
                                     fontSize: '0.85rem'
                                 }}
@@ -93,7 +113,7 @@ export default function Layout() {
                                 申請刪除中 ({pendingDeleteCount})
                             </span>
                         )}
-                        <div style={{ marginRight: '1.5rem', fontSize: '0.95rem', fontWeight: 500, opacity: 0.9 }}>
+                        <div className="navbar-time" style={{ fontSize: '0.95rem', fontWeight: 500, opacity: 0.9 }}>
                             {currentTime.toLocaleString('zh-TW', {
                                 hour12: false,
                                 year: 'numeric',
@@ -104,14 +124,15 @@ export default function Layout() {
                                 second: '2-digit'
                             })}
                         </div>
-                        <span>
+                        <div className="navbar-profile">
                             {user?.username} ({user?.display_name || '未設定姓名'}|{user?.hospital})
-                            {user?.role === 'admin' && (
-                                <span className="badge badge-info" style={{ marginLeft: '8px' }}>
-                                    管理員
-                                </span>
-                            )}
-                        </span>
+                            <span
+                                className={`badge ${user?.role === 'admin' ? 'badge-info' : 'badge-success'}`}
+                                style={{ marginLeft: '8px' }}
+                            >
+                                {user?.role === 'admin' ? '管理員' : '成員'}
+                            </span>
+                        </div>
 
                         <div className="settings-dropdown" ref={settingsRef} style={{ position: 'relative' }}>
                             <button
@@ -158,6 +179,55 @@ export default function Layout() {
                                         <User size={16} style={{ marginRight: '0.75rem' }} />
                                         修改基本資料
                                     </button>
+
+                                    {/* Export - available to all users */}
+                                    <button
+                                        className="dropdown-item"
+                                        onClick={() => {
+                                            handleExportAllData();
+                                            setShowSettingsMenu(false);
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            width: '100%',
+                                            padding: '0.75rem 1rem',
+                                            border: 'none',
+                                            background: 'none',
+                                            cursor: 'pointer',
+                                            color: 'var(--text-primary)',
+                                            textAlign: 'left',
+                                            fontSize: '0.95rem'
+                                        }}
+                                    >
+                                        <Upload size={16} style={{ marginRight: '0.75rem' }} />
+                                        {user?.role === 'admin' ? '匯出整個資料庫' : '匯出我的資料'}
+                                    </button>
+
+                                    {/* Import - available to all users */}
+                                    <button
+                                        className="dropdown-item"
+                                        onClick={() => {
+                                            setShowImportModal(true);
+                                            setShowSettingsMenu(false);
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            width: '100%',
+                                            padding: '0.75rem 1rem',
+                                            border: 'none',
+                                            background: 'none',
+                                            cursor: 'pointer',
+                                            color: 'var(--text-primary)',
+                                            textAlign: 'left',
+                                            fontSize: '0.95rem'
+                                        }}
+                                    >
+                                        <Download size={16} style={{ marginRight: '0.75rem' }} />
+                                        匯入資料
+                                    </button>
+
 
                                     <div
                                         className="dropdown-item-submenu-trigger"
@@ -237,12 +307,34 @@ export default function Layout() {
                                             </div>
                                         )}
                                     </div>
+
+                                    <div style={{ borderTop: '1px solid var(--border-color)', margin: '0.25rem 0' }}></div>
+
+                                    <button
+                                        className="dropdown-item"
+                                        onClick={handleLogout}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            width: '100%',
+                                            padding: '0.75rem 1rem',
+                                            border: 'none',
+                                            background: 'none',
+                                            cursor: 'pointer',
+                                            color: 'var(--color-danger)',
+                                            textAlign: 'left',
+                                            fontSize: '0.95rem'
+                                        }}
+                                    >
+                                        <LogOut size={16} style={{ marginRight: '0.75rem' }} />
+                                        登出
+                                    </button>
                                 </div>
                             )}
                         </div>
 
-                        <button className="btn btn-icon" onClick={handleLogout} title="登出">
-                            <LogOut size={18} color="white" />
+                        <button className="btn btn-icon" onClick={() => window.location.reload()} title="重新整理">
+                            <RefreshCw size={18} color="white" />
                         </button>
                     </div>
                 </div>
@@ -288,6 +380,57 @@ export default function Layout() {
                 isOpen={showProfile}
                 onClose={() => setShowProfile(false)}
             />
+
+            {/* Import Modal */}
+            {showImportModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        backgroundColor: 'var(--bg-card)',
+                        borderRadius: 'var(--border-radius)',
+                        padding: '1.5rem',
+                        maxWidth: '600px',
+                        width: '90%',
+                        maxHeight: '80vh',
+                        overflow: 'auto'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h2 style={{ margin: 0 }}>匯入資料</h2>
+                            <button
+                                onClick={() => setShowImportModal(false)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '1.5rem',
+                                    cursor: 'pointer',
+                                    color: 'var(--text-muted)'
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <CsvUpload
+                            variant="card"
+                            userHospital={user?.hospital || ''}
+                            onUploadComplete={() => {
+                                setShowImportModal(false);
+                                window.location.reload();
+                            }}
+                            onError={(msg) => alert(msg)}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

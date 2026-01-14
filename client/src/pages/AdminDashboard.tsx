@@ -1,7 +1,6 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Trash2, Edit, AlertCircle, X, Filter, ArrowUp, ArrowDown, Plus, Upload } from 'lucide-react';
+import { FileText, Trash2, Edit, AlertCircle, X, Filter, ArrowUp, ArrowDown, Upload } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { submissionService, exportService } from '../services/firestore';
 import type { Submission } from '../services/firestore';
@@ -67,7 +66,7 @@ export default function AdminDashboard() {
     const fetchSubmissions = async () => {
         setLoading(true);
         try {
-            const data = await submissionService.getAll();
+            const data = await submissionService.getAll(undefined, true);
             setSubmissions(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : '發生錯誤');
@@ -133,15 +132,6 @@ export default function AdminDashboard() {
         setFilterMRN('');
     };
 
-    const handleExportCSV = async () => {
-        try {
-            const csvContent = await exportService.exportToCSV();
-            downloadCSV(csvContent, `mhar-bsi-all-data-${new Date().toISOString().split('T')[0]}.csv`);
-        } catch (err) {
-            alert(err instanceof Error ? err.message : '匯出失敗');
-        }
-    };
-
     const handleExportFilteredCSV = async () => {
         try {
             const ids = filteredSubmissions.map(s => s.id);
@@ -164,7 +154,7 @@ export default function AdminDashboard() {
     };
 
     const downloadCSV = async (content: string, defaultFileName: string) => {
-        const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+        const blob = new Blob(['\ufeff' + content], { type: 'text/csv;charset=utf-8' });
 
         if ('showSaveFilePicker' in window) {
             try {
@@ -238,14 +228,6 @@ export default function AdminDashboard() {
                 <h1>管理員儀表板</h1>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <CsvUpload variant="buttons" onUploadComplete={fetchSubmissions} userHospital={user?.hospital || ''} onError={setError} />
-                    <button className="btn btn-secondary" onClick={handleExportCSV} style={{ fontWeight: 'bold', fontSize: '0.875rem' }}>
-                        <Upload size={18} />
-                        匯出整個資料庫
-                    </button>
-                    <Link to="/form" className="btn btn-primary">
-                        <Plus size={18} />
-                        新增表單
-                    </Link>
                 </div>
             </div>
 
@@ -263,14 +245,15 @@ export default function AdminDashboard() {
             ) : (
                 <>
                     {/* Filter Section */}
-                    <div className="card" style={{ marginBottom: 'var(--spacing-lg)', padding: 'var(--spacing-md)' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div className="card filter-section" style={{ marginBottom: 'var(--spacing-lg)', padding: 'var(--spacing-md)' }}>
+                        <div className="filter-content">
+                            {/* Line 1: Hospital, MRN, Clear button */}
+                            <div className="filter-row filter-row-main">
+                                <div className="filter-group filter-label">
                                     <Filter size={18} color="var(--text-muted)" />
                                     <span style={{ fontWeight: 500 }}>篩選條件:</span>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div className="filter-group">
                                     <label style={{ color: 'var(--text-secondary)' }}>醫院：</label>
                                     <select
                                         className="form-select"
@@ -285,7 +268,7 @@ export default function AdminDashboard() {
                                     </select>
                                 </div>
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div className="filter-group">
                                     <label style={{ color: 'var(--text-secondary)' }}>病歷號：</label>
                                     <input
                                         type="text"
@@ -297,7 +280,7 @@ export default function AdminDashboard() {
                                     />
                                 </div>
 
-                                <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <div className="filter-actions">
                                     <button
                                         className="btn btn-secondary"
                                         onClick={handleExportFilteredCSV}
@@ -305,7 +288,7 @@ export default function AdminDashboard() {
                                         style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem', marginRight: '0.5rem' }}
                                     >
                                         <Upload size={14} style={{ marginRight: '4px' }} />
-                                        匯出篩選表單
+                                        {hasActiveFilters ? '匯出篩選表單' : '匯出表單'}
                                     </button>
                                     <button
                                         className={`btn ${hasActiveFilters ? 'btn-danger' : 'btn-secondary'}`}
@@ -327,7 +310,8 @@ export default function AdminDashboard() {
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', paddingLeft: '1.5rem' }}>
+                            {/* Line 2: Date Filters */}
+                            <div className="filter-row filter-row-dates">
                                 <DualDateRangePicker
                                     admissionRange={{ start: admissionStartDate, end: admissionEndDate }}
                                     cultureRange={{ start: cultureStartDate, end: cultureEndDate }}
@@ -342,7 +326,8 @@ export default function AdminDashboard() {
                                 />
                             </div>
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '1.5rem' }}>
+                            {/* Line 3: Pathogen Tags */}
+                            <div className="filter-row filter-row-pathogens">
                                 <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>菌種：</label>
                                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                                     {PATHOGEN_CONFIG.map(p => {
@@ -533,6 +518,6 @@ export default function AdminDashboard() {
                     </div>
                 </>
             )}
-        </div >
+        </div>
     );
 }

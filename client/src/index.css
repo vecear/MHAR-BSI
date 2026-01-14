@@ -713,6 +713,271 @@ h3 {
   font-size: 0.875rem;
 }
 
+.navbar-time {
+  margin-right: 1.5rem;
+}
+
+.navbar-badge {
+  margin-right: 2rem;
+}
+
+@media (max-width: 768px) {
+  .navbar-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .navbar-user {
+    width: 100%;
+    display: flex;
+    flex-wrap: nowrap;
+    /* 不換行，讓 flex 處理寬度 */
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    color: var(--text-on-header);
+    /* 強制白色文字 */
+  }
+
+  /* 手機版隱藏時間 */
+  .navbar-time {
+    display: none;
+  }
+
+  /* Badge 自適應寬度 */
+  .navbar-badge {
+    margin-right: 0;
+    width: auto !important;
+    max-width: 35%;
+    /* 稍微縮小最大寬度 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 0 1 auto;
+  }
+
+  /* 使用者名稱 */
+  .navbar-profile {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+    /* 佔據剩餘空間 */
+    min-width: 0;
+    /* 允許縮小 */
+    /* 強制白色，並增加字重確保可讀性 */
+    color: #ffffff !important;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-right: 0.5rem;
+    line-height: 1.5;
+  }
+
+  /* 確保 Badge 不會被壓縮 */
+  .navbar-profile .badge {
+    flex-shrink: 0;
+    white-space: nowrap;
+    margin-left: 4px !important;
+    /* 確保與文字有間距 */
+    padding: 0.2rem 0.5rem;
+    /* 手機版稍微縮小 padding */
+    font-size: 0.7rem;
+  }
+
+  /* 確保圖示按鈕不被壓縮 */
+  .navbar-user .btn-icon {
+    flex: 0 0 auto;
+    padding: 0.25rem;
+  }
+}
+
+/* ===========================================
+   Filter Section - Base & Responsive Styles
+   =========================================== */
+
+/* Base filter styles */
+.filter-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter-row-main {
+  gap: 0.75rem;
+}
+
+.filter-row-dates,
+.filter-row-pathogens {
+  padding-left: 1.5rem;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-label {
+  min-width: fit-content;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* Mobile Filter Section */
+@media (max-width: 768px) {
+  .filter-section {
+    padding: var(--spacing-sm) !important;
+  }
+
+  .filter-content {
+    gap: 1rem;
+  }
+
+  /* Main filter row - allow wrapping but keep items grouped */
+  .filter-row-main {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  /* Filter label stays horizontal at top, full width */
+  .filter-label {
+    flex: 1 1 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+  }
+
+  /* Hospital and MRN share the same row (each ~50%) */
+  .filter-row-main .filter-group:not(.filter-label) {
+    flex: 1 1 45%;
+    min-width: 120px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .filter-group label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  .filter-group .form-input,
+  .filter-group .form-select {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: unset !important;
+  }
+
+  /* Actions - buttons on same row (each ~50%) */
+  .filter-actions {
+    flex: 1 1 100%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-left: 0;
+    gap: 0.5rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+  }
+
+  .filter-actions .btn {
+    flex: 1 1 45%;
+    min-width: 100px;
+    justify-content: center;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .filter-actions>div {
+    flex: 1 1 100%;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  /* Date row - full width, no left padding */
+  .filter-row-dates {
+    padding-left: 0;
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .filter-row-dates>* {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  /* DualDateRangePicker full width */
+  .dual-date-picker {
+    width: 100% !important;
+    display: block !important;
+  }
+
+  .dual-date-picker-btn {
+    width: 100% !important;
+  }
+
+  /* Pathogens row */
+  .filter-row-pathogens {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-left: 0;
+  }
+
+  .filter-row-pathogens>div {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .filter-row-pathogens label[style] {
+    padding: 0.35rem 0.5rem !important;
+    font-size: 0.8rem;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .filter-section {
+    padding: var(--spacing-xs) !important;
+  }
+
+  .filter-group label {
+    font-size: 0.8rem;
+  }
+
+  .filter-actions .btn {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Stack pathogen checkboxes in single column */
+  .filter-row-pathogens>div {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Main Content */
 .main-content {
   flex: 1;
@@ -801,10 +1066,9 @@ h3 {
 }
 
 .badge-success {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  border: 1px solid var(--color-primary);
-  /* Add border for better definition */
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #22c55e;
 }
 
 .badge-warning {
