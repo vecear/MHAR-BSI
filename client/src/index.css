@@ -641,7 +641,7 @@ h3 {
 .navbar {
   background: var(--bg-header);
   color: var(--text-on-header);
-  padding: var(--spacing-md) var(--spacing-xl);
+  padding: calc(var(--spacing-md) + env(safe-area-inset-top)) var(--spacing-xl) var(--spacing-md) var(--spacing-xl);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -654,6 +654,7 @@ h3 {
   flex-direction: column;
   align-items: stretch;
   padding: 0;
+  padding-top: env(safe-area-inset-top);
 }
 
 .navbar-header {
