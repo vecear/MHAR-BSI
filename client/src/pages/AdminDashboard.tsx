@@ -8,12 +8,13 @@ import CsvUpload from '../components/CsvUpload';
 import DualDateRangePicker from '../components/DualDateRangePicker';
 
 const HOSPITALS = [
-    '內湖總院', '松山分院', '澎湖分院', '桃園總院',
+    '三軍總院', '松山分院', '澎湖分院', '桃園總院',
     '台中總院', '高雄總院', '左營總院', '花蓮總院'
 ];
 
 const HOSPITAL_CONFIG: Record<string, { bg: string; text: string }> = {
-    '內湖總院': { bg: '#dbeafe', text: '#2563eb' },
+    '三軍總院': { bg: '#dbeafe', text: '#2563eb' }, // New name
+    '內湖總院': { bg: '#dbeafe', text: '#2563eb' }, // Legacy support
     '松山分院': { bg: '#dcfce7', text: '#16a34a' },
     '澎湖分院': { bg: '#fef3c7', text: '#d97706' },
     '桃園總院': { bg: '#fce7f3', text: '#db2777' },

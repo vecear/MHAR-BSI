@@ -1300,6 +1300,7 @@ h3 {
     gap: var(--spacing-sm);
   }
 
+
   .navbar-user {
     flex-wrap: wrap;
     justify-content: center;
@@ -1314,8 +1315,33 @@ h3 {
   }
 
   /* Hide clock on mobile to save space */
-  .navbar-user>div:first-child {
+  .navbar-time {
     display: none;
+  }
+
+  /* Wrap profile and actions on one row */
+  .navbar-controls-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+    flex-wrap: nowrap;
+    /* Force single row */
+  }
+
+  .navbar-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+  }
+
+  /* Ensure profile text wraps if needed but prefers staying on line */
+  .navbar-profile {
+    white-space: normal;
+    text-align: right;
+    font-size: 0.9rem;
+    line-height: 1.2;
   }
 
   /* Container */

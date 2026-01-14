@@ -6,7 +6,7 @@ import { LogIn, FolderKanban } from 'lucide-react';
 import { PROJECTS, DEFAULT_PROJECT_ID } from '../constants/projects';
 
 const HOSPITALS = [
-    '內湖總院',
+    '三軍總院',
     '松山分院',
     '澎湖分院',
     '桃園總院',

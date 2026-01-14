@@ -185,216 +185,220 @@ export default function Layout() {
                                 second: '2-digit'
                             })}
                         </div>
-                        <div className="navbar-profile">
-                            {user?.username} ({user?.display_name || '未設定姓名'}|{user?.hospital})
-                            <span
-                                className={`badge ${user?.role === 'admin' ? 'badge-info' : 'badge-success'}`}
-                                style={{ marginLeft: '8px' }}
-                            >
-                                {user?.role === 'admin' ? '管理員' : '成員'}
-                            </span>
-                        </div>
+                        <div className="navbar-controls-row">
+                            <div className="navbar-profile">
+                                {user?.username} ({user?.display_name || '未設定姓名'}|{user?.hospital})
+                                <span
+                                    className={`badge ${user?.role === 'admin' ? 'badge-info' : 'badge-success'}`}
+                                    style={{ marginLeft: '8px' }}
+                                >
+                                    {user?.role === 'admin' ? '管理員' : '成員'}
+                                </span>
+                            </div>
 
-                        <div className="settings-dropdown" ref={settingsRef} style={{ position: 'relative' }}>
-                            <button
-                                className={`btn btn-icon ${showSettingsMenu ? 'active' : ''}`}
-                                onClick={() => setShowSettingsMenu(!showSettingsMenu)}
-                                title="設定"
-                            >
-                                <Settings size={18} color="white" />
-                            </button>
-
-                            {showSettingsMenu && (
-                                <div className="dropdown-menu" style={{
-                                    position: 'absolute',
-                                    top: '100%',
-                                    right: 0,
-                                    marginTop: '0.5rem',
-                                    backgroundColor: 'var(--bg-card)',
-                                    border: '1px solid var(--border-color)',
-                                    borderRadius: 'var(--border-radius)',
-                                    boxShadow: 'var(--shadow-lg)',
-                                    minWidth: '200px',
-                                    zIndex: 1000,
-                                    padding: '0.5rem 0'
-                                }}>
+                            <div className="navbar-actions">
+                                <div className="settings-dropdown" ref={settingsRef} style={{ position: 'relative' }}>
                                     <button
-                                        className="dropdown-item"
-                                        onClick={() => {
-                                            setShowProfile(true);
-                                            setShowSettingsMenu(false);
-                                        }}
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            width: '100%',
-                                            padding: '0.75rem 1rem',
-                                            border: 'none',
-                                            background: 'none',
-                                            cursor: 'pointer',
-                                            color: 'var(--text-primary)',
-                                            textAlign: 'left',
-                                            fontSize: '0.95rem'
-                                        }}
+                                        className={`btn btn-icon ${showSettingsMenu ? 'active' : ''}`}
+                                        onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+                                        title="設定"
                                     >
-                                        <User size={16} style={{ marginRight: '0.75rem' }} />
-                                        修改基本資料
+                                        <Settings size={18} color="white" />
                                     </button>
 
-                                    <button
-                                        className="dropdown-item"
-                                        onClick={() => {
-                                            handleExportAllData();
-                                            setShowSettingsMenu(false);
-                                        }}
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            width: '100%',
-                                            padding: '0.75rem 1rem',
-                                            border: 'none',
-                                            background: 'none',
-                                            cursor: 'pointer',
-                                            color: 'var(--text-primary)',
-                                            textAlign: 'left',
-                                            fontSize: '0.95rem'
-                                        }}
-                                    >
-                                        <Upload size={16} style={{ marginRight: '0.75rem' }} />
-                                        {user?.role === 'admin' ? '匯出整個資料庫' : '匯出我的資料'}
-                                    </button>
+                                    {showSettingsMenu && (
+                                        <div className="dropdown-menu" style={{
+                                            position: 'absolute',
+                                            top: '100%',
+                                            right: 0,
+                                            marginTop: '0.5rem',
+                                            backgroundColor: 'var(--bg-card)',
+                                            border: '1px solid var(--border-color)',
+                                            borderRadius: 'var(--border-radius)',
+                                            boxShadow: 'var(--shadow-lg)',
+                                            minWidth: '200px',
+                                            zIndex: 1000,
+                                            padding: '0.5rem 0'
+                                        }}>
+                                            <button
+                                                className="dropdown-item"
+                                                onClick={() => {
+                                                    setShowProfile(true);
+                                                    setShowSettingsMenu(false);
+                                                }}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    width: '100%',
+                                                    padding: '0.75rem 1rem',
+                                                    border: 'none',
+                                                    background: 'none',
+                                                    cursor: 'pointer',
+                                                    color: 'var(--text-primary)',
+                                                    textAlign: 'left',
+                                                    fontSize: '0.95rem'
+                                                }}
+                                            >
+                                                <User size={16} style={{ marginRight: '0.75rem' }} />
+                                                修改基本資料
+                                            </button>
 
-                                    <button
-                                        className="dropdown-item"
-                                        onClick={() => {
-                                            setShowImportModal(true);
-                                            setShowSettingsMenu(false);
-                                        }}
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            width: '100%',
-                                            padding: '0.75rem 1rem',
-                                            border: 'none',
-                                            background: 'none',
-                                            cursor: 'pointer',
-                                            color: 'var(--text-primary)',
-                                            textAlign: 'left',
-                                            fontSize: '0.95rem'
-                                        }}
-                                    >
-                                        <Download size={16} style={{ marginRight: '0.75rem' }} />
-                                        匯入資料
-                                    </button>
+                                            <button
+                                                className="dropdown-item"
+                                                onClick={() => {
+                                                    handleExportAllData();
+                                                    setShowSettingsMenu(false);
+                                                }}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    width: '100%',
+                                                    padding: '0.75rem 1rem',
+                                                    border: 'none',
+                                                    background: 'none',
+                                                    cursor: 'pointer',
+                                                    color: 'var(--text-primary)',
+                                                    textAlign: 'left',
+                                                    fontSize: '0.95rem'
+                                                }}
+                                            >
+                                                <Upload size={16} style={{ marginRight: '0.75rem' }} />
+                                                {user?.role === 'admin' ? '匯出整個資料庫' : '匯出我的資料'}
+                                            </button>
+
+                                            <button
+                                                className="dropdown-item"
+                                                onClick={() => {
+                                                    setShowImportModal(true);
+                                                    setShowSettingsMenu(false);
+                                                }}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    width: '100%',
+                                                    padding: '0.75rem 1rem',
+                                                    border: 'none',
+                                                    background: 'none',
+                                                    cursor: 'pointer',
+                                                    color: 'var(--text-primary)',
+                                                    textAlign: 'left',
+                                                    fontSize: '0.95rem'
+                                                }}
+                                            >
+                                                <Download size={16} style={{ marginRight: '0.75rem' }} />
+                                                匯入資料
+                                            </button>
 
 
-                                    <div
-                                        className="dropdown-item-submenu-trigger"
-                                        onMouseEnter={() => setShowThemeMenu(true)}
-                                        onMouseLeave={() => setShowThemeMenu(false)}
-                                        style={{ position: 'relative' }}
-                                    >
-                                        <button
-                                            className="dropdown-item"
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'space-between',
-                                                width: '100%',
-                                                padding: '0.75rem 1rem',
-                                                border: 'none',
-                                                background: 'none',
-                                                cursor: 'pointer',
-                                                color: 'var(--text-primary)',
-                                                textAlign: 'left',
-                                                fontSize: '0.95rem'
-                                            }}
-                                        >
-                                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                <Palette size={16} style={{ marginRight: '0.75rem' }} />
-                                                頁面主題
+                                            <div
+                                                className="dropdown-item-submenu-trigger"
+                                                onMouseEnter={() => setShowThemeMenu(true)}
+                                                onMouseLeave={() => setShowThemeMenu(false)}
+                                                style={{ position: 'relative' }}
+                                            >
+                                                <button
+                                                    className="dropdown-item"
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'space-between',
+                                                        width: '100%',
+                                                        padding: '0.75rem 1rem',
+                                                        border: 'none',
+                                                        background: 'none',
+                                                        cursor: 'pointer',
+                                                        color: 'var(--text-primary)',
+                                                        textAlign: 'left',
+                                                        fontSize: '0.95rem'
+                                                    }}
+                                                >
+                                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                        <Palette size={16} style={{ marginRight: '0.75rem' }} />
+                                                        頁面主題
+                                                    </div>
+                                                    <ChevronRight size={14} />
+                                                </button>
+
+                                                {showThemeMenu && (
+                                                    <div className="dropdown-submenu" style={{
+                                                        position: 'absolute',
+                                                        top: window.innerWidth <= 768 ? '100%' : 0,
+                                                        right: window.innerWidth <= 768 ? 0 : '100%',
+                                                        marginRight: window.innerWidth <= 768 ? 0 : '0.5rem',
+                                                        marginTop: window.innerWidth <= 768 ? '0.25rem' : 0,
+                                                        backgroundColor: 'var(--bg-card)',
+                                                        border: '1px solid var(--border-color)',
+                                                        borderRadius: 'var(--border-radius)',
+                                                        boxShadow: 'var(--shadow-lg)',
+                                                        width: window.innerWidth <= 480 ? '280px' : window.innerWidth <= 768 ? '400px' : '640px',
+                                                        maxWidth: '90vw',
+                                                        display: 'grid',
+                                                        gridTemplateColumns: window.innerWidth <= 480 ? 'repeat(2, 1fr)' : window.innerWidth <= 768 ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)',
+                                                        gap: '0.5rem',
+                                                        padding: '0.5rem'
+                                                    }}>
+                                                        {THEMES.map(t => (
+                                                            <button
+                                                                key={t.id}
+                                                                onClick={() => setTheme(t.id)}
+                                                                style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    width: '100%',
+                                                                    padding: '0.5rem 1rem',
+                                                                    border: 'none',
+                                                                    background: theme === t.id ? 'var(--color-primary-light)' : 'none',
+                                                                    cursor: 'pointer',
+                                                                    color: theme === t.id ? 'var(--color-primary)' : 'var(--text-primary)',
+                                                                    textAlign: 'left',
+                                                                    fontSize: '0.9rem'
+                                                                }}
+                                                            >
+                                                                <div style={{
+                                                                    width: '12px',
+                                                                    height: '12px',
+                                                                    borderRadius: '50%',
+                                                                    backgroundColor: t.color,
+                                                                    marginRight: '0.75rem',
+                                                                    border: '1px solid var(--border-color)'
+                                                                }} />
+                                                                {t.name}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
-                                            <ChevronRight size={14} />
-                                        </button>
 
-                                        {showThemeMenu && (
-                                            <div className="dropdown-submenu" style={{
-                                                position: 'absolute',
-                                                top: window.innerWidth <= 768 ? '100%' : 0,
-                                                right: window.innerWidth <= 768 ? 0 : '100%',
-                                                marginRight: window.innerWidth <= 768 ? 0 : '0.5rem',
-                                                marginTop: window.innerWidth <= 768 ? '0.25rem' : 0,
-                                                backgroundColor: 'var(--bg-card)',
-                                                border: '1px solid var(--border-color)',
-                                                borderRadius: 'var(--border-radius)',
-                                                boxShadow: 'var(--shadow-lg)',
-                                                width: window.innerWidth <= 480 ? '280px' : window.innerWidth <= 768 ? '400px' : '640px',
-                                                maxWidth: '90vw',
-                                                display: 'grid',
-                                                gridTemplateColumns: window.innerWidth <= 480 ? 'repeat(2, 1fr)' : window.innerWidth <= 768 ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)',
-                                                gap: '0.5rem',
-                                                padding: '0.5rem'
-                                            }}>
-                                                {THEMES.map(t => (
-                                                    <button
-                                                        key={t.id}
-                                                        onClick={() => setTheme(t.id)}
-                                                        style={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            width: '100%',
-                                                            padding: '0.5rem 1rem',
-                                                            border: 'none',
-                                                            background: theme === t.id ? 'var(--color-primary-light)' : 'none',
-                                                            cursor: 'pointer',
-                                                            color: theme === t.id ? 'var(--color-primary)' : 'var(--text-primary)',
-                                                            textAlign: 'left',
-                                                            fontSize: '0.9rem'
-                                                        }}
-                                                    >
-                                                        <div style={{
-                                                            width: '12px',
-                                                            height: '12px',
-                                                            borderRadius: '50%',
-                                                            backgroundColor: t.color,
-                                                            marginRight: '0.75rem',
-                                                            border: '1px solid var(--border-color)'
-                                                        }} />
-                                                        {t.name}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
+                                            <div style={{ borderTop: '1px solid var(--border-color)', margin: '0.25rem 0' }}></div>
 
-                                    <div style={{ borderTop: '1px solid var(--border-color)', margin: '0.25rem 0' }}></div>
-
-                                    <button
-                                        className="dropdown-item"
-                                        onClick={handleLogout}
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            width: '100%',
-                                            padding: '0.75rem 1rem',
-                                            border: 'none',
-                                            background: 'none',
-                                            cursor: 'pointer',
-                                            color: 'var(--color-danger)',
-                                            textAlign: 'left',
-                                            fontSize: '0.95rem'
-                                        }}
-                                    >
-                                        <LogOut size={16} style={{ marginRight: '0.75rem' }} />
-                                        登出
-                                    </button>
+                                            <button
+                                                className="dropdown-item"
+                                                onClick={handleLogout}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    width: '100%',
+                                                    padding: '0.75rem 1rem',
+                                                    border: 'none',
+                                                    background: 'none',
+                                                    cursor: 'pointer',
+                                                    color: 'var(--color-danger)',
+                                                    textAlign: 'left',
+                                                    fontSize: '0.95rem'
+                                                }}
+                                            >
+                                                <LogOut size={16} style={{ marginRight: '0.75rem' }} />
+                                                登出
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
 
-                        <button className="btn btn-icon" onClick={() => window.location.reload()} title="重新整理">
-                            <RefreshCw size={18} color="white" />
-                        </button>
+                                <button className="btn btn-icon" onClick={() => window.location.reload()} title="重新整理">
+                                    <RefreshCw size={18} color="white" />
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

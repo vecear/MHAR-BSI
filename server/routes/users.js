@@ -5,7 +5,7 @@ const { userQueries } = require('../db/database');
 const router = express.Router();
 
 const VALID_HOSPITALS = [
-    '內湖總院', '松山分院', '桃園總院', '台中總院',
+    '三軍總院', '松山分院', '桃園總院', '台中總院',
     '高雄總院', '左營總院', '花蓮總院', '澎湖分院'
 ];
 

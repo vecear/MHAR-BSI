@@ -108,7 +108,7 @@ const initialFormData: FormData = {
 };
 
 export const HOSPITALS = [
-    '內湖總院', '松山分院', '澎湖分院', '桃園總院',
+    '三軍總院', '松山分院', '澎湖分院', '桃園總院',
     '台中總院', '高雄總院', '左營總院', '花蓮總院'
 ];
 

@@ -5,7 +5,7 @@ import { useToast } from '../components/Toast';
 import { useAuth } from '../contexts/AuthContext';
 
 const HOSPITALS = [
-    '內湖總院',
+    '三軍總院',
     '松山分院',
     '澎湖分院',
     '桃園總院',
