@@ -45,6 +45,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         } else {
             document.documentElement.setAttribute('data-theme', theme);
         }
+
+        // Update iOS status bar color (meta theme-color) to match header
+        setTimeout(() => {
+            const headerColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-header').trim();
+            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor && headerColor) {
+                metaThemeColor.setAttribute('content', headerColor);
+            }
+        }, 10);
     }, [theme]);
 
     return (
