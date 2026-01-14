@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { projectGuideService, commentService, GuideComment } from '../services/firestore';
+import { projectGuideService, commentService } from '../services/firestore';
+import type { GuideComment } from '../services/firestore';
 import { useToast } from '../components/Toast';
 import { Edit, Save, X, BookOpen, Send, MessageSquare, Trash2, Bell, Check, User } from 'lucide-react';
 import ReactQuill from 'react-quill';
