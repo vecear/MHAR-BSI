@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { FormData } from '../pages/FormPage';
 
 interface Props {
@@ -29,6 +30,34 @@ const ANTIBIOTICS = [
 ];
 
 export default function FormStep2({ formData, updateFormData }: Props) {
+    // Set default values to the largest MIC (last option) if not set
+    useEffect(() => {
+        const updates: Record<string, string> = {};
+        const currentData = formData.mic_data || {};
+        let hasUpdates = false;
+
+        ANTIBIOTICS.forEach(antibiotic => {
+            // If value is missing (undefined or empty string)
+            if (!currentData[antibiotic.key]) {
+                const values = antibiotic.values;
+                // Select the last value (largest)
+                if (values.length > 0) {
+                    updates[antibiotic.key] = values[values.length - 1];
+                    hasUpdates = true;
+                }
+            }
+        });
+
+        if (hasUpdates) {
+            updateFormData({
+                mic_data: {
+                    ...currentData,
+                    ...updates
+                }
+            });
+        }
+    }, []);
+
     const handleMicChange = (key: string, value: string) => {
         updateFormData({
             mic_data: {
