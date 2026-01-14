@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Users, Edit, Trash2, X, UserPlus, AlertCircle } from 'lucide-react';
+import { Users, Edit, Trash2, X, AlertCircle } from 'lucide-react';
 import { userService } from '../services/firestore';
 import type { FirestoreUser } from '../services/firestore';
 import { PROJECTS } from '../constants/projects';
@@ -64,11 +64,7 @@ export default function UserManagement() {
         }
     };
 
-    const openAddUser = () => {
-        setEditingUser(null);
-        setUserForm(initialUserForm);
-        setShowUserModal(true);
-    };
+
 
     const openEditUser = (user: FirestoreUser) => {
         setEditingUser(user);
@@ -149,10 +145,6 @@ export default function UserManagement() {
             `}</style>
             <div className="page-header">
                 <h1>使用者管理</h1>
-                <button className="btn btn-primary" onClick={openAddUser}>
-                    <UserPlus size={18} />
-                    新增使用者
-                </button>
             </div>
 
             {error && (
@@ -173,7 +165,7 @@ export default function UserManagement() {
                             <Users className="empty-state-icon" />
                             <h3>尚無使用者</h3>
                             <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>
-                                點擊「新增使用者」來建立帳號
+                                請等待使用者自行註冊
                             </p>
                         </div>
                     ) : (
@@ -252,18 +244,14 @@ export default function UserManagement() {
                 <div className="modal-overlay" onClick={() => setShowUserModal(false)}>
                     <div className="modal animate-slideUp" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>{editingUser ? '編輯使用者' : '新增使用者'}</h3>
+                            <h3>編輯使用者</h3>
                             <button className="btn btn-icon" onClick={() => setShowUserModal(false)}>
                                 <X size={18} />
                             </button>
                         </div>
                         <form onSubmit={handleSaveUser}>
                             <div className="modal-body">
-                                {!editingUser && (
-                                    <div className="alert alert-info" style={{ marginBottom: '1rem' }}>
-                                        注意：建議使用者自行透過註冊頁面建立帳號，此處僅供管理員建立 Firestore 使用者資料。
-                                    </div>
-                                )}
+
 
                                 <div className="form-grid-2">
                                     <div className="form-group">
@@ -278,20 +266,7 @@ export default function UserManagement() {
                                             style={editingUser ? { backgroundColor: 'var(--bg-primary)' } : {}}
                                         />
                                     </div>
-                                    {!editingUser && (
-                                        <div className="form-group">
-                                            <label className="form-label required">密碼</label>
-                                            <input
-                                                type="password"
-                                                className="form-input"
-                                                value={userForm.password}
-                                                onChange={e => setUserForm({ ...userForm, password: e.target.value })}
-                                                minLength={6}
-                                                required
-                                                placeholder="至少6個字元"
-                                            />
-                                        </div>
-                                    )}
+
                                 </div>
 
                                 <div className="form-grid-2">
@@ -403,7 +378,7 @@ export default function UserManagement() {
                                     取消
                                 </button>
                                 <button type="submit" className="btn btn-primary" disabled={savingUser}>
-                                    {savingUser ? <div className="spinner" style={{ width: '1rem', height: '1rem' }}></div> : (editingUser ? '儲存' : '建立')}
+                                    {savingUser ? <div className="spinner" style={{ width: '1rem', height: '1rem' }}></div> : '儲存'}
                                 </button>
                             </div>
                         </form>
