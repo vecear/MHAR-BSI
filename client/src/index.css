@@ -654,10 +654,8 @@ h3 {
   flex-direction: column;
   align-items: stretch;
   padding: 0;
-  /* Fallbacks for iOS safe area */
-  padding-top: 1rem;
-  padding-top: calc(constant(safe-area-inset-top) + 0.5rem);
-  padding-top: calc(env(safe-area-inset-top) + 0.5rem);
+  /* Fixed padding for iPhone notch clearance */
+  padding-top: 50px !important;
 }
 
 .navbar-header {
