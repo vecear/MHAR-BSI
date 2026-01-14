@@ -786,3 +786,88 @@ export const projectGuideService = {
         }, { merge: true });
     }
 };
+
+// ==================== Comment Service ====================
+
+export interface GuideComment {
+    id: string;
+    content: string;
+    user_id: string;
+    username: string;
+    hospital: string;
+    created_at?: Date;
+    notify_admin: boolean;
+    admin_read: boolean;
+}
+
+export const commentService = {
+    // Create new comment
+    async create(
+        userId: string,
+        username: string,
+        hospital: string,
+        content: string,
+        notifyAdmin: boolean
+    ): Promise<string> {
+        const docRef = await addDoc(collection(db, 'guide_comments'), {
+            user_id: userId,
+            username,
+            hospital,
+            content,
+            notify_admin: notifyAdmin,
+            admin_read: false,
+            created_at: serverTimestamp()
+        });
+        return docRef.id;
+    },
+
+    // Get all comments
+    async getAll(): Promise<GuideComment[]> {
+        const q = query(
+            collection(db, 'guide_comments'),
+            orderBy('created_at', 'desc')
+        );
+
+        const snapshot = await getDocs(q);
+        const comments: GuideComment[] = [];
+
+        for (const docSnap of snapshot.docs) {
+            const data = docSnap.data();
+            comments.push({
+                id: docSnap.id,
+                content: data.content,
+                user_id: data.user_id,
+                username: data.username,
+                hospital: data.hospital,
+                notify_admin: data.notify_admin || false,
+                admin_read: data.admin_read || false,
+                created_at: convertTimestamp(data.created_at)
+            });
+        }
+        return comments;
+    },
+
+    // Count unread notifications for admin
+    async countUnread(): Promise<number> {
+        const q = query(
+            collection(db, 'guide_comments'),
+            where('notify_admin', '==', true),
+            where('admin_read', '==', false)
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.size;
+    },
+
+    // Mark comment as read (for admin)
+    async markRead(id: string): Promise<void> {
+        const docRef = doc(db, 'guide_comments', id);
+        await updateDoc(docRef, {
+            admin_read: true
+        });
+    },
+
+    // Delete comment (admin or owner)
+    async delete(id: string): Promise<void> {
+        await deleteDoc(doc(db, 'guide_comments', id));
+    }
+};
