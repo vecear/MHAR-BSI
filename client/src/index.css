@@ -836,6 +836,15 @@ h3 {
    Filter Section - Base & Responsive Styles
    =========================================== */
 
+
+/* Pathogen List Styles */
+.pathogen-list {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 /* Base filter styles */
 .filter-content {
   display: flex;
@@ -843,6 +852,7 @@ h3 {
   gap: 0.75rem;
   width: 100%;
 }
+
 
 .filter-row {
   display: flex;
@@ -982,24 +992,35 @@ h3 {
     padding-left: 0;
   }
 
-  .filter-row-pathogens>div {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
+  /* Pathogen List - Wrap on mobile */
+  .pathogen-list {
+    display: flex;
+    flex-wrap: wrap;
+    /* Ensure wrapping */
     width: 100%;
+    gap: 0.5rem;
+    padding-bottom: 0;
+    overflow: visible;
+    /* No scroll */
+  }
+
+  .pathogen-tag {
+    flex: 1 1 auto;
+    /* Allow growth */
+    justify-content: center;
+    /* Center text */
+    min-width: 80px;
+    /* Minimum touch target width */
   }
 
   .filter-row-pathogens label[style] {
-    padding: 0.35rem 0.5rem !important;
-    font-size: 0.8rem;
+    padding: 0;
   }
 }
 
 /* Extra small screens */
 @media (max-width: 480px) {
-  .filter-section {
-    padding: var(--spacing-xs) !important;
-  }
+
 
   .filter-group label {
     font-size: 0.8rem;
@@ -1009,11 +1030,31 @@ h3 {
     font-size: 0.85rem;
     padding: 0.5rem 0.75rem;
   }
+}
 
-  /* Stack pathogen checkboxes in single column */
-  .filter-row-pathogens>div {
-    grid-template-columns: 1fr;
-  }
+/* Pathogen Tag Base Styles */
+.pathogen-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  /* Pill shape */
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  font-size: 0.875rem;
+  user-select: none;
+}
+
+.pathogen-tag:hover {
+  filter: brightness(0.95);
+  transform: translateY(-1px);
+}
+
+.pathogen-tag.active {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 /* Main Content */

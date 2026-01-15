@@ -370,22 +370,17 @@ export default function Dashboard() {
                     {/* Line 3: Pathogen Tags */}
                     <div className="filter-row filter-row-pathogens">
                         <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>菌種：</label>
-                        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div className="pathogen-list">
                             {PATHOGEN_CONFIG.map(p => {
                                 const isChecked = filterPathogens.includes(p.id);
                                 return (
                                     <label
                                         key={p.id}
+                                        className={`pathogen-tag ${isChecked ? 'active' : ''}`}
                                         style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '0.35rem',
-                                            cursor: 'pointer',
-                                            padding: '0.25rem 0.5rem',
-                                            borderRadius: '6px',
-                                            backgroundColor: isChecked ? p.bg : 'transparent',
-                                            border: isChecked ? `2px solid ${p.text}` : '2px solid transparent',
-                                            transition: 'all 0.2s ease'
+                                            backgroundColor: isChecked ? p.bg : 'var(--bg-secondary)',
+                                            color: isChecked ? p.text : 'var(--text-secondary)',
+                                            borderColor: isChecked ? p.text : 'var(--border-color)',
                                         }}
                                     >
                                         <input
@@ -398,11 +393,9 @@ export default function Dashboard() {
                                                     setFilterPathogens([...filterPathogens, p.id]);
                                                 }
                                             }}
-                                            style={{ accentColor: p.text, width: '16px', height: '16px' }}
+                                            style={{ display: 'none' }}
                                         />
-                                        <span style={{ color: p.text, fontWeight: 500, fontSize: '0.85rem' }}>
-                                            {p.label}
-                                        </span>
+                                        <span>{p.label}</span>
                                     </label>
                                 );
                             })}
