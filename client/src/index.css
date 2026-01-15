@@ -644,6 +644,30 @@ h3 {
   border: 1px solid var(--border-color) !important;
 }
 
+.page-header-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-icon-wrapper {
+  background: var(--color-primary-light);
+  padding: 0.75rem;
+  border-radius: 12px;
+  color: var(--color-primary);
+  display: inline-flex;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.page-subtitle {
+  margin: 0.25rem 0 0 0;
+  color: var(--text-muted);
+}
+
 /* Navbar */
 .navbar {
   background: var(--bg-header);
@@ -1501,22 +1525,56 @@ h3 {
     padding: var(--spacing-md);
   }
 
-  /* Page Header */
+  /* Page Header Mobile Update */
   .page-header {
     flex-direction: column;
     gap: var(--spacing-md);
     align-items: stretch;
   }
 
-  .page-header>h1 {
-    text-align: center;
-    font-size: 1.5rem;
+  /* Center the content group */
+  .page-header-content {
+    justify-content: flex-start;
+    /* Align left */
+    flex-direction: row;
+    /* Keep side-by-side */
+    text-align: left;
+    width: 100%;
+    gap: 1rem;
   }
 
-  .page-header>div {
+  .header-icon-wrapper {
+    margin: 0;
+    /* No auto margin */
+    flex-shrink: 0;
+    /* Prevent shrinking */
+  }
+
+  .page-header-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    /* Left align text */
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    margin: 0;
+  }
+
+  .page-subtitle {
+    margin: 0.25rem 0 0 0;
+    color: var(--text-muted);
+  }
+
+  .page-header>div:not(.page-header-content) {
     justify-content: center;
     flex-wrap: wrap;
+    width: 100%;
+    /* Ensure buttons area is full width */
+    display: flex;
   }
+
 
   /* Cards */
   .card {
@@ -1885,6 +1943,20 @@ h3 {
 
   .page-header>div .btn {
     width: 100%;
+  }
+
+  /* Force header content to stay side-by-side */
+  .page-header .page-header-content {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    gap: 0.75rem !important;
+  }
+
+  .page-header .page-header-content .header-icon-wrapper {
+    margin-right: 0 !important;
+    margin-bottom: 0 !important;
   }
 
   /* Cards */

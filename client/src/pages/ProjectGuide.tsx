@@ -220,19 +220,14 @@ export default function ProjectGuide() {
 
     return (
         <div className="project-guide-container animate-fadeIn" style={{ paddingBottom: '4rem' }}>
-            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div className="header-icon-wrapper" style={{
-                        background: 'var(--color-primary-light)',
-                        padding: '0.75rem',
-                        borderRadius: '12px',
-                        color: 'var(--color-primary)'
-                    }}>
+            <div className="page-header">
+                <div className="page-header-content">
+                    <div className="header-icon-wrapper">
                         <BookOpen size={24} />
                     </div>
-                    <div>
-                        <h1 className="page-title" style={{ margin: 0, fontSize: '1.75rem' }}>收案說明</h1>
-                        <p className="page-subtitle" style={{ margin: '0.25rem 0 0 0', color: 'var(--text-muted)' }}>
+                    <div className="page-header-text">
+                        <h1 className="page-title">收案說明</h1>
+                        <p className="page-subtitle">
                             Project Inclusion Criteria & Guide
                         </p>
                     </div>
