@@ -7,11 +7,24 @@ import { useToast } from '../components/Toast';
 import { Edit, Save, X, BookOpen, Send, MessageSquare, Trash2, Bell, Check, User, Smile, Reply as ReplyIcon } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import EmojiPicker, { Theme } from 'emoji-picker-react';
+import EmojiPicker, { Theme, Categories } from 'emoji-picker-react';
 import type { EmojiClickData } from 'emoji-picker-react';
 
 
+const EMOJI_CATEGORIES = [
+    { category: Categories.SUGGESTED, name: '常用' },
+    { category: Categories.SMILEYS_PEOPLE, name: '表情與人物' },
+    { category: Categories.ANIMALS_NATURE, name: '動物與自然' },
+    { category: Categories.FOOD_DRINK, name: '食物與飲料' },
+    { category: Categories.TRAVEL_PLACES, name: '旅遊與地點' },
+    { category: Categories.ACTIVITIES, name: '活動' },
+    { category: Categories.OBJECTS, name: '物品' },
+    { category: Categories.SYMBOLS, name: '符號' },
+    { category: Categories.FLAGS, name: '旗幟' },
+];
+
 export default function ProjectGuide() {
+    // ... (rest of imports and component start)
     const { refreshPendingDeleteCount } = useOutletContext<{ refreshPendingDeleteCount: () => void }>();
     const { user } = useAuth();
     const { showSuccess, showError } = useToast();
@@ -374,6 +387,11 @@ export default function ProjectGuide() {
                                 theme={Theme.AUTO}
                                 width={300}
                                 height={400}
+                                categories={EMOJI_CATEGORIES}
+                                searchPlaceholder="搜尋表情符號..."
+                                previewConfig={{
+                                    defaultCaption: "選擇表情符號"
+                                }}
                             />
                         </div>
                     )}
@@ -634,6 +652,11 @@ export default function ProjectGuide() {
                                                         theme={Theme.AUTO}
                                                         width={300}
                                                         height={350}
+                                                        categories={EMOJI_CATEGORIES}
+                                                        searchPlaceholder="搜尋表情符號..."
+                                                        previewConfig={{
+                                                            defaultCaption: "選擇表情符號"
+                                                        }}
                                                     />
                                                 </div>
                                             )}

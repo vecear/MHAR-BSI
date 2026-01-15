@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { X, Calculator, AlertCircle } from 'lucide-react';
 
 interface Props {
@@ -131,14 +131,43 @@ interface OrganSectionProps {
 }
 
 function OrganSection({ title, icon, options, value, onChange }: OrganSectionProps) {
+    const isManual = value !== null && !options.some(opt => opt.value === value);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        if (val === '') {
+            // If cleared, what to do? Maybe nothing or reset?
+            // For simple organs, clearing isn't really "resetting" to a calculated value.
+            // Let's allow clearing (null) equivalent? 
+            // The prop types say value is number | null.
+            // But onChange expects number.
+            // Let's just not update if empty, or allow passing -1 as 'clear'?
+            // Providing a way to clear via input is tough if onChange is strict.
+            // But for simple organs, 'null' is just unselected.
+            // Let's assume user types a number.
+            return;
+        }
+        const num = parseInt(val, 10);
+        if (!isNaN(num) && num >= 0 && num <= 4) {
+            onChange(num);
+        }
+    };
+
     return (
         <div className="sofa-organ-section">
             <div className="sofa-organ-header">
                 <span className="sofa-organ-icon">{icon}</span>
                 <span className="sofa-organ-title">{title}</span>
-                <span className="sofa-organ-score">
-                    {value !== null ? `${value}分` : '-'}
-                </span>
+                <input
+                    type="number"
+                    className={`sofa-score-input ${isManual ? 'manual-override' : ''}`}
+                    value={value !== null ? value : ''}
+                    onChange={handleInputChange}
+                    onClick={(e) => e.stopPropagation()}
+                    min="0"
+                    max="4"
+                    placeholder="-"
+                />
             </div>
             <div className="sofa-options">
                 {options.map(opt => (
@@ -165,7 +194,7 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
     // Respiration inputs
     const [paO2, setPaO2] = useState<string>('');
     const [fiO2, setFiO2] = useState<string>('');
-    // const [hasVentilator, setHasVentilator] = useState<boolean>(false); // Removed separate state
+    const [manualRespiration, setManualRespiration] = useState<number | null>(null);
 
     // Oxygen device selection
     const [oxygenDevice, setOxygenDevice] = useState<OxygenDevice>('direct');
@@ -200,7 +229,15 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
     const effectiveFiO2 = (oxygenDevice === 'direct' || oxygenDevice === 'mechanical_ventilation') ? fiO2 : (calculatedFiO2?.toString() || '');
 
     // Calculate respiration score from inputs
-    const respiration = useMemo(() => calculateRespirationScore(paO2, effectiveFiO2, hasVentilator), [paO2, effectiveFiO2, hasVentilator]);
+    const autoRespiration = useMemo(() => calculateRespirationScore(paO2, effectiveFiO2, hasVentilator), [paO2, effectiveFiO2, hasVentilator]);
+
+    // Auto-reset manual override when inputs change
+    useEffect(() => {
+        setManualRespiration(null);
+    }, [paO2, effectiveFiO2, hasVentilator]);
+
+    // Effective respiration score (manual overrides auto)
+    const respiration = manualRespiration !== null ? manualRespiration : autoRespiration;
 
     // Calculate ratio for display
     const paO2FiO2Ratio = useMemo(() => {
@@ -226,7 +263,7 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
     const handleReset = () => {
         setPaO2('');
         setFiO2('');
-        // setHasVentilator(false); // Removed
+        setManualRespiration(null);
         setOxygenDevice('direct');
         setFlowRate('');
         setVenturiFiO2(24);
@@ -271,7 +308,10 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
 
                     <div className="sofa-info-banner">
                         <AlertCircle size={16} />
-                        請選擇各器官系統在菌血症發生時的最差狀態
+                        <div className="sofa-info-content">
+                            <span>請選擇在菌血症發生時狀態</span>
+                            <span style={{ fontSize: '0.9em', opacity: 0.9 }}>(亦可直接輸入分數)</span>
+                        </div>
                     </div>
 
                     <div className="sofa-organs-grid">
@@ -280,9 +320,26 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
                             <div className="sofa-organ-header">
                                 <span className="sofa-organ-icon">🫁</span>
                                 <span className="sofa-organ-title">呼吸系統 (Respiration)</span>
-                                <span className="sofa-organ-score">
-                                    {respiration !== null ? `${respiration}分` : '-'}
-                                </span>
+                                <input
+                                    type="number"
+                                    className={`sofa-score-input ${manualRespiration !== null ? 'manual-override' : ''}`}
+                                    value={respiration !== null ? respiration : ''}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        if (val === '') {
+                                            setManualRespiration(null);
+                                            return;
+                                        }
+                                        const num = parseInt(val, 10);
+                                        if (!isNaN(num) && num >= 0 && num <= 4) {
+                                            setManualRespiration(num);
+                                        }
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    min="0"
+                                    max="4"
+                                    placeholder="-"
+                                />
                             </div>
                             <div className="sofa-respiration-inputs">
                                 <div className="sofa-input-row">

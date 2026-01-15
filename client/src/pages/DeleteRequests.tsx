@@ -112,24 +112,26 @@ export default function DeleteRequests() {
                             <tbody>
                                 {requests.map(req => (
                                     <tr key={req.id}>
-                                        <td style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.85em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
-                                            {req.status === 'approved' ? (
-                                                req.record_time?.replace(/[-T:]/g, '') || '-'
-                                            ) : (
-                                                <Link to={`/form/${req.submission_id}`} style={{ textDecoration: 'none', color: 'var(--color-primary)' }}>
-                                                    {req.record_time?.replace(/[-T:]/g, '') || '-'}
-                                                </Link>
-                                            )}
+                                        <td data-label="紀錄編號" style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: '0.85em', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                                            <span>
+                                                {req.status === 'approved' ? (
+                                                    req.record_time?.replace(/[-T:]/g, '') || '-'
+                                                ) : (
+                                                    <Link to={`/form/${req.submission_id}`} style={{ textDecoration: 'none', color: 'var(--color-primary)' }}>
+                                                        {req.record_time?.replace(/[-T:]/g, '') || '-'}
+                                                    </Link>
+                                                )}
+                                            </span>
                                         </td>
-                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.medical_record_number}</td>
-                                        <td style={{ textAlign: 'center' }}>{req.admission_date}</td>
-                                        <td style={{ textAlign: 'center', maxWidth: '200px', whiteSpace: 'normal', fontSize: '0.9rem', color: '#555' }}>
+                                        <td data-label="病歷號" style={{ textAlign: 'center', verticalAlign: 'middle' }}>{req.medical_record_number}</td>
+                                        <td data-label="住院日期" style={{ textAlign: 'center' }}>{req.admission_date}</td>
+                                        <td data-label="申請原因" style={{ textAlign: 'center', maxWidth: '200px', whiteSpace: 'normal', fontSize: '0.9rem', color: '#555' }}>
                                             {req.request_reason || <span style={{ color: '#ccc', fontStyle: 'italic' }}>無</span>}
                                         </td>
-                                        <td style={{ textAlign: 'center' }}>{getStatusBadge(req.status)}</td>
-                                        <td style={{ textAlign: 'center' }}>{formatDateTime(req.created_at)}</td>
-                                        <td style={{ textAlign: 'center' }}>{req.resolved_at ? formatDateTime(req.resolved_at) : '-'}</td>
-                                        <td style={{ textAlign: 'center' }}>{req.reject_reason || '-'}</td>
+                                        <td data-label="狀態" style={{ textAlign: 'center' }}>{getStatusBadge(req.status)}</td>
+                                        <td data-label="申請時間" style={{ textAlign: 'center' }}>{formatDateTime(req.created_at)}</td>
+                                        <td data-label="處理時間" style={{ textAlign: 'center' }}>{req.resolved_at ? formatDateTime(req.resolved_at) : '-'}</td>
+                                        <td data-label="管理員回覆" style={{ textAlign: 'center' }}>{req.reject_reason || '-'}</td>
                                     </tr>
                                 ))}
                             </tbody>

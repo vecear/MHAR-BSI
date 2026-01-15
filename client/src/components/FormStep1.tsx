@@ -42,75 +42,47 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                 <div className="form-grid-2">
                     <div className="form-group">
                         <label className="form-label required">紀錄時間</label>
-                        <div className="record-time-row" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'nowrap' }}>
-                            <input
-                                type="date"
-                                className="form-input"
-                                value={formData.record_time?.split('T')[0] || ''}
-                                onChange={e => {
-                                    const time = formData.record_time?.split('T')[1] || '00:00';
-                                    updateFormData({ record_time: `${e.target.value}T${time}` });
-                                }}
-                                style={{ width: 'auto', flex: 1, minWidth: '130px' }}
-                            />
-                            <div className="time-picker-group" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                <select
-                                    className="form-select time-select"
-                                    value={formData.record_time?.split('T')[1]?.split(':')[0] || '00'}
-                                    onChange={e => {
-                                        const date = formData.record_time?.split('T')[0] || new Date().toISOString().split('T')[0];
-                                        const minute = formData.record_time?.split('T')[1]?.split(':')[1] || '00';
-                                        updateFormData({ record_time: `${date}T${e.target.value}:${minute}` });
-                                    }}
-                                    style={{ width: '65px', paddingRight: '0.5rem', paddingLeft: '0.5rem', textAlign: 'center' }}
-                                >
-                                    {Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')).map(h => (
-                                        <option key={h} value={h}>{h}</option>
-                                    ))}
-                                </select>
-                                <span className="time-separator">:</span>
-                                <select
-                                    className="form-select time-select"
-                                    value={formData.record_time?.split('T')[1]?.split(':')[1] || '00'}
-                                    onChange={e => {
-                                        const date = formData.record_time?.split('T')[0] || new Date().toISOString().split('T')[0];
-                                        const hour = formData.record_time?.split('T')[1]?.split(':')[0] || '00';
-                                        updateFormData({ record_time: `${date}T${hour}:${e.target.value}` });
-                                    }}
-                                    style={{ width: '65px', paddingRight: '0.5rem', paddingLeft: '0.5rem', textAlign: 'center' }}
-                                >
-                                    {Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0')).map(m => (
-                                        <option key={m} value={m}>{m}</option>
-                                    ))}
-                                </select>
+                        <div className="record-time-container">
+                            {/* Group 1: Date and Time Combined */}
+                            <div className="record-sub-group-date">
+                                <input
+                                    type="datetime-local"
+                                    className="form-input"
+                                    value={formData.record_time?.slice(0, 16) || ''}
+                                    onChange={e => updateFormData({ record_time: e.target.value })}
+                                    style={{ flex: 1, minWidth: '200px' }}
+                                />
                             </div>
-                            <button
-                                className="btn btn-secondary btn-now-time"
-                                onClick={() => {
-                                    const now = new Date();
-                                    const offset = now.getTimezoneOffset();
-                                    const local = new Date(now.getTime() - offset * 60 * 1000);
-                                    updateFormData({ record_time: local.toISOString().slice(0, 16) });
-                                }}
-                                type="button"
-                                style={{ whiteSpace: 'nowrap', padding: '0.5rem 0.75rem', height: '38px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                            >
-                                <Clock size={16} />
-                                現在時間
-                            </button>
 
-                            <span style={{
-                                fontSize: '0.9rem',
-                                color: 'var(--text-secondary)',
-                                fontFamily: 'monospace',
-                                letterSpacing: '0.05em',
-                                whiteSpace: 'nowrap',
-                                marginLeft: '0.5rem'
-                            }}>
-                                編號：<strong style={{ color: 'var(--text-primary)' }}>
-                                    {formData.record_time ? formData.record_time.replace(/[-T:]/g, '') : '-'}
-                                </strong>
-                            </span>
+                            {/* Group 2: Button and ID */}
+                            <div className="record-sub-group-actions">
+                                <button
+                                    className="btn btn-secondary btn-now-time"
+                                    onClick={() => {
+                                        const now = new Date();
+                                        const offset = now.getTimezoneOffset();
+                                        const local = new Date(now.getTime() - offset * 60 * 1000);
+                                        updateFormData({ record_time: local.toISOString().slice(0, 16) });
+                                    }}
+                                    type="button"
+                                    style={{ whiteSpace: 'nowrap', padding: '0.5rem 0.75rem', height: '38px', display: 'flex', alignItems: 'center', gap: '4px', flex: '0 0 auto' }}
+                                >
+                                    <Clock size={16} />
+                                    現在時間
+                                </button>
+
+                                <span style={{
+                                    fontSize: '0.9rem',
+                                    color: 'var(--text-secondary)',
+                                    fontFamily: 'monospace',
+                                    letterSpacing: '0.05em',
+                                    whiteSpace: 'nowrap'
+                                }}>
+                                    編號：<strong style={{ color: 'var(--text-primary)' }}>
+                                        {formData.record_time ? formData.record_time.replace(/[-T:]/g, '') : '-'}
+                                    </strong>
+                                </span>
+                            </div>
                         </div>
                     </div>
 
@@ -166,8 +138,29 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                     <div className="form-group" style={{ flex: '1 1 120px' }}>
                         <label className="form-label">Recorded By</label>
                         <div style={{ marginTop: '0.25rem' }}>
-                            <span className="badge badge-info" style={{ fontSize: '1rem', padding: '0.4rem 1rem', display: 'inline-block', width: '100%', textAlign: 'center', boxSizing: 'border-box' }}>
-                                {formData.recorded_by}
+                            <span className="badge badge-info" style={{
+                                fontSize: '0.9rem',
+                                padding: '0.4rem 1rem',
+                                display: 'inline-flex',
+                                flexDirection: 'column',
+                                width: '100%',
+                                textAlign: 'center',
+                                boxSizing: 'border-box',
+                                lineHeight: '1.2'
+                            }}>
+                                {(() => {
+                                    const val = formData.recorded_by || '';
+                                    const match = val.match(/^(.+?)\s*\((.+)\)$/);
+                                    if (match) {
+                                        return (
+                                            <>
+                                                <span style={{ fontWeight: '600' }}>{match[1]}</span>
+                                                <span style={{ fontSize: '0.85rem', opacity: 0.9 }}>{match[2]}</span>
+                                            </>
+                                        );
+                                    }
+                                    return val;
+                                })()}
                             </span>
                         </div>
                     </div>
@@ -422,7 +415,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                         </div>
                     </div>
                     <div className="form-group">
-                        <label className="form-label">Renal function at bacteremia</label>
+                        <label className="form-label">Renal function at bacteremia (Cr)</label>
                         <input
                             type="text"
                             className="form-input"

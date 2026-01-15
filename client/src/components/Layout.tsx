@@ -106,94 +106,98 @@ export default function Layout() {
 
                     {/* User info section */}
                     <div className="navbar-user">
-                        {/* Delete Request Notification */}
-                        {user?.role === 'admin' && pendingDeleteCount > 0 && (
-                            <span
-                                className="badge badge-danger navbar-badge"
-                                style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    animation: 'pulse 2s infinite',
-                                    cursor: 'pointer',
-                                    padding: '0.4rem 0.8rem',
-                                    fontSize: '0.85rem'
-                                }}
-                                onClick={() => navigate('/admin/delete-requests')}
-                                title="點擊查看刪除申請"
-                            >
-                                <AlertTriangle size={16} />
-                                申請刪除中 ({pendingDeleteCount})
-                            </span>
-                        )}
-
-                        {/* Pending Users Notification */}
-                        {user?.role === 'admin' && pendingUserCount > 0 && (
-                            <span
-                                className="badge navbar-badge"
-                                style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    animation: 'pulse 2s infinite',
-                                    cursor: 'pointer',
-                                    padding: '0.4rem 0.8rem',
-                                    fontSize: '0.85rem',
-                                    backgroundColor: '#fca5a5', // Light Red
-                                    color: '#7f1d1d', // Dark Red Text
-                                    marginLeft: '8px'
-                                }}
-                                onClick={() => navigate('/users')}
-                                title="點擊前往審核"
-                            >
-                                <UserPlus size={16} />
-                                開通新成員 ({pendingUserCount})
-                            </span>
-                        )}
-
-                        {/* Comment Notification */}
-                        {user?.role === 'admin' && unreadCommentCount > 0 && (
-                            <span
-                                className="badge navbar-badge"
-                                style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    animation: 'pulse 2s infinite',
-                                    cursor: 'pointer',
-                                    padding: '0.4rem 0.8rem',
-                                    fontSize: '0.85rem',
-                                    backgroundColor: 'var(--color-warning)', // Orange/Yellow
-                                    color: '#fff',
-                                    marginLeft: '8px'
-                                }}
-                                onClick={() => navigate('/guide')}
-                                title="點擊查看未讀留言"
-                            >
-                                <Bell size={16} />
-                                新留言 ({unreadCommentCount})
-                            </span>
-                        )}
-
-
-                        <div className="navbar-controls-row">
-                            <div className="navbar-profile">
-                                {user?.username} ({user?.display_name || '未設定姓名'}|{user?.hospital})
-                                <span
-                                    className={`badge ${user?.role === 'admin' ? 'badge-info' : 'badge-success'}`}
-                                    style={{ marginLeft: '8px' }}
-                                >
-                                    {user?.role === 'admin' ? '管理員' : '成員'}
-                                </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                            {/* Profile Info Row */}
+                            <div className="navbar-controls-row">
+                                <div className="navbar-profile">
+                                    {user?.username} ({user?.display_name || '未設定姓名'}|{user?.hospital})
+                                    <span
+                                        className={`badge ${user?.role === 'admin' ? 'badge-info' : 'badge-success'}`}
+                                        style={{ marginLeft: '8px' }}
+                                    >
+                                        {user?.role === 'admin' ? '管理員' : '成員'}
+                                    </span>
+                                </div>
                             </div>
 
+                            {/* Notifications Row */}
+                            {(pendingDeleteCount > 0 || pendingUserCount > 0 || unreadCommentCount > 0) && (
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                    {/* Delete Request Notification */}
+                                    {user?.role === 'admin' && pendingDeleteCount > 0 && (
+                                        <span
+                                            className="badge badge-danger navbar-badge"
+                                            style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                animation: 'pulse 2s infinite',
+                                                cursor: 'pointer',
+                                                padding: '0.25rem 0.6rem',
+                                                fontSize: '0.8rem'
+                                            }}
+                                            onClick={() => navigate('/admin/delete-requests')}
+                                            title="點擊查看刪除申請"
+                                        >
+                                            <AlertTriangle size={14} />
+                                            申請刪除中 ({pendingDeleteCount})
+                                        </span>
+                                    )}
+
+                                    {/* Pending Users Notification */}
+                                    {user?.role === 'admin' && pendingUserCount > 0 && (
+                                        <span
+                                            className="badge navbar-badge"
+                                            style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                animation: 'pulse 2s infinite',
+                                                cursor: 'pointer',
+                                                padding: '0.25rem 0.6rem',
+                                                fontSize: '0.8rem',
+                                                backgroundColor: '#fca5a5', // Light Red
+                                                color: '#7f1d1d', // Dark Red Text
+                                            }}
+                                            onClick={() => navigate('/users')}
+                                            title="點擊前往審核"
+                                        >
+                                            <UserPlus size={14} />
+                                            開通新成員 ({pendingUserCount})
+                                        </span>
+                                    )}
+
+                                    {/* Comment Notification */}
+                                    {user?.role === 'admin' && unreadCommentCount > 0 && (
+                                        <span
+                                            className="badge navbar-badge"
+                                            style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                animation: 'pulse 2s infinite',
+                                                cursor: 'pointer',
+                                                padding: '0.25rem 0.6rem',
+                                                fontSize: '0.8rem',
+                                                backgroundColor: 'var(--color-warning)', // Orange/Yellow
+                                                color: '#fff',
+                                            }}
+                                            onClick={() => navigate('/guide')}
+                                            title="點擊查看未讀留言"
+                                        >
+                                            <Bell size={14} />
+                                            新留言 ({unreadCommentCount})
+                                        </span>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
 
                 {/* Second row: Navigation links */}
                 <div className="navbar-secondary-row">
-                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', overflowX: 'auto', flex: 1 }}>
+                    <div className="navbar-scroll-container" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', overflowX: 'auto', flex: 1, paddingBottom: '6px' }}>
                         <Link to="/" className={`navbar-link ${location.pathname === '/' ? 'active' : ''}`}>
                             <Home size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
                             首頁
