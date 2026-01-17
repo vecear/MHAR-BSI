@@ -38,6 +38,31 @@ router.post('/login', (req, res) => {
     });
 });
 
+// Lookup email by username (Bridge for Firebase Auth)
+router.post('/lookup', (req, res) => {
+    const { username } = req.body;
+
+    if (!username) {
+        return res.status(400).json({ error: '請輸入帳號' });
+    }
+
+    // Try finding by username
+    let user = userQueries.findByUsername.get(username);
+
+    // If not found, check if it's already an email? 
+    // Actually this route is specifically for converting username -> email.
+
+    if (!user) {
+        return res.status(404).json({ error: '找不到此帳號' });
+    }
+
+    if (!user.email) {
+        return res.status(400).json({ error: '此帳號未綁定 Email' });
+    }
+
+    res.json({ email: user.email });
+});
+
 // Logout
 router.post('/logout', (req, res) => {
     req.session.destroy((err) => {

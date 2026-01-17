@@ -133,11 +133,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (!identifier.includes('@')) {
             try {
                 // Bridge Strategy: Validate with Server (SQLite) first
-                console.log('Attempting server bridge login for:', identifier);
-                const response = await fetch('/api/auth/login', {
+                console.log('Attempting server bridge lookup for:', identifier);
+                // Use lookup endpoint which doesn't require password (since we don't have it on server for synced users)
+                const response = await fetch('/api/auth/lookup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: identifier, password })
+                    body: JSON.stringify({ username: identifier })
                 });
 
                 if (!response.ok) {

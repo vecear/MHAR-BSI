@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, FileText, Home, Settings, User, ChevronRight, Trash2, AlertTriangle, Users, RefreshCw, Upload, Download, BookOpen, Bell, UserPlus } from 'lucide-react';
+import { LogOut, FileText, Home, Settings, User, ChevronRight, ChevronDown, Trash2, AlertTriangle, Users, RefreshCw, Upload, Download, BookOpen, Bell, UserPlus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { deleteRequestService, exportService, commentService, userService } from '../services/firestore';
 import { useTheme, THEMES } from '../context/ThemeContext';
@@ -77,7 +77,8 @@ export default function Layout() {
 
     const handleExportAllData = async () => {
         try {
-            const csvContent = await exportService.exportToCSV();
+            const hospitalFilter = user?.role === 'admin' ? undefined : user?.hospital;
+            const csvContent = await exportService.exportToCSV(undefined, hospitalFilter);
             const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
             const downloadUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -327,12 +328,14 @@ export default function Layout() {
 
                                     <div
                                         className="dropdown-item-submenu-trigger"
-                                        onMouseEnter={() => setShowThemeMenu(true)}
-                                        onMouseLeave={() => setShowThemeMenu(false)}
                                         style={{ position: 'relative' }}
                                     >
                                         <button
                                             className="dropdown-item"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowThemeMenu(!showThemeMenu);
+                                            }}
                                             style={{
                                                 display: 'flex',
                                                 alignItems: 'center',
@@ -351,33 +354,23 @@ export default function Layout() {
                                                 🎨
                                                 <span style={{ marginLeft: '0.75rem' }}>切換主題</span>
                                             </div>
-                                            <ChevronRight size={16} />
+                                            {showThemeMenu ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                         </button>
 
                                         {/* Theme Submenu */}
                                         {showThemeMenu && (
-                                            <div className="submenu" style={{
-                                                position: 'absolute',
-                                                top: 0,
-                                                right: '100%',
-                                                marginTop: 0,
-                                                backgroundColor: 'var(--bg-card)',
-                                                border: '1px solid var(--border-color)',
-                                                borderRadius: 'var(--border-radius)',
-                                                boxShadow: 'var(--shadow-lg)',
-                                                minWidth: '180px',
-                                                zIndex: 1001,
-                                                padding: '0.5rem 0'
-                                            }}>
-                                                {THEMES.map(t => (
+                                            <div
+                                                className="submenu"
+                                                style={{}}
+                                            >
+                                                {THEMES.slice(0, 10).map(t => (
                                                     <button
                                                         key={t.id}
                                                         className={`dropdown-item ${currentTheme === t.id ? 'active' : ''}`}
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             handleThemeChange(t.id);
-                                                            setShowThemeMenu(false);
-                                                            setShowSettingsMenu(false);
+                                                            // Keep menu open for better UX
                                                         }}
                                                         style={{
                                                             display: 'flex',
@@ -392,7 +385,14 @@ export default function Layout() {
                                                             fontSize: '0.95rem'
                                                         }}
                                                     >
-                                                        <span style={{ marginRight: '0.5rem' }}>🎨</span>
+                                                        <div style={{
+                                                            width: '14px',
+                                                            height: '14px',
+                                                            borderRadius: '50%',
+                                                            backgroundColor: t.color,
+                                                            marginRight: '0.75rem',
+                                                            border: '1px solid var(--border-color)'
+                                                        }}></div>
                                                         {t.name}
                                                     </button>
                                                 ))}

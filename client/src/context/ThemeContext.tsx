@@ -10,7 +10,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const THEMES: { id: Theme; name: string; color: string }[] = [
-    { id: 'light', name: '預設 (淺色)', color: '#ffffff' },
+    { id: 'light', name: '預設 (淺色)', color: '#0f172a' },
     { id: 'dark', name: '暗色模式', color: '#1e293b' },
     { id: 'nordic', name: '北歐灰藍', color: '#5e81ac' },
     { id: 'forest', name: '森林綠意', color: '#059669' },

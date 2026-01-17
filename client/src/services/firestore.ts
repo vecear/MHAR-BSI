@@ -598,7 +598,7 @@ export const userService = {
 
 export const exportService = {
     // Export submissions to CSV with proper structured format
-    async exportToCSV(ids?: string[]): Promise<string> {
+    async exportToCSV(ids?: string[], hospitalFilter?: string): Promise<string> {
         let submissions: Submission[];
 
         if (ids && ids.length > 0) {
@@ -607,6 +607,11 @@ export const exportService = {
             submissions = results.filter((s): s is Submission => s !== null);
         } else {
             submissions = await submissionService.getAll(undefined, true);
+        }
+
+        // Filter by hospital if requested
+        if (hospitalFilter) {
+            submissions = submissions.filter(s => s.hospital === hospitalFilter);
         }
 
         if (submissions.length === 0) return '';
