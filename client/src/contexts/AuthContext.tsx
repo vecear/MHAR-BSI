@@ -7,7 +7,7 @@ import {
     onAuthStateChanged
 } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp, collection } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { DEFAULT_PROJECT_ID } from '../constants/projects';
 
