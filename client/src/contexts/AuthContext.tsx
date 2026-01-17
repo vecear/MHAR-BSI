@@ -126,24 +126,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }, []);
 
     const login = async (emailOrUsername: string, password: string, projectId: string = DEFAULT_PROJECT_ID) => {
-        let loginEmail = emailOrUsername;
+        const identifier = emailOrUsername.trim();
+        let loginEmail = identifier;
 
         // If not an email, try to find the email by username
-        if (!emailOrUsername.includes('@')) {
+        if (!identifier.includes('@')) {
             const usersRef = collection(db, 'users');
-            const q = query(usersRef, where('username', '==', emailOrUsername));
+            const q = query(usersRef, where('username', '==', identifier));
             const querySnapshot = await getDocs(q);
 
-            if (querySnapshot.empty) {
-                throw new Error('找不到此帳號名稱');
+            if (!querySnapshot.empty) {
+                // Assuming username is unique, get the first match
+                const userData = querySnapshot.docs[0].data();
+                if (userData.email) {
+                    loginEmail = userData.email;
+                }
             }
-
-            // Assuming username is unique, get the first match
-            const userData = querySnapshot.docs[0].data();
-            if (!userData.email) {
-                throw new Error('此帳號沒有綁定 Email，無法登入');
-            }
-            loginEmail = userData.email;
+            // Fallback: If no user found by username, identifier remains the original string,
+            // and Firebase auth will try to use it as an email. This handles cases where
+            // an email might not contain @ (though rare) or simply lets Firebase throw its error.
         }
 
         const userCredential = await signInWithEmailAndPassword(auth, loginEmail, password);

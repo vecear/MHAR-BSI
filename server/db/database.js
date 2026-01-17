@@ -124,6 +124,12 @@ const userQueries = {
             return resultToObject(result);
         }
     },
+    findByUsernameOrEmail: {
+        get: (identifier) => {
+            const result = db.exec('SELECT * FROM users WHERE username = ? OR email = ?', [identifier, identifier]);
+            return resultToObject(result);
+        }
+    },
     findById: {
         get: (id) => {
             const result = db.exec('SELECT id, username, hospital, role, email, display_name, gender, phone, address, line_id, security_question, security_answer, created_at FROM users WHERE id = ?', [id]);

@@ -12,7 +12,7 @@ router.post('/login', (req, res) => {
         return res.status(400).json({ error: '請輸入帳號和密碼' });
     }
 
-    const user = userQueries.findByUsername.get(username);
+    const user = userQueries.findByUsernameOrEmail.get(username);
 
     if (!user) {
         return res.status(401).json({ error: '帳號或密碼錯誤' });
