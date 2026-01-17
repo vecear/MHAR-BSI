@@ -132,19 +132,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         // If not an email, try to find the email by username
         if (!identifier.includes('@')) {
             const usersRef = collection(db, 'users');
+
+            // 1. Try exact match first (efficient)
             const q = query(usersRef, where('username', '==', identifier));
             const querySnapshot = await getDocs(q);
 
             if (!querySnapshot.empty) {
-                // Assuming username is unique, get the first match
                 const userData = querySnapshot.docs[0].data();
                 if (userData.email) {
                     loginEmail = userData.email;
                 }
+            } else {
+                // 2. Try case-insensitive match by fetching all users
+                // Note: In production with many users, this should be optimized with a normalized field
+                const allUsersSnapshot = await getDocs(usersRef);
+                const matchedUser = allUsersSnapshot.docs.find(doc => {
+                    const data = doc.data();
+                    return data.username && data.username.toLowerCase() === identifier.toLowerCase();
+                });
+
+                if (matchedUser) {
+                    const userData = matchedUser.data();
+                    if (userData.email) {
+                        loginEmail = userData.email;
+                    }
+                } else {
+                    // Try to be helpful: maybe it IS an email but missing @ or just a bad username
+                    throw new Error(`找不到帳號名稱: "${identifier}"，請確認帳號名稱是否正確或直接改用 Email 登入`);
+                }
             }
-            // Fallback: If no user found by username, identifier remains the original string,
-            // and Firebase auth will try to use it as an email. This handles cases where
-            // an email might not contain @ (though rare) or simply lets Firebase throw its error.
         }
 
         const userCredential = await signInWithEmailAndPassword(auth, loginEmail, password);
