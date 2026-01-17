@@ -185,30 +185,6 @@ export default function FormPage() {
             showError('請填寫病歷號和住院日期');
             return;
         }
-        const validateStep1 = (): boolean => {
-            const requiredFields: { key: keyof FormData, label: string }[] = [
-                { key: 'medical_record_number', label: '病歷號' },
-                { key: 'admission_date', label: 'Admission Date' },
-                { key: 'name', label: 'Name' },
-                { key: 'hospital', label: 'Hospital' },
-                { key: 'pathogen', label: 'Pathogen' },
-                { key: 'age', label: 'Age' },
-                { key: 'bw', label: 'BW' },
-                { key: 'duration_before_bacteremia', label: 'Duration in Hospital before Bacteremia' },
-                { key: 'renal_function_admission', label: 'Renal function at admission' },
-                { key: 'sofa_score', label: 'SOFA Score' },
-                { key: 'renal_function_bacteremia', label: 'Renal function at bacteremia' }
-            ];
-
-            for (const field of requiredFields) {
-                if (!formData[field.key]) {
-                    showError(`請填寫 ${field.label}`);
-                    return false;
-                }
-            }
-
-            return true;
-        };
         if (!user) {
             showError('請先登入');
             return;
@@ -267,7 +243,62 @@ export default function FormPage() {
         }
     };
 
+    const validateStep1 = (): boolean => {
+        const requiredFields: { key: keyof FormData, label: string }[] = [
+            { key: 'medical_record_number', label: '病歷號' },
+            { key: 'admission_date', label: 'Admission Date' },
+            { key: 'name', label: 'Name' },
+            { key: 'hospital', label: 'Hospital' },
+            { key: 'pathogen', label: 'Pathogen' },
+            { key: 'age', label: 'Age' },
+            { key: 'bw', label: 'BW' },
+            { key: 'duration_before_bacteremia', label: 'Duration in Hospital before Bacteremia' },
+            { key: 'renal_function_admission', label: 'Renal function at admission' },
+            { key: 'sofa_score', label: 'SOFA Score' },
+            { key: 'renal_function_bacteremia', label: 'Renal function at bacteremia' }
+        ];
+
+        for (const field of requiredFields) {
+            if (!formData[field.key]) {
+                showError(`請填寫 ${field.label}`);
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    const validateStep3 = (): boolean => {
+        if (!formData.antibiotic_classes || formData.antibiotic_classes.length === 0) return true;
+
+        for (const classKey of formData.antibiotic_classes) {
+            const classDetails = formData.antibiotic_details?.[classKey];
+            if (!classDetails) continue;
+
+            for (const drug of classDetails.drugs) {
+                const usage = classDetails.usage?.[drug];
+                if (!usage || !usage.start_date || !usage.end_date) {
+                    showError(`請填寫 ${drug} 的完整使用期間`);
+                    return false;
+                }
+                if (usage.second_use) {
+                    if (!usage.second_start_date || !usage.second_end_date) {
+                        showError(`請填寫 ${drug} 的第二次完整使用期間`);
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    };
+
     const goToStep = (step: number) => {
+        // Validation when moving forward
+        if (step > currentStep) {
+            if (currentStep === 1 && !validateStep1()) return;
+            if (currentStep === 3 && !validateStep3()) return;
+        }
+
         if (step >= 1 && step <= 4) {
             setCurrentStep(step);
         }
