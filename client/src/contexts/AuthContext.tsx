@@ -7,7 +7,7 @@ import {
     onAuthStateChanged
 } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, collection } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { DEFAULT_PROJECT_ID } from '../constants/projects';
 
@@ -129,37 +129,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const identifier = emailOrUsername.trim();
         let loginEmail = identifier;
 
-        // If not an email, try to find the email by username
+        // If it DOES NOT look like an email, assume it is a username
         if (!identifier.includes('@')) {
-            const usersRef = collection(db, 'users');
-
-            // 1. Try exact match first (efficient)
-            const q = query(usersRef, where('username', '==', identifier));
-            const querySnapshot = await getDocs(q);
-
-            if (!querySnapshot.empty) {
-                const userData = querySnapshot.docs[0].data();
-                if (userData.email) {
-                    loginEmail = userData.email;
-                }
-            } else {
-                // 2. Try case-insensitive match by fetching all users
-                // Note: In production with many users, this should be optimized with a normalized field
-                const allUsersSnapshot = await getDocs(usersRef);
-                const matchedUser = allUsersSnapshot.docs.find(doc => {
-                    const data = doc.data();
-                    return data.username && data.username.toLowerCase() === identifier.toLowerCase();
+            try {
+                // Bridge Strategy: Validate with Server (SQLite) first
+                console.log('Attempting server bridge login for:', identifier);
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: identifier, password })
                 });
 
-                if (matchedUser) {
-                    const userData = matchedUser.data();
-                    if (userData.email) {
-                        loginEmail = userData.email;
-                    }
-                } else {
-                    // Try to be helpful: maybe it IS an email but missing @ or just a bad username
-                    throw new Error(`找不到帳號名稱: "${identifier}"，請確認帳號名稱是否正確或直接改用 Email 登入`);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '驗證失敗');
                 }
+
+                const userData = await response.json();
+
+                if (!userData.email) {
+                    throw new Error('此帳號未綁定 Email，請聯繫管理員');
+                }
+
+                loginEmail = userData.email;
+                console.log('Bridge login successful. Email resolved:', loginEmail);
+
+            } catch (err) {
+                console.error("Server bridge login failed:", err);
+                // If api call failed (e.g. wrong password), re-throw to stop
+                throw err;
             }
         }
 

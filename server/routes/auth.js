@@ -33,7 +33,8 @@ router.post('/login', (req, res) => {
         username: user.username,
         hospital: user.hospital,
         role: user.role,
-        display_name: user.display_name
+        display_name: user.display_name,
+        email: user.email // Expose email for client-side Firebase auth bridge
     });
 });
 
