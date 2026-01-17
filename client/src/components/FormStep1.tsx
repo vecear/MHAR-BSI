@@ -97,6 +97,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                         <label className="form-label required">病歷號</label>
                         <input
                             type="text"
+                            inputMode="numeric"
                             className="form-input"
                             value={formData.medical_record_number}
                             onChange={e => updateFormData({ medical_record_number: e.target.value })}
@@ -192,7 +193,8 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                     <div className="form-group" style={{ flex: '1 1 100px' }}>
                         <label className="form-label">BW (kg)</label>
                         <input
-                            type="text"
+                            type="number"
+                            step="0.1"
                             className="form-input"
                             value={formData.bw}
                             onChange={e => updateFormData({ bw: e.target.value })}
@@ -237,19 +239,40 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                 </div>
 
                 <div className="form-group">
-                    <label className="form-label">Pathogen</label>
-                    <div className="radio-group">
-                        {PATHOGENS.map(opt => (
-                            <label key={opt} className="radio-label">
-                                <input
-                                    type="radio"
-                                    name="pathogen"
-                                    checked={formData.pathogen === opt}
-                                    onChange={() => updateFormData({ pathogen: opt })}
-                                />
-                                {opt}
-                            </label>
-                        ))}
+                    <label className="form-label required">Pathogen</label>
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                        {PATHOGENS.map(opt => {
+                            const styles = {
+                                'CRKP': { color: '#dc2626', bg: '#fecaca', border: '#fca5a5' },    // Red-200
+                                'CRAB': { color: '#9333ea', bg: '#e9d5ff', border: '#d8b4fe' },    // Purple-200
+                                'CRECOLI': { color: '#2563eb', bg: '#bfdbfe', border: '#93c5fd' }, // Blue-200
+                                'CRPA': { color: '#ea580c', bg: '#fed7aa', border: '#fdba74' }     // Orange-200
+                            }[opt] || { color: '#333', bg: '#fff', border: '#ddd' };
+
+                            const isSelected = formData.pathogen === opt;
+
+                            return (
+                                <button
+                                    key={opt}
+                                    type="button"
+                                    onClick={() => updateFormData({ pathogen: opt })}
+                                    style={{
+                                        padding: '0.5rem 1.5rem',
+                                        borderRadius: '9999px',
+                                        border: `1px solid ${isSelected ? styles.color : styles.border}`,
+                                        backgroundColor: isSelected ? styles.bg : 'white',
+                                        color: isSelected ? styles.color : '#64748b',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        fontSize: '1rem',
+                                        outline: 'none'
+                                    }}
+                                >
+                                    {opt}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -367,7 +390,8 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                     <div className="form-group">
                         <label className="form-label">Renal function at admission within 7 days (Cr)</label>
                         <input
-                            type="text"
+                            type="number"
+                            step="0.1"
                             className="form-input"
                             value={formData.renal_function_admission}
                             onChange={e => updateFormData({ renal_function_admission: e.target.value })}
@@ -380,12 +404,15 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                         <label className="form-label">SOFA Score at Bacteremia</label>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <input
-                                type="text"
+                                type="number"
                                 className="form-input"
                                 value={formData.sofa_score}
                                 onChange={e => updateFormData({ sofa_score: e.target.value })}
                                 style={{ flex: 1 }}
                                 placeholder="0-24"
+                                step="1"
+                                min="0"
+                                max="24"
                             />
                             <button
                                 type="button"
@@ -417,7 +444,8 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                     <div className="form-group">
                         <label className="form-label">Renal function at bacteremia (Cr)</label>
                         <input
-                            type="text"
+                            type="number"
+                            step="0.1"
                             className="form-input"
                             value={formData.renal_function_bacteremia}
                             onChange={e => updateFormData({ renal_function_bacteremia: e.target.value })}

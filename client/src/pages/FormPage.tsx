@@ -185,7 +185,30 @@ export default function FormPage() {
             showError('請填寫病歷號和住院日期');
             return;
         }
+        const validateStep1 = (): boolean => {
+            const requiredFields: { key: keyof FormData, label: string }[] = [
+                { key: 'medical_record_number', label: '病歷號' },
+                { key: 'admission_date', label: 'Admission Date' },
+                { key: 'name', label: 'Name' },
+                { key: 'hospital', label: 'Hospital' },
+                { key: 'pathogen', label: 'Pathogen' },
+                { key: 'age', label: 'Age' },
+                { key: 'bw', label: 'BW' },
+                { key: 'duration_before_bacteremia', label: 'Duration in Hospital before Bacteremia' },
+                { key: 'renal_function_admission', label: 'Renal function at admission' },
+                { key: 'sofa_score', label: 'SOFA Score' },
+                { key: 'renal_function_bacteremia', label: 'Renal function at bacteremia' }
+            ];
 
+            for (const field of requiredFields) {
+                if (!formData[field.key]) {
+                    showError(`請填寫 ${field.label}`);
+                    return false;
+                }
+            }
+
+            return true;
+        };
         if (!user) {
             showError('請先登入');
             return;

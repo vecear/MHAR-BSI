@@ -125,44 +125,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return () => unsubscribe();
     }, []);
 
-    const login = async (emailOrUsername: string, password: string, projectId: string = DEFAULT_PROJECT_ID) => {
-        const identifier = emailOrUsername.trim();
-        let loginEmail = identifier;
-
-        // If it DOES NOT look like an email, assume it is a username
-        if (!identifier.includes('@')) {
-            try {
-                // Bridge Strategy: Validate with Server (SQLite) first
-                console.log('Attempting server bridge lookup for:', identifier);
-                // Use lookup endpoint which doesn't require password (since we don't have it on server for synced users)
-                const response = await fetch('/api/auth/lookup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: identifier })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || '驗證失敗');
-                }
-
-                const userData = await response.json();
-
-                if (!userData.email) {
-                    throw new Error('此帳號未綁定 Email，請聯繫管理員');
-                }
-
-                loginEmail = userData.email;
-                console.log('Bridge login successful. Email resolved:', loginEmail);
-
-            } catch (err) {
-                console.error("Server bridge login failed:", err);
-                // If api call failed (e.g. wrong password), re-throw to stop
-                throw err;
-            }
-        }
-
-        const userCredential = await signInWithEmailAndPassword(auth, loginEmail, password);
+    const login = async (email: string, password: string, projectId: string = DEFAULT_PROJECT_ID) => {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
         // Fetch user profile to check permissions
         const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));

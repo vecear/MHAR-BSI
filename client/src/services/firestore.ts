@@ -649,8 +649,8 @@ export const exportService = {
         // Build headers
         const headers: string[] = [
             // Basic info
-            'id', 'username', 'hospital', 'medical_record_number', 'admission_date',
-            'data_status', 'update_count', 'record_time', 'name', 'recorded_by',
+            'hospital', 'medical_record_number', 'admission_date',
+            'data_status', 'record_time', 'name', 'recorded_by',
             'sex', 'age', 'bw', 'pathogen', 'positive_culture_date',
             // Checkbox: Primary Source
             'primary_source',
@@ -686,13 +686,10 @@ export const exportService = {
             const row: string[] = [];
 
             // Basic info
-            row.push(s.id);
-            row.push(s.username || '');
             row.push(s.hospital || '');
             row.push(s.medical_record_number);
             row.push(s.admission_date);
             row.push(s.data_status);
-            row.push(String(s.update_count || 1));
             row.push(String(fd.record_time || ''));
             row.push(String(fd.name || ''));
             row.push(String(fd.recorded_by || ''));
@@ -733,7 +730,9 @@ export const exportService = {
             // MIC data
             const micData = (fd.mic_data as Record<string, string>) || {};
             ANTIBIOTICS_MIC.forEach(ab => {
-                row.push(micData[ab] || '');
+                const val = micData[ab] || '';
+                // Prepend \t to force Excel to treat as text (prevents 4/16 -> 16-Apr)
+                row.push(val ? `\t${val}` : '');
             });
 
             // Antibiotic usage - format as date range
