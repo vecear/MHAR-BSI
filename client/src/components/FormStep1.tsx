@@ -458,9 +458,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                             inputMode="decimal"
                             className="form-input"
                             value={formData.renal_function_bacteremia}
-                            onChange={e => {
-                                const val = e.target.value;
-                                updateFormData({ renal_function_bacteremia: val });
+                            onChange={e => updateFormData({ renal_function_bacteremia: e.target.value })}
                         />
                     </div>
                 </div>
