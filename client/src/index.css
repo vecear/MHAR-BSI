@@ -2369,6 +2369,10 @@ h3 {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+    display: block;
+    margin: 0;
+    -webkit-appearance: none;
+    appearance: none;
   }
 
   .form-label {
