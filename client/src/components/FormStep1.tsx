@@ -98,6 +98,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                         <input
                             type="text"
                             inputMode="numeric"
+                            pattern="[0-9]*"
                             className="form-input"
                             value={formData.medical_record_number}
                             onChange={e => updateFormData({ medical_record_number: e.target.value })}
@@ -185,6 +186,8 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                         <label className="form-label">Age</label>
                         <input
                             type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             className="form-input"
                             value={formData.age}
                             onChange={e => updateFormData({ age: e.target.value })}
@@ -195,6 +198,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                         <input
                             type="number"
                             step="0.1"
+                            inputMode="decimal"
                             className="form-input"
                             value={formData.bw}
                             onChange={e => updateFormData({ bw: e.target.value })}
@@ -382,6 +386,8 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                         <label className="form-label">Duration in Hospital before Bacteremia (Days)</label>
                         <input
                             type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             className="form-input"
                             value={formData.duration_before_bacteremia}
                             onChange={e => updateFormData({ duration_before_bacteremia: e.target.value })}
@@ -392,6 +398,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                         <input
                             type="number"
                             step="0.1"
+                            inputMode="decimal"
                             className="form-input"
                             value={formData.renal_function_admission}
                             onChange={e => updateFormData({ renal_function_admission: e.target.value })}
@@ -413,6 +420,8 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                                 step="1"
                                 min="0"
                                 max="24"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                             />
                             <button
                                 type="button"
@@ -446,9 +455,12 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                         <input
                             type="number"
                             step="0.1"
+                            inputMode="decimal"
                             className="form-input"
                             value={formData.renal_function_bacteremia}
-                            onChange={e => updateFormData({ renal_function_bacteremia: e.target.value })}
+                            onChange={e => {
+                                const val = e.target.value;
+                                updateFormData({ renal_function_bacteremia: val });
                         />
                     </div>
                 </div>
