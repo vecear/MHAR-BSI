@@ -40,6 +40,14 @@ export interface FormData {
     septic_shock: string;
     renal_function_bacteremia: string;
     platelets: string;
+    vasopressor_used: string;
+    vasopressors: {
+        [key: string]: {
+            concentration: string;
+            rate: string;
+            dose: string;
+        };
+    };
 
     // MIC Data (Step 2)
     mic_data: Record<string, string>;
@@ -95,6 +103,9 @@ const initialFormData: FormData = {
     sofa_score: '',
     septic_shock: '',
     renal_function_bacteremia: '',
+    platelets: '',
+    vasopressor_used: 'No',
+    vasopressors: {},
     mic_data: {},
     antibiotic_classes: [],
     antibiotic_details: {},
@@ -105,8 +116,7 @@ const initialFormData: FormData = {
     clinical_response_14days: '',
     negative_bc: '',
     remarks: '',
-    data_status: 'incomplete',
-    platelets: ''
+    data_status: 'incomplete'
 };
 
 export const HOSPITALS = [

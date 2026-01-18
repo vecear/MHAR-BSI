@@ -6,6 +6,15 @@ interface Props {
     onClose: () => void;
     onConfirm: (score: number) => void;
     currentScore?: string;
+    platelets?: string;
+    renalCr?: string;
+    vasopressors?: {
+        [key: string]: {
+            concentration: string;
+            rate: string;
+            dose: string;
+        };
+    };
 }
 
 // Calculate respiration score from PaO2, FiO2, and ventilator status
@@ -128,9 +137,10 @@ interface OrganSectionProps {
     options: { value: number; label: string; shortLabel: string }[];
     value: number | null;
     onChange: (value: number) => void;
+    subtext?: string;
 }
 
-function OrganSection({ title, icon, options, value, onChange }: OrganSectionProps) {
+function OrganSection({ title, icon, options, value, onChange, subtext }: OrganSectionProps) {
     const isManual = value !== null && !options.some(opt => opt.value === value);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,7 +167,10 @@ function OrganSection({ title, icon, options, value, onChange }: OrganSectionPro
         <div className="sofa-organ-section">
             <div className="sofa-organ-header">
                 <span className="sofa-organ-icon">{icon}</span>
-                <span className="sofa-organ-title">{title}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    <span className="sofa-organ-title">{title}</span>
+                    {subtext && <span style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: '500' }}>{subtext}</span>}
+                </div>
                 <input
                     type="number"
                     className={`sofa-score-input ${isManual ? 'manual-override' : ''}`}
@@ -190,7 +203,7 @@ function OrganSection({ title, icon, options, value, onChange }: OrganSectionPro
     );
 }
 
-export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScore }: Props) {
+export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScore, platelets, renalCr, vasopressors }: Props) {
     // Respiration inputs
     const [paO2, setPaO2] = useState<string>('');
     const [fiO2, setFiO2] = useState<string>('');
@@ -235,6 +248,66 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
     useEffect(() => {
         setManualRespiration(null);
     }, [paO2, effectiveFiO2, hasVentilator]);
+
+    // Auto-calculate coagulation score when platelets change
+    useEffect(() => {
+        if (platelets && platelets !== '') {
+            const val = parseFloat(platelets);
+            if (!isNaN(val)) {
+                if (val < 20) setCoagulation(4);
+                else if (val < 50) setCoagulation(3);
+                else if (val < 100) setCoagulation(2);
+                else if (val < 150) setCoagulation(1);
+                else setCoagulation(0);
+            }
+        }
+    }, [platelets, isOpen]);
+
+    // Auto-calculate renal score when Cr change
+    useEffect(() => {
+        if (renalCr && renalCr !== '') {
+            const val = parseFloat(renalCr);
+            if (!isNaN(val)) {
+                if (val >= 5.0) setRenal(4);
+                else if (val >= 3.5) setRenal(3);
+                else if (val >= 2.0) setRenal(2);
+                else if (val >= 1.2) setRenal(1);
+                else setRenal(0);
+            }
+        }
+    }, [renalCr, isOpen]);
+
+    // Auto-calculate cardiovascular score from multiple vasopressors - select highest score
+    useEffect(() => {
+        if (!vasopressors || Object.keys(vasopressors).length === 0) return;
+
+        let maxScore = 0;
+
+        Object.entries(vasopressors).forEach(([type, data]) => {
+            const dose = parseFloat(data.dose || '0');
+            if (isNaN(dose) || dose === 0) return;
+
+            let score = 0;
+            if (type === 'Dopamine') {
+                if (dose > 15) score = 4;
+                else if (dose > 5) score = 3;
+                else if (dose > 0) score = 2;
+            } else if (type === 'Dobutamine') {
+                if (dose > 0) score = 2;
+            } else if (type === 'Norepinephrine' || type === 'Epinephrine') {
+                if (dose > 0.1) score = 4;
+                else if (dose > 0) score = 3;
+            }
+
+            if (score > maxScore) {
+                maxScore = score;
+            }
+        });
+
+        if (maxScore > 0) {
+            setCardiovascular(maxScore);
+        }
+    }, [vasopressors, isOpen]);
 
     // Effective respiration score (manual overrides auto)
     const respiration = manualRespiration !== null ? manualRespiration : autoRespiration;
@@ -468,6 +541,7 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
                             options={COAGULATION_OPTIONS}
                             value={coagulation}
                             onChange={setCoagulation}
+                            subtext={platelets && platelets !== '' ? `Platelet at bacteremia: ${platelets} ×10³/µL` : undefined}
                         />
 
                         <OrganSection
@@ -484,6 +558,12 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
                             options={CARDIOVASCULAR_OPTIONS}
                             value={cardiovascular}
                             onChange={setCardiovascular}
+                            subtext={vasopressors && Object.keys(vasopressors).length > 0
+                                ? Object.entries(vasopressors)
+                                    .filter(([_, data]) => parseFloat(data.dose || '0') > 0)
+                                    .map(([type, data]) => `${type}: ${data.dose} mcg/kg/min`)
+                                    .join(', ')
+                                : undefined}
                         />
 
                         <OrganSection
@@ -500,6 +580,7 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
                             options={RENAL_OPTIONS}
                             value={renal}
                             onChange={setRenal}
+                            subtext={renalCr && renalCr !== '' ? `Cr at bacteremia: ${renalCr} mg/dL` : undefined}
                         />
                     </div>
 

@@ -47,6 +47,69 @@ export default function FormStep1({ formData, updateFormData, showIncomplete }: 
         }
     };
 
+    // Calculate vasopressor dose: (concentration mg/ml × rate ml/hr × 1000) / (weight kg × 60)
+    const calculateVasopressorDose = (concentration: string, rate: string, weight: string): string => {
+        const conc = parseFloat(concentration);
+        const rateVal = parseFloat(rate);
+        const weightVal = parseFloat(weight);
+
+        if (isNaN(conc) || isNaN(rateVal) || isNaN(weightVal) || weightVal === 0) {
+            return '';
+        }
+
+        const dose = (conc * rateVal * 1000) / (weightVal * 60);
+        return dose.toFixed(2);
+    };
+
+    // Handler for vasopressor checkbox toggle
+    const handleVasopressorToggle = (vasopressorId: string) => {
+        const currentVasopressors = { ...formData.vasopressors };
+
+        if (currentVasopressors[vasopressorId]) {
+            // Remove vasopressor
+            delete currentVasopressors[vasopressorId];
+        } else {
+            // Add vasopressor with empty values
+            currentVasopressors[vasopressorId] = {
+                concentration: '',
+                rate: '',
+                dose: ''
+            };
+        }
+
+        updateFormData({ vasopressors: currentVasopressors });
+    };
+
+    // Handler for vasopressor field changes (concentration/rate/dose)
+    const handleVasopressorFieldChange = (
+        vasopressorId: string,
+        field: 'concentration' | 'rate' | 'dose',
+        value: string
+    ) => {
+        const currentVasopressors = { ...formData.vasopressors };
+        const vasopressor = currentVasopressors[vasopressorId];
+
+        if (!vasopressor) return;
+
+        vasopressor[field] = value;
+
+        // Auto-calculate dose when concentration or rate changes
+        if (field === 'concentration' || field === 'rate') {
+            if (vasopressor.concentration && vasopressor.rate && formData.bw) {
+                const calculatedDose = calculateVasopressorDose(
+                    vasopressor.concentration,
+                    vasopressor.rate,
+                    formData.bw
+                );
+                if (calculatedDose) {
+                    vasopressor.dose = calculatedDose;
+                }
+            }
+        }
+
+        updateFormData({ vasopressors: currentVasopressors });
+    };
+
     return (
         <div>
             {/* Record Time */}
@@ -361,6 +424,182 @@ export default function FormStep1({ formData, updateFormData, showIncomplete }: 
 
                 <div className="form-grid-2">
                     <div className="form-group">
+                        <label className="form-label">Duration in Hospital before Bacteremia (Days) <IncompleteTag field={formData.duration_before_bacteremia} /></label>
+                        <input
+                            type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            className="form-input"
+                            value={formData.duration_before_bacteremia}
+                            onChange={e => updateFormData({ duration_before_bacteremia: e.target.value })}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">ICU at Bacteremia Onset <IncompleteTag field={formData.icu_at_onset} /></label>
+                        <div className="radio-group">
+                            {['Yes', 'No'].map(opt => (
+                                <label key={opt} className="radio-label">
+                                    <input
+                                        type="radio"
+                                        name="icu_at_onset"
+                                        checked={formData.icu_at_onset === opt}
+                                        onChange={() => updateFormData({ icu_at_onset: opt })}
+                                    />
+                                    {opt}
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="form-grid-2">
+                    <div className="form-group">
+                        <label className="form-label">SEPTIC Shock at Bacteremia<IncompleteTag field={formData.septic_shock} /></label>
+                        <div className="radio-group" style={{ marginBottom: formData.septic_shock === 'Yes' ? '0.5rem' : '0' }}>
+                            {['Yes', 'No'].map(opt => (
+                                <label key={opt} className="radio-label">
+                                    <input
+                                        type="radio"
+                                        name="septic_shock"
+                                        checked={formData.septic_shock === opt}
+                                        onChange={() => updateFormData({ septic_shock: opt })}
+                                    />
+                                    {opt}
+                                </label>
+                            ))}
+                        </div>
+
+                        {formData.septic_shock === 'Yes' && (
+                            <div className="vasopressor-box" style={{
+                                marginTop: '0.5rem',
+                                padding: '1rem',
+                                background: '#f0f9ff',
+                                borderRadius: '8px',
+                                border: '1px solid #bae6fd'
+                            }}>
+                                <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                    <label className="form-label" style={{ fontSize: '0.85rem' }}>是否使用升壓劑？</label>
+                                    <div className="radio-group" style={{ margin: 0 }}>
+                                        {['Yes', 'No'].map(opt => (
+                                            <label key={opt} className="radio-label" style={{ fontSize: '0.85rem' }}>
+                                                <input
+                                                    type="radio"
+                                                    name="vasopressor_used"
+                                                    checked={formData.vasopressor_used === opt}
+                                                    onChange={() => updateFormData({ vasopressor_used: opt })}
+                                                />
+                                                {opt}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {formData.vasopressor_used === 'Yes' && (
+                                    <>
+                                        <div style={{ fontSize: '0.85rem', color: '#0369a1', marginBottom: '1rem', fontWeight: '500' }}>
+                                            體重: <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{formData.bw || '?'}</span> Kg
+                                        </div>
+                                        <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                            <label className="form-label" style={{ fontSize: '0.85rem' }}>升壓劑種類（可複選）</label>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'flex-start' }}>
+                                                {[
+                                                    { id: 'Dopamine', label: 'Dopamine' },
+                                                    { id: 'Dobutamine', label: 'Dobutamine' },
+                                                    { id: 'Norepinephrine', label: 'Norepinephrine' },
+                                                    { id: 'Epinephrine', label: 'Epinephrine' }
+                                                ].map(opt => {
+                                                    const isChecked = !!formData.vasopressors[opt.id];
+                                                    const vasopressor = formData.vasopressors[opt.id];
+
+                                                    return (
+                                                        <div key={opt.id} style={{ width: '100%' }}>
+                                                            <label style={{ display: 'flex', alignItems: 'center', margin: 0, fontSize: '0.85rem', cursor: 'pointer' }}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isChecked}
+                                                                    onChange={() => handleVasopressorToggle(opt.id)}
+                                                                    style={{ marginRight: '0.5rem' }}
+                                                                />
+                                                                {opt.label}
+                                                            </label>
+
+                                                            {isChecked && vasopressor && (
+                                                                <div style={{
+                                                                    display: 'grid',
+                                                                    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                                                                    gap: '0.75rem',
+                                                                    marginTop: '0.5rem',
+                                                                    padding: '0.75rem',
+                                                                    background: '#fff',
+                                                                    borderRadius: '6px',
+                                                                    border: '1px dashed #bae6fd',
+                                                                    marginLeft: '1.5rem'
+                                                                }}>
+                                                                    <div className="form-group" style={{ margin: 0 }}>
+                                                                        <label className="form-label" style={{ fontSize: '0.75rem', color: '#64748b' }}>濃度 (mg/ml)</label>
+                                                                        <input
+                                                                            type="number"
+                                                                            step="0.01"
+                                                                            className="form-input"
+                                                                            style={{ fontSize: '0.85rem', padding: '0.35rem' }}
+                                                                            value={vasopressor.concentration}
+                                                                            onChange={e => handleVasopressorFieldChange(opt.id, 'concentration', e.target.value)}
+                                                                            placeholder="數值"
+                                                                        />
+                                                                        {opt.id === 'Dopamine' && (
+                                                                            <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '0.25rem', lineHeight: '1.3' }}>
+                                                                                Eazydopa: <span style={{ color: '#dc2626', fontWeight: '600' }}>1.6 mg/ml</span> (400mg/250mL)<br />
+                                                                                Gipamine: <span style={{ color: '#dc2626', fontWeight: '600' }}>3 mg/ml</span> (600mg/200mL)
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="form-group" style={{ margin: 0 }}>
+                                                                        <label className="form-label" style={{ fontSize: '0.75rem', color: '#64748b' }}>速率 (ml/hr)</label>
+                                                                        <input
+                                                                            type="number"
+                                                                            step="0.01"
+                                                                            className="form-input"
+                                                                            style={{ fontSize: '0.85rem', padding: '0.35rem' }}
+                                                                            value={vasopressor.rate}
+                                                                            onChange={e => handleVasopressorFieldChange(opt.id, 'rate', e.target.value)}
+                                                                            placeholder="數值"
+                                                                        />
+                                                                    </div>
+                                                                    <div className="form-group" style={{ margin: 0 }}>
+                                                                        <label className="form-label" style={{ fontSize: '0.75rem', color: '#64748b' }}>計算劑量 (mcg/kg/min)</label>
+                                                                        <input
+                                                                            type="number"
+                                                                            step="0.01"
+                                                                            className="form-input"
+                                                                            style={{
+                                                                                fontSize: '0.85rem',
+                                                                                padding: '0.35rem',
+                                                                                backgroundColor: (vasopressor.concentration || vasopressor.rate) ? '#f8fafc' : '#fff',
+                                                                                cursor: (vasopressor.concentration || vasopressor.rate) ? 'not-allowed' : 'text'
+                                                                            }}
+                                                                            value={vasopressor.dose}
+                                                                            onChange={e => handleVasopressorFieldChange(opt.id, 'dose', e.target.value)}
+                                                                            readOnly={!!(vasopressor.concentration || vasopressor.rate)}
+                                                                        />
+                                                                        <div style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '0.25rem', lineHeight: '1.2' }}>
+                                                                            {(vasopressor.concentration || vasopressor.rate)
+                                                                                ? '計算劑量 = (濃度 × 速率 × 1000) / (體重 × 60)'
+                                                                                : '可手動輸入或填入濃度/速率自動計算'}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    <div className="form-group">
                         <label className="form-label">Thrombocytopenia (&lt;100,000) at bacteremia <IncompleteTag field={formData.thrombocytopenia} /></label>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -396,38 +635,13 @@ export default function FormStep1({ formData, updateFormData, showIncomplete }: 
                             </div>
                         </div>
                     </div>
-                    <div className="form-group">
-                        <label className="form-label">ICU at Bacteremia Onset <IncompleteTag field={formData.icu_at_onset} /></label>
-                        <div className="radio-group">
-                            {['Yes', 'No'].map(opt => (
-                                <label key={opt} className="radio-label">
-                                    <input
-                                        type="radio"
-                                        name="icu_at_onset"
-                                        checked={formData.icu_at_onset === opt}
-                                        onChange={() => updateFormData({ icu_at_onset: opt })}
-                                    />
-                                    {opt}
-                                </label>
-                            ))}
-                        </div>
-                    </div>
                 </div>
 
                 <div className="form-grid-2">
                     <div className="form-group">
-                        <label className="form-label">Duration in Hospital before Bacteremia (Days) <IncompleteTag field={formData.duration_before_bacteremia} /></label>
-                        <input
-                            type="number"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            className="form-input"
-                            value={formData.duration_before_bacteremia}
-                            onChange={e => updateFormData({ duration_before_bacteremia: e.target.value })}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="form-label">Renal function at admission within 7 days (Cr) <IncompleteTag field={formData.renal_function_admission} /></label>
+                        <label className="form-label">
+                            Renal function <span style={{ color: '#2563eb' }}>at admission within 7 days</span> (Cr) <IncompleteTag field={formData.renal_function_admission} />
+                        </label>
                         <input
                             type="number"
                             step="0.1"
@@ -437,9 +651,22 @@ export default function FormStep1({ formData, updateFormData, showIncomplete }: 
                             onChange={e => updateFormData({ renal_function_admission: e.target.value })}
                         />
                     </div>
+                    <div className="form-group">
+                        <label className="form-label">
+                            Renal function <span style={{ color: '#dc2626' }}>at bacteremia</span> (Cr) <IncompleteTag field={formData.renal_function_bacteremia} />
+                        </label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            inputMode="decimal"
+                            className="form-input"
+                            value={formData.renal_function_bacteremia}
+                            onChange={e => updateFormData({ renal_function_bacteremia: e.target.value })}
+                        />
+                    </div>
                 </div>
 
-                <div className="form-grid-3">
+                <div className="form-grid-1" style={{ marginTop: '1rem' }}>
                     <div className="form-group">
                         <label className="form-label">SOFA Score at Bacteremia <IncompleteTag field={formData.sofa_score} /></label>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -467,33 +694,6 @@ export default function FormStep1({ formData, updateFormData, showIncomplete }: 
                             </button>
                         </div>
                     </div>
-                    <div className="form-group">
-                        <label className="form-label">SEPTIC Shock at Bacteremia <IncompleteTag field={formData.septic_shock} /></label>
-                        <div className="radio-group">
-                            {['Yes', 'No'].map(opt => (
-                                <label key={opt} className="radio-label">
-                                    <input
-                                        type="radio"
-                                        name="septic_shock"
-                                        checked={formData.septic_shock === opt}
-                                        onChange={() => updateFormData({ septic_shock: opt })}
-                                    />
-                                    {opt}
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="form-group">
-                        <label className="form-label">Renal function at bacteremia (Cr) <IncompleteTag field={formData.renal_function_bacteremia} /></label>
-                        <input
-                            type="number"
-                            step="0.1"
-                            inputMode="decimal"
-                            className="form-input"
-                            value={formData.renal_function_bacteremia}
-                            onChange={e => updateFormData({ renal_function_bacteremia: e.target.value })}
-                        />
-                    </div>
                 </div>
             </div>
 
@@ -503,8 +703,10 @@ export default function FormStep1({ formData, updateFormData, showIncomplete }: 
                 onClose={() => setShowSOFACalculator(false)}
                 onConfirm={(score) => updateFormData({ sofa_score: String(score) })}
                 currentScore={formData.sofa_score}
+                platelets={formData.platelets}
+                renalCr={formData.renal_function_bacteremia}
+                vasopressors={formData.vasopressors}
             />
         </div>
     );
 }
-
