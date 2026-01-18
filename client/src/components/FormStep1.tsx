@@ -361,19 +361,39 @@ export default function FormStep1({ formData, updateFormData, showIncomplete }: 
 
                 <div className="form-grid-2">
                     <div className="form-group">
-                        <label className="form-label">Thrombocytopenia (&lt;100000) at bacteremia <IncompleteTag field={formData.thrombocytopenia} /></label>
-                        <div className="radio-group">
-                            {['Yes', 'No'].map(opt => (
-                                <label key={opt} className="radio-label">
-                                    <input
-                                        type="radio"
-                                        name="thrombocytopenia"
-                                        checked={formData.thrombocytopenia === opt}
-                                        onChange={() => updateFormData({ thrombocytopenia: opt })}
-                                    />
-                                    {opt}
-                                </label>
-                            ))}
+                        <label className="form-label">Thrombocytopenia (&lt;100,000) at bacteremia <IncompleteTag field={formData.thrombocytopenia} /></label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <input
+                                    type="number"
+                                    className="form-input"
+                                    style={{ width: '100px' }}
+                                    value={formData.platelets || ''}
+                                    placeholder="數值"
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        const updates: any = { platelets: val };
+                                        if (val !== '') {
+                                            updates.thrombocytopenia = Number(val) < 100 ? 'Yes' : 'No';
+                                        }
+                                        updateFormData(updates);
+                                    }}
+                                />
+                                <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>×10³ / µL</span>
+                            </div>
+                            <div className="radio-group" style={{ margin: 0, height: '38px', display: 'flex', alignItems: 'center' }}>
+                                {['Yes', 'No'].map(opt => (
+                                    <label key={opt} className="radio-label" style={{ margin: 0 }}>
+                                        <input
+                                            type="radio"
+                                            name="thrombocytopenia"
+                                            checked={formData.thrombocytopenia === opt}
+                                            onChange={() => updateFormData({ thrombocytopenia: opt })}
+                                        />
+                                        {opt}
+                                    </label>
+                                ))}
+                            </div>
                         </div>
                     </div>
                     <div className="form-group">

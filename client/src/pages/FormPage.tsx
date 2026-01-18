@@ -39,6 +39,7 @@ export interface FormData {
     sofa_score: string;
     septic_shock: string;
     renal_function_bacteremia: string;
+    platelets: string;
 
     // MIC Data (Step 2)
     mic_data: Record<string, string>;
@@ -104,7 +105,8 @@ const initialFormData: FormData = {
     clinical_response_14days: '',
     negative_bc: '',
     remarks: '',
-    data_status: 'incomplete'
+    data_status: 'incomplete',
+    platelets: ''
 };
 
 export const HOSPITALS = [
