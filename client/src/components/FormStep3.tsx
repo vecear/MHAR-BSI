@@ -175,6 +175,13 @@ export default function FormStep3({ formData, updateFormData }: Props) {
         formData.antibiotic_details?.[classKey]?.usage?.[drug] ||
         { start_date: '', end_date: '', second_use: false };
 
+    // Check if a class is selected but has no drugs selected
+    const hasNoDrugsSelected = (classKey: string) => {
+        if (!isClassSelected(classKey)) return false;
+        const drugs = formData.antibiotic_details?.[classKey]?.drugs || [];
+        return drugs.length === 0;
+    };
+
     return (
         <div>
             <div className="form-section">
@@ -200,7 +207,8 @@ export default function FormStep3({ formData, updateFormData }: Props) {
                                     alignItems: 'center',
                                     padding: '0.75rem 1rem',
                                     background: isClassSelected(abClass.key) ? 'var(--color-primary-light)' : 'var(--bg-primary)',
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
+                                    borderLeft: hasNoDrugsSelected(abClass.key) ? '4px solid var(--color-danger)' : 'none'
                                 }}
                                 onClick={() => toggleClass(abClass.key)}
                             >
@@ -210,7 +218,18 @@ export default function FormStep3({ formData, updateFormData }: Props) {
                                     onChange={() => { }}
                                     style={{ marginRight: '0.75rem' }}
                                 />
-                                <span style={{ flex: 1, fontWeight: 500 }}>{abClass.name}</span>
+                                <span style={{ flex: 1, fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    {abClass.name}
+                                    {hasNoDrugsSelected(abClass.key) && (
+                                        <span style={{
+                                            color: 'var(--color-danger)',
+                                            fontSize: '0.875rem',
+                                            fontWeight: 600
+                                        }}>
+                                            ⚠️ 未選擇藥物
+                                        </span>
+                                    )}
+                                </span>
                                 {isClassSelected(abClass.key) && (
                                     expandedClasses.includes(abClass.key)
                                         ? <ChevronUp size={18} />
@@ -224,6 +243,23 @@ export default function FormStep3({ formData, updateFormData }: Props) {
                                     <p style={{ fontSize: '0.875rem', marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>
                                         選擇使用的藥物:
                                     </p>
+
+                                    {/* Warning if no drugs selected */}
+                                    {hasNoDrugsSelected(abClass.key) && (
+                                        <div style={{
+                                            padding: '0.75rem',
+                                            marginBottom: '1rem',
+                                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                            border: '1px solid var(--color-danger)',
+                                            borderRadius: 'var(--border-radius)',
+                                            color: 'var(--color-danger)',
+                                            fontSize: '0.875rem',
+                                            fontWeight: 500
+                                        }}>
+                                            ⚠️ 請至少選擇一種藥物
+                                        </div>
+                                    )}
+
                                     <div className="checkbox-group" style={{ marginBottom: '1rem' }}>
                                         {abClass.drugs.map(drug => (
                                             <label key={drug} className="checkbox-label">
@@ -253,7 +289,7 @@ export default function FormStep3({ formData, updateFormData }: Props) {
                                                 <h4 style={{ fontSize: '0.875rem', marginBottom: '0.75rem' }}>{drug}</h4>
 
                                                 <div className="form-group" style={{ marginBottom: '0.5rem' }}>
-                                                    <label className="form-label">使用期間 (Start ~ End)</label>
+                                                    <label className="form-label required">使用期間 (Start ~ End)</label>
                                                     <div>
                                                         <DatePicker
                                                             selectsRange={true}
@@ -300,7 +336,7 @@ export default function FormStep3({ formData, updateFormData }: Props) {
 
                                                 {usage.second_use && (
                                                     <div className="form-group" style={{ marginBottom: 0 }}>
-                                                        <label className="form-label">第二次使用期間 (Start ~ End)</label>
+                                                        <label className="form-label required">第二次使用期間 (Start ~ End)</label>
                                                         <div>
                                                             <DatePicker
                                                                 selectsRange={true}

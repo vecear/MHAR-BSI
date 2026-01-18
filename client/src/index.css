@@ -431,6 +431,17 @@ html {
 body {
   min-height: 100vh;
   background-color: var(--bg-primary);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Allow text selection in form elements */
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  user-select: text !important;
+  -webkit-user-select: text !important;
 }
 
 #root {
@@ -564,6 +575,8 @@ h3 {
   background: var(--bg-secondary);
   color: var(--text-primary);
   transition: border-color 0.2s, box-shadow 0.2s;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .form-input:focus,
@@ -581,6 +594,40 @@ h3 {
 .form-textarea {
   min-height: 100px;
   resize: vertical;
+}
+
+/* Date input - make entire input clickable */
+input[type="date"],
+input[type="datetime-local"] {
+  cursor: pointer;
+  position: relative;
+}
+
+/* Expand the clickable area for date inputs to cover entire input */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  z-index: 1;
+}
+
+/* Keep the visual calendar icon visible */
+input[type="date"],
+input[type="datetime-local"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25rem;
+  padding-right: 2.5rem;
 }
 
 /* Radio & Checkbox */
@@ -1249,20 +1296,13 @@ h3 {
 }
 
 .form-step.completed .form-step-number {
-  background: var(--color-primary);
-  color: var(--text-on-primary);
+  color: var(--color-primary);
 }
 
 .form-step-number {
-  width: 1.5rem;
-  height: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  font-weight: 600;
-  font-size: 0.75rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  margin-right: 0.25rem;
 }
 
 /* Form Section */
@@ -1812,16 +1852,9 @@ h3 {
   }
 
   .form-step-number {
-    width: 1.25rem;
-    height: 1.25rem;
-    font-size: 0.65rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: normal;
-    margin: 0;
-    padding: 0;
-    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-right: 0.25rem;
   }
 
   /* Buttons */
@@ -3653,6 +3686,38 @@ h3 {
   }
 }
 
+/* Incomplete field indicator - flashing red text */
+@keyframes blink-incomplete {
+
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  25%,
+  75% {
+    opacity: 0.3;
+  }
+}
+
+.incomplete-indicator {
+  color: #ffffff;
+  background-color: #ef4444;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.form-label .incomplete-indicator {
+  vertical-align: middle;
+}
+
 .animate-fadeIn {
   background: transparent !important;
 }
@@ -3693,22 +3758,18 @@ h3 {
   }
 }
 
- / *   M o b i l e   L a y o u t   f o r   S u b m e n u   * /   @ m e d i a   ( m a x - w i d t h :   7 6 8 p x )    {
-         . s u b m e n u    {
-               p o s i t i o n :    s t a t i c    ! i m p o r t a n t ;
-               w i d t h :    1 0 0 %    ! i m p o r t a n t ;
-               b o x - s h a d o w :    n o n e    ! i m p o r t a n t ;
-               b o r d e r :    n o n e    ! i m p o r t a n t ;
-               b o r d e r - t o p :    1 p x   s o l i d   v a r ( - - b o r d e r - c o l o r )    ! i m p o r t a n t ;
-               b o r d e r - b o t t o m :    1 p x   s o l i d   v a r ( - - b o r d e r - c o l o r )    ! i m p o r t a n t ;
-               b a c k g r o u n d - c o l o r :    r g b a ( 0 ,    0 ,    0 ,    0 . 0 2 )    ! i m p o r t a n t ;
-               t r a n s f o r m :    n o n e    ! i m p o r t a n t ;
-               m a r g i n - t o p :    0 . 5 r e m    ! i m p o r t a n t ;
-               p a d d i n g - l e f t :    1 r e m    ! i m p o r t a n t ;
-       / *   I n d e n t   i t e m s   * /       
+/* Mobile Layout for Submenu */
+@media (max-width: 768px) {
+  .submenu {
+    position: static !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-top: 1px solid var(--border-color) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    background-color: rgba(0, 0, 0, 0.02) !important;
+    transform: none !important;
+    margin-top: 0.5rem !important;
+    padding-left: 1rem !important;
   }
-
-     
 }
-
-       

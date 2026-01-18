@@ -7,6 +7,7 @@ interface Props {
     formData: FormData;
     updateFormData: (updates: Partial<FormData>) => void;
     userHospital: string;
+    showIncomplete?: boolean;
 }
 
 const PATHOGENS = ['CRKP', 'CRAB', 'CRECOLI', 'CRPA'];
@@ -22,8 +23,20 @@ const CHRONIC_DISEASES = [
     'COPD', 'Connective tissue disease', 'PUD', 'None'
 ];
 
-export default function FormStep1({ formData, updateFormData }: Props) {
+export default function FormStep1({ formData, updateFormData, showIncomplete }: Props) {
     const [showSOFACalculator, setShowSOFACalculator] = useState(false);
+
+    // Helper to check if a field is empty
+    const isEmpty = (value: string | string[] | undefined) => {
+        if (Array.isArray(value)) return value.length === 0;
+        return !value || !value.trim();
+    };
+
+    // Incomplete indicator component
+    const IncompleteTag = ({ field }: { field: string | string[] | undefined }) => {
+        if (!showIncomplete || !isEmpty(field)) return null;
+        return <span className="incomplete-indicator">未完成</span>;
+    };
 
     const handleCheckboxChange = (field: 'primary_source' | 'chronic_diseases', value: string) => {
         const current = formData[field] || [];
@@ -167,7 +180,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                         </div>
                     </div>
                     <div className="form-group" style={{ flex: '1.5 1 220px' }}>
-                        <label className="form-label">Sex</label>
+                        <label className="form-label">Sex <IncompleteTag field={formData.sex} /></label>
                         <div className="radio-group" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem', height: '38px', alignItems: 'center' }}>
                             {['Male', 'Female'].map(opt => (
                                 <label key={opt} className="radio-label" style={{ margin: 0 }}>
@@ -183,7 +196,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                         </div>
                     </div>
                     <div className="form-group" style={{ flex: '0.8 1 80px' }}>
-                        <label className="form-label">Age</label>
+                        <label className="form-label">Age <IncompleteTag field={formData.age} /></label>
                         <input
                             type="number"
                             inputMode="numeric"
@@ -194,7 +207,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                         />
                     </div>
                     <div className="form-group" style={{ flex: '1 1 100px' }}>
-                        <label className="form-label">BW (kg)</label>
+                        <label className="form-label">BW (kg) <IncompleteTag field={formData.bw} /></label>
                         <input
                             type="number"
                             step="0.1"
@@ -282,7 +295,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
 
                 <div className="form-grid-2">
                     <div className="form-group">
-                        <label className="form-label">Positive Culture Date</label>
+                        <label className="form-label">Positive Culture Date <IncompleteTag field={formData.positive_culture_date} /></label>
                         <input
                             type="date"
                             className="form-input"
@@ -293,7 +306,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                 </div>
 
                 <div className="form-group">
-                    <label className="form-label">Primary Source (Specimen)</label>
+                    <label className="form-label">Primary Source (Specimen) <IncompleteTag field={formData.primary_source} /></label>
                     <div className="checkbox-group">
                         {PRIMARY_SOURCES.map(opt => (
                             <label key={opt} className="checkbox-label">
@@ -309,7 +322,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                 </div>
 
                 <div className="form-group">
-                    <label className="form-label">Type of Infection</label>
+                    <label className="form-label">Type of Infection <IncompleteTag field={formData.type_of_infection} /></label>
                     <div className="radio-group">
                         {INFECTION_TYPES.map(opt => (
                             <label key={opt} className="radio-label">
@@ -326,7 +339,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                 </div>
 
                 <div className="form-group">
-                    <label className="form-label">Chronic Diseases</label>
+                    <label className="form-label">Chronic Diseases <IncompleteTag field={formData.chronic_diseases} /></label>
                     <div className="checkbox-group">
                         {CHRONIC_DISEASES.map(opt => (
                             <label key={opt} className="checkbox-label">
@@ -348,7 +361,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
 
                 <div className="form-grid-2">
                     <div className="form-group">
-                        <label className="form-label">Thrombocytopenia (&lt;100000) at bacteremia</label>
+                        <label className="form-label">Thrombocytopenia (&lt;100000) at bacteremia <IncompleteTag field={formData.thrombocytopenia} /></label>
                         <div className="radio-group">
                             {['Yes', 'No'].map(opt => (
                                 <label key={opt} className="radio-label">
@@ -364,7 +377,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                         </div>
                     </div>
                     <div className="form-group">
-                        <label className="form-label">ICU at Bacteremia Onset</label>
+                        <label className="form-label">ICU at Bacteremia Onset <IncompleteTag field={formData.icu_at_onset} /></label>
                         <div className="radio-group">
                             {['Yes', 'No'].map(opt => (
                                 <label key={opt} className="radio-label">
@@ -383,7 +396,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
 
                 <div className="form-grid-2">
                     <div className="form-group">
-                        <label className="form-label">Duration in Hospital before Bacteremia (Days)</label>
+                        <label className="form-label">Duration in Hospital before Bacteremia (Days) <IncompleteTag field={formData.duration_before_bacteremia} /></label>
                         <input
                             type="number"
                             inputMode="numeric"
@@ -394,7 +407,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                         />
                     </div>
                     <div className="form-group">
-                        <label className="form-label">Renal function at admission within 7 days (Cr)</label>
+                        <label className="form-label">Renal function at admission within 7 days (Cr) <IncompleteTag field={formData.renal_function_admission} /></label>
                         <input
                             type="number"
                             step="0.1"
@@ -408,7 +421,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
 
                 <div className="form-grid-3">
                     <div className="form-group">
-                        <label className="form-label">SOFA Score at Bacteremia</label>
+                        <label className="form-label">SOFA Score at Bacteremia <IncompleteTag field={formData.sofa_score} /></label>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <input
                                 type="number"
@@ -435,7 +448,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                         </div>
                     </div>
                     <div className="form-group">
-                        <label className="form-label">SEPTIC Shock at Bacteremia</label>
+                        <label className="form-label">SEPTIC Shock at Bacteremia <IncompleteTag field={formData.septic_shock} /></label>
                         <div className="radio-group">
                             {['Yes', 'No'].map(opt => (
                                 <label key={opt} className="radio-label">
@@ -451,7 +464,7 @@ export default function FormStep1({ formData, updateFormData }: Props) {
                         </div>
                     </div>
                     <div className="form-group">
-                        <label className="form-label">Renal function at bacteremia (Cr)</label>
+                        <label className="form-label">Renal function at bacteremia (Cr) <IncompleteTag field={formData.renal_function_bacteremia} /></label>
                         <input
                             type="number"
                             step="0.1"

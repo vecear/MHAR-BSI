@@ -122,6 +122,7 @@ export default function FormPage() {
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [submissionId, setSubmissionId] = useState<string | null>(id || null);
+    const [showIncomplete, setShowIncomplete] = useState(false);
     const { showError, showSuccess } = useToast();
 
     // Load existing data if editing
@@ -145,6 +146,10 @@ export default function FormPage() {
                 data_status: submission.data_status
             });
             setSubmissionId(submission.id);
+            // Show incomplete indicators if loading an incomplete submission
+            if (submission.data_status === 'incomplete') {
+                setShowIncomplete(true);
+            }
         } catch (err) {
             showError(err instanceof Error ? err.message : '發生錯誤');
         } finally {
@@ -181,6 +186,7 @@ export default function FormPage() {
     };
 
     const handleSave = async (isSubmit: boolean = false) => {
+        // Only require medical_record_number and admission_date to save
         if (!formData.medical_record_number || !formData.admission_date) {
             showError('請填寫病歷號和住院日期');
             return;
@@ -190,23 +196,55 @@ export default function FormPage() {
             return;
         }
 
-        // Determine final status
-        let finalStatus: 'complete' | 'incomplete' = 'incomplete';
+        // Check if ALL fields are filled to determine completion status
+        const checkAllFieldsFilled = (): boolean => {
+            // Step 1 fields
+            const step1Fields = [
+                'name', 'sex', 'age', 'bw', 'hospital', 'pathogen',
+                'positive_culture_date', 'type_of_infection',
+                'thrombocytopenia', 'icu_at_onset', 'duration_before_bacteremia',
+                'renal_function_admission', 'sofa_score', 'septic_shock', 'renal_function_bacteremia'
+            ] as const;
+
+            for (const field of step1Fields) {
+                const value = formData[field];
+                if (!value || (typeof value === 'string' && !value.trim())) return false;
+            }
+
+            // Check arrays
+            if (!formData.primary_source || formData.primary_source.length === 0) return false;
+            if (!formData.chronic_diseases || formData.chronic_diseases.length === 0) return false;
+
+            // Step 4 Outcome fields
+            const step4Fields = [
+                'infection_control', 'crude_mortality', 'poly_microbial',
+                'hospital_stay_days', 'clinical_response_14days', 'negative_bc'
+            ] as const;
+
+            for (const field of step4Fields) {
+                const value = formData[field];
+                if (!value || (typeof value === 'string' && !value.trim())) return false;
+            }
+
+            return true;
+        };
+
+        const allFilled = checkAllFieldsFilled();
+        let finalStatus: 'complete' | 'incomplete';
 
         if (!isSubmit) {
+            // Saving draft - always incomplete
             finalStatus = 'incomplete';
         } else {
-            const isComplete = window.confirm('該筆資料是否已完成？\n\n按下「確定」標記為「已完成」\n按下「取消」標記為「未完成」');
-            finalStatus = isComplete ? 'complete' : 'incomplete';
-
-            if (finalStatus === 'complete') {
-                const requiredFields: (keyof FormData)[] = ['name', 'sex', 'hospital', 'pathogen', 'type_of_infection'];
-                const missingFields = requiredFields.filter(field => !formData[field]);
-                if (missingFields.length > 0) {
-                    if (!window.confirm('您已選擇標記為「已完成」，但部分基本欄位尚未填寫。確定要繼續嗎？')) {
-                        return;
-                    }
-                }
+            // Submitting - auto-determine status based on all fields
+            if (allFilled) {
+                finalStatus = 'complete';
+                setShowIncomplete(false);
+                showSuccess('資料已完整填寫，標記為「已完成」');
+            } else {
+                finalStatus = 'incomplete';
+                setShowIncomplete(true);
+                showSuccess('資料已儲存，部分欄位尚未填寫，標記為「未完成」');
             }
         }
 
@@ -231,7 +269,9 @@ export default function FormPage() {
                 setSubmissionId(newId);
             }
 
-            showSuccess('資料已儲存');
+            if (!isSubmit) {
+                showSuccess('草稿已儲存');
+            }
 
             if (isSubmit) {
                 setTimeout(() => navigate('/'), 1500);
@@ -243,19 +283,14 @@ export default function FormPage() {
         }
     };
 
+    // Only validate fields with * (required) in Step 1
     const validateStep1 = (): boolean => {
         const requiredFields: { key: keyof FormData, label: string }[] = [
             { key: 'medical_record_number', label: '病歷號' },
             { key: 'admission_date', label: 'Admission Date' },
             { key: 'name', label: 'Name' },
             { key: 'hospital', label: 'Hospital' },
-            { key: 'pathogen', label: 'Pathogen' },
-            { key: 'age', label: 'Age' },
-            { key: 'bw', label: 'BW' },
-            { key: 'duration_before_bacteremia', label: 'Duration in Hospital before Bacteremia' },
-            { key: 'renal_function_admission', label: 'Renal function at admission' },
-            { key: 'sofa_score', label: 'SOFA Score' },
-            { key: 'renal_function_bacteremia', label: 'Renal function at bacteremia' }
+            { key: 'pathogen', label: 'Pathogen' }
         ];
 
         for (const field of requiredFields) {
@@ -271,9 +306,28 @@ export default function FormPage() {
     const validateStep3 = (): boolean => {
         if (!formData.antibiotic_classes || formData.antibiotic_classes.length === 0) return true;
 
+        // Map of class keys to display names
+        const classNames: Record<string, string> = {
+            'aminoglycoside': 'Aminoglycoside',
+            'carbapenem': 'Carbapenem',
+            'cephalosporin': 'Cephalosporin',
+            'fluoroquinolone': 'Fluoroquinolone',
+            'polymyxin': 'Polymyxin',
+            'tigecycline': 'Tigecycline',
+            'beta_lactam': 'Beta-lactam / Beta-lactamase inhibitor',
+            'sulfonamide': 'Sulfonamide',
+            'other': 'Other'
+        };
+
         for (const classKey of formData.antibiotic_classes) {
             const classDetails = formData.antibiotic_details?.[classKey];
-            if (!classDetails) continue;
+            const className = classNames[classKey] || classKey;
+
+            // Check if no drugs are selected for this class
+            if (!classDetails || !classDetails.drugs || classDetails.drugs.length === 0) {
+                showError(`請至少選擇一種「${className}」類別下的藥物`);
+                return false;
+            }
 
             for (const drug of classDetails.drugs) {
                 const usage = classDetails.usage?.[drug];
@@ -337,6 +391,7 @@ export default function FormPage() {
                         formData={formData}
                         updateFormData={updateFormData}
                         userHospital={user?.hospital || ''}
+                        showIncomplete={showIncomplete}
                     />
                 )}
                 {currentStep === 2 && (
@@ -346,7 +401,7 @@ export default function FormPage() {
                     <FormStep3 formData={formData} updateFormData={updateFormData} />
                 )}
                 {currentStep === 4 && (
-                    <FormStep4 formData={formData} updateFormData={updateFormData} />
+                    <FormStep4 formData={formData} updateFormData={updateFormData} showIncomplete={showIncomplete} />
                 )}
 
                 {/* Navigation */}

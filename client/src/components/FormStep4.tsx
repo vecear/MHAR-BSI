@@ -3,9 +3,19 @@ import type { FormData } from '../pages/FormPage';
 interface Props {
     formData: FormData;
     updateFormData: (updates: Partial<FormData>) => void;
+    showIncomplete?: boolean;
 }
 
-export default function FormStep4({ formData, updateFormData }: Props) {
+export default function FormStep4({ formData, updateFormData, showIncomplete }: Props) {
+    // Helper to check if a field is empty
+    const isEmpty = (value: string | undefined) => !value || !value.trim();
+
+    // Incomplete indicator component
+    const IncompleteTag = ({ field }: { field: string | undefined }) => {
+        if (!showIncomplete || !isEmpty(field)) return null;
+        return <span className="incomplete-indicator">未完成</span>;
+    };
+
     return (
         <div>
             <div className="form-section">
@@ -13,7 +23,7 @@ export default function FormStep4({ formData, updateFormData }: Props) {
 
                 <div className="form-grid-2">
                     <div className="form-group">
-                        <label className="form-label">Infection Control Measure</label>
+                        <label className="form-label">Infection Control Measure <IncompleteTag field={formData.infection_control} /></label>
                         <div className="radio-group">
                             {['Yes', 'No'].map(opt => (
                                 <label key={opt} className="radio-label">
@@ -30,7 +40,7 @@ export default function FormStep4({ formData, updateFormData }: Props) {
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">Crude Mortality</label>
+                        <label className="form-label">Crude Mortality <IncompleteTag field={formData.crude_mortality} /></label>
                         <div className="radio-group">
                             {['Mortality', 'Alive'].map(opt => (
                                 <label key={opt} className="radio-label">
@@ -49,7 +59,7 @@ export default function FormStep4({ formData, updateFormData }: Props) {
 
                 <div className="form-grid-2">
                     <div className="form-group">
-                        <label className="form-label">Poly Microbial</label>
+                        <label className="form-label">Poly Microbial <IncompleteTag field={formData.poly_microbial} /></label>
                         <div className="radio-group">
                             {['Yes', 'No'].map(opt => (
                                 <label key={opt} className="radio-label">
@@ -66,7 +76,7 @@ export default function FormStep4({ formData, updateFormData }: Props) {
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">Hospital stay after Bacteremia (Days)</label>
+                        <label className="form-label">Hospital stay after Bacteremia (Days) <IncompleteTag field={formData.hospital_stay_days} /></label>
                         <input
                             type="number"
                             className="form-input"
@@ -78,7 +88,7 @@ export default function FormStep4({ formData, updateFormData }: Props) {
 
                 <div className="form-grid-2">
                     <div className="form-group">
-                        <label className="form-label">Clinical Response at 14 days treatment</label>
+                        <label className="form-label">Clinical Response at 14 days treatment <IncompleteTag field={formData.clinical_response_14days} /></label>
                         <div className="radio-group">
                             {['Yes', 'No'].map(opt => (
                                 <label key={opt} className="radio-label">
@@ -95,7 +105,7 @@ export default function FormStep4({ formData, updateFormData }: Props) {
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">Negative b/c During and after Treatment until Discharge</label>
+                        <label className="form-label">Negative b/c During and after Treatment until Discharge <IncompleteTag field={formData.negative_bc} /></label>
                         <div className="radio-group">
                             {['Yes', 'No', 'Unknown'].map(opt => (
                                 <label key={opt} className="radio-label">
