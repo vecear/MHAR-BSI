@@ -1,0 +1,16 @@
+{
+  "name": "MHAR-BSI 菌血症研究表單系統",
+  "short_name": "MHAR-BSI",
+  "description": "菌血症研究表單系統",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
