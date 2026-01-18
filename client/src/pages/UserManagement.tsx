@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Users, Edit, Trash2, X, AlertCircle } from 'lucide-react';
+import { Users, Edit, Trash2, X } from 'lucide-react';
+import { useToast } from '../components/Toast';
 import { userService } from '../services/firestore';
 import type { FirestoreUser } from '../services/firestore';
 import { PROJECTS } from '../constants/projects';
@@ -40,9 +41,9 @@ const initialUserForm: UserFormData = {
 
 export default function UserManagement() {
     const { refreshPendingDeleteCount } = useOutletContext<{ refreshPendingDeleteCount: () => void }>();
+    const { showError, showSuccess } = useToast();
     const [users, setUsers] = useState<FirestoreUser[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
 
     // Modal states
     const [showUserModal, setShowUserModal] = useState(false);
@@ -60,7 +61,7 @@ export default function UserManagement() {
             const data = await userService.getAll();
             setUsers(data);
         } catch (err) {
-            setError(err instanceof Error ? err.message : '發生錯誤');
+            showError(err instanceof Error ? err.message : '發生錯誤');
         } finally {
             setLoading(false);
         }
@@ -165,8 +166,9 @@ export default function UserManagement() {
             setUserForm(initialUserForm);
             fetchUsers();
             refreshPendingDeleteCount?.();
+            showSuccess('使用者資料已更新');
         } catch (err) {
-            alert(err instanceof Error ? err.message : '儲存失敗');
+            showError(err instanceof Error ? err.message : '儲存失敗');
         } finally {
             setSavingUser(false);
         }
@@ -178,8 +180,9 @@ export default function UserManagement() {
             await userService.delete(id);
             setUsers(prev => prev.filter(u => u.id !== id));
             refreshPendingDeleteCount?.();
+            showSuccess('使用者已刪除');
         } catch (err) {
-            alert(err instanceof Error ? err.message : '刪除失敗');
+            showError(err instanceof Error ? err.message : '刪除失敗');
         }
     };
 
@@ -208,12 +211,6 @@ export default function UserManagement() {
                 <h1>使用者管理</h1>
             </div>
 
-            {error && (
-                <div className="alert alert-error">
-                    <AlertCircle size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-                    {error}
-                </div>
-            )}
 
             {loading ? (
                 <div className="loading-container">

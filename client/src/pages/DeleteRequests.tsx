@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, AlertCircle, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { deleteRequestService } from '../services/firestore';
 import type { DeleteRequest } from '../services/firestore';
+import { useToast } from '../components/Toast';
 
 export default function DeleteRequests() {
     const { user } = useAuth();
+    const { showError } = useToast();
     const [requests, setRequests] = useState<DeleteRequest[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
 
     useEffect(() => {
         if (user) {
@@ -22,7 +23,7 @@ export default function DeleteRequests() {
             const data = await deleteRequestService.getAll(user!.id, false);
             setRequests(data);
         } catch (err) {
-            setError(err instanceof Error ? err.message : '發生錯誤');
+            showError(err instanceof Error ? err.message : '發生錯誤');
         } finally {
             setLoading(false);
         }
@@ -80,12 +81,6 @@ export default function DeleteRequests() {
                 <h1>刪除申請</h1>
             </div>
 
-            {error && (
-                <div className="alert alert-error">
-                    <AlertCircle size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-                    {error}
-                </div>
-            )}
 
             <div className="card">
                 {requests.length === 0 ? (

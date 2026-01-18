@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Upload, Trash2, AlertCircle, Filter, X, ArrowUp, ArrowDown, Edit, Clock } from 'lucide-react';
+import { FileText, Upload, Trash2, Filter, X, ArrowUp, ArrowDown, Edit, Clock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { submissionService, deleteRequestService, exportService } from '../services/firestore';
 import type { Submission, DeleteRequest } from '../services/firestore';
 import DualDateRangePicker from '../components/DualDateRangePicker';
+import { useToast } from '../components/Toast';
 
 const HOSPITALS = [
     '三軍總院', '松山分院', '澎湖分院', '桃園總院',
@@ -32,11 +33,11 @@ const PATHOGEN_CONFIG = [
 
 export default function Dashboard() {
     const { user } = useAuth();
+    const { showError, showSuccess } = useToast();
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [deleteRequests, setDeleteRequests] = useState<DeleteRequest[]>([]);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
 
     // Filter states
     const [admissionStartDate, setAdmissionStartDate] = useState<string>('');
@@ -80,7 +81,7 @@ export default function Dashboard() {
             setSubmissions(subs);
             setDeleteRequests(delReqs);
         } catch (err) {
-            setError(err instanceof Error ? err.message : '發生錯誤');
+            showError(err instanceof Error ? err.message : '發生錯誤');
         } finally {
             setLoading(false);
         }
@@ -146,7 +147,7 @@ export default function Dashboard() {
         const reason = prompt('請輸入刪除申請的原因（必填）：');
         if (reason === null) return;
         if (!reason.trim()) {
-            alert('請輸入原因');
+            showError('請輸入原因');
             return;
         }
 
@@ -159,10 +160,10 @@ export default function Dashboard() {
                 sub.form_data?.record_time as string,
                 reason
             );
-            alert('刪除申請已送出，待管理員審核');
+            showSuccess('刪除申請已送出，待管理員審核');
             await fetchData();
         } catch (err) {
-            alert(err instanceof Error ? err.message : '申請失敗');
+            showError(err instanceof Error ? err.message : '申請失敗');
         }
     };
 
@@ -212,7 +213,7 @@ export default function Dashboard() {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
         } catch (err) {
-            alert(err instanceof Error ? err.message : '匯出失敗');
+            showError(err instanceof Error ? err.message : '匯出失敗');
         }
     };
 
@@ -247,7 +248,7 @@ export default function Dashboard() {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
         } catch (err) {
-            alert(err instanceof Error ? err.message : '匯出失敗');
+            showError(err instanceof Error ? err.message : '匯出失敗');
         }
     };
 
@@ -274,12 +275,6 @@ export default function Dashboard() {
                 <h1>我的表單記錄</h1>
             </div>
 
-            {error && (
-                <div className="alert alert-error">
-                    <AlertCircle size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-                    {error}
-                </div>
-            )}
 
             {/* Filter Section */}
             <div className="card filter-section" style={{ marginBottom: 'var(--spacing-lg)', padding: 'var(--spacing-md)' }}>

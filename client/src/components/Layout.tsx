@@ -7,10 +7,12 @@ import { useTheme, THEMES } from '../context/ThemeContext';
 import { PROJECTS } from '../constants/projects';
 import ProfileModal from './ProfileModal';
 import CsvUpload from './CsvUpload';
+import { useToast } from './Toast';
 
 export default function Layout() {
     const { user, logout, currentProject } = useAuth();
     const { theme, setTheme } = useTheme();
+    const { showError, showSuccess } = useToast();
     const navigate = useNavigate();
     const location = useLocation();
     const [showProfile, setShowProfile] = useState(false);
@@ -89,8 +91,9 @@ export default function Layout() {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(downloadUrl);
+            showSuccess('資料匯出成功');
         } catch (err) {
-            alert(err instanceof Error ? err.message : '匯出失敗');
+            showError(err instanceof Error ? err.message : '匯出失敗');
         }
     };
 
@@ -508,7 +511,7 @@ export default function Layout() {
                                     setShowImportModal(false);
                                     window.location.reload();
                                 }}
-                                onError={(msg) => alert(msg)}
+                                onError={showError}
                             />
                         </div>
                     </div>

@@ -1,15 +1,16 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
-import { Trash2, AlertCircle, Check, XCircle, FileText } from 'lucide-react';
+import { Trash2, Check, XCircle, FileText } from 'lucide-react';
 import { deleteRequestService } from '../services/firestore';
 import type { DeleteRequest } from '../services/firestore';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../components/Toast';
 
 export default function AdminDeleteRequests() {
     const { user } = useAuth();
+    const { showError, showSuccess } = useToast();
     const [deleteRequests, setDeleteRequests] = useState<DeleteRequest[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const { refreshPendingDeleteCount } = useOutletContext<{ refreshPendingDeleteCount: () => void }>();
 
@@ -29,7 +30,7 @@ export default function AdminDeleteRequests() {
             setDeleteRequests(data);
             setSelectedIds(new Set());
         } catch (err) {
-            setError(err instanceof Error ? err.message : '發生錯誤');
+            showError(err instanceof Error ? err.message : '發生錯誤');
         } finally {
             setLoading(false);
         }
@@ -41,8 +42,9 @@ export default function AdminDeleteRequests() {
             await deleteRequestService.approve(id, user!.id);
             fetchDeleteRequests();
             refreshPendingDeleteCount?.();
+            showSuccess('刪除申請已核准');
         } catch (err) {
-            alert(err instanceof Error ? err.message : '操作失敗');
+            showError(err instanceof Error ? err.message : '操作失敗');
         }
     };
 
@@ -53,8 +55,9 @@ export default function AdminDeleteRequests() {
             await deleteRequestService.reject(id, user!.id, reason || undefined);
             fetchDeleteRequests();
             refreshPendingDeleteCount();
+            showSuccess('刪除申請已拒絕');
         } catch (err) {
-            alert(err instanceof Error ? err.message : '操作失敗');
+            showError(err instanceof Error ? err.message : '操作失敗');
         }
     };
 
@@ -66,8 +69,9 @@ export default function AdminDeleteRequests() {
             const ids = Array.from(selectedIds);
             await Promise.all(ids.map(id => deleteRequestService.delete(id)));
             fetchDeleteRequests();
+            showSuccess(`已刪除 ${ids.length} 筆申請紀錄`);
         } catch (err) {
-            alert(err instanceof Error ? err.message : '操作失敗');
+            showError(err instanceof Error ? err.message : '操作失敗');
         }
     };
 
@@ -99,12 +103,6 @@ export default function AdminDeleteRequests() {
                 <h1>刪除表單管理</h1>
             </div>
 
-            {error && (
-                <div className="alert alert-error">
-                    <AlertCircle size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-                    {error}
-                </div>
-            )}
 
             {loading ? (
                 <div className="loading-container">

@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Trash2, Edit, AlertCircle, X, Filter, ArrowUp, ArrowDown, Upload } from 'lucide-react';
+import { FileText, Trash2, Edit, X, Filter, ArrowUp, ArrowDown, Upload } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { submissionService, exportService } from '../services/firestore';
 import type { Submission } from '../services/firestore';
 import CsvUpload from '../components/CsvUpload';
 import DualDateRangePicker from '../components/DualDateRangePicker';
+import { useToast } from '../components/Toast';
 
 const HOSPITALS = [
     '三軍總院', '松山分院', '澎湖分院', '桃園總院',
@@ -33,9 +34,9 @@ const PATHOGEN_CONFIG = [
 
 export default function AdminDashboard() {
     const { user } = useAuth();
+    const { showError, showSuccess } = useToast();
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
 
     // Filter states
     const [admissionStartDate, setAdmissionStartDate] = useState('');
@@ -70,7 +71,7 @@ export default function AdminDashboard() {
             const data = await submissionService.getAll(undefined, true);
             setSubmissions(data);
         } catch (err) {
-            setError(err instanceof Error ? err.message : '發生錯誤');
+            showError(err instanceof Error ? err.message : '發生錯誤');
         } finally {
             setLoading(false);
         }
@@ -139,7 +140,7 @@ export default function AdminDashboard() {
             const csvContent = await exportService.exportToCSV(ids);
             downloadCSV(csvContent, `mhar-bsi-filtered-${new Date().toISOString().split('T')[0]}.csv`);
         } catch (err) {
-            alert(err instanceof Error ? err.message : '匯出失敗');
+            showError(err instanceof Error ? err.message : '匯出失敗');
         }
     };
 
@@ -150,7 +151,7 @@ export default function AdminDashboard() {
             const csvContent = await exportService.exportToCSV(ids);
             downloadCSV(csvContent, `mhar-bsi-selected-${new Date().toISOString().split('T')[0]}.csv`);
         } catch (err) {
-            alert(err instanceof Error ? err.message : '匯出失敗');
+            showError(err instanceof Error ? err.message : '匯出失敗');
         }
     };
 
@@ -188,8 +189,9 @@ export default function AdminDashboard() {
             await submissionService.delete(id);
             setSubmissions(prev => prev.filter(s => s.id !== id));
             setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+            showSuccess('資料已刪除');
         } catch (err) {
-            alert(err instanceof Error ? err.message : '刪除失敗');
+            showError(err instanceof Error ? err.message : '刪除失敗');
         }
     };
 
@@ -201,8 +203,9 @@ export default function AdminDashboard() {
             await Promise.all(ids.map(id => submissionService.delete(id)));
             setSubmissions(prev => prev.filter(s => !selectedIds.has(s.id)));
             setSelectedIds(new Set());
+            showSuccess(`已刪除 ${ids.length} 筆資料`);
         } catch (err) {
-            alert(err instanceof Error ? err.message : '刪除失敗');
+            showError(err instanceof Error ? err.message : '刪除失敗');
         }
     };
 
@@ -228,16 +231,10 @@ export default function AdminDashboard() {
             <div className="page-header">
                 <h1>管理員儀表板</h1>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <CsvUpload variant="buttons" onUploadComplete={fetchSubmissions} userHospital={user?.hospital || ''} onError={setError} />
+                    <CsvUpload variant="buttons" onUploadComplete={fetchSubmissions} userHospital={user?.hospital || ''} onError={showError} />
                 </div>
             </div>
 
-            {error && (
-                <div className="alert alert-error">
-                    <AlertCircle size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-                    {error}
-                </div>
-            )}
 
             {loading ? (
                 <div className="loading-container">

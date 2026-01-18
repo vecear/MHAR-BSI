@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X, User, AlertCircle, Check } from 'lucide-react';
+import { X, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { auth } from '../firebase';
+import { useToast } from './Toast';
 
 interface ProfileData {
     username: string;
@@ -38,8 +39,7 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+    const { showError, showSuccess } = useToast();
 
     useEffect(() => {
         if (isOpen && user) {
@@ -59,21 +59,19 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
-        setSuccess('');
 
         // Validate password if changing
         if (newPassword) {
             if (newPassword !== confirmPassword) {
-                setError('新密碼與確認密碼不符');
+                showError('新密碼與確認密碼不符');
                 return;
             }
             if (newPassword.length < 6) {
-                setError('新密碼至少需要6個字元');
+                showError('新密碼至少需要6個字元');
                 return;
             }
             if (!currentPassword) {
-                setError('請輸入目前密碼');
+                showError('請輸入目前密碼');
                 return;
             }
         }
@@ -108,10 +106,10 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
                 }
             }
 
-            setSuccess('個人資料已更新');
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
+            showSuccess('個人資料已更新');
 
             if (onUpdate) onUpdate();
 
@@ -119,7 +117,7 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
                 onClose();
             }, 1500);
         } catch (err) {
-            setError(err instanceof Error ? err.message : '更新失敗');
+            showError(err instanceof Error ? err.message : '更新失敗');
         } finally {
             setSaving(false);
         }
@@ -147,18 +145,6 @@ export default function ProfileModal({ isOpen, onClose, onUpdate }: Props) {
                 ) : (
                     <form onSubmit={handleSubmit}>
                         <div className="modal-body">
-                            {error && (
-                                <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
-                                    <AlertCircle size={18} style={{ marginRight: '8px' }} />
-                                    {error}
-                                </div>
-                            )}
-                            {success && (
-                                <div className="alert alert-success" style={{ marginBottom: '1rem' }}>
-                                    <Check size={18} style={{ marginRight: '8px' }} />
-                                    {success}
-                                </div>
-                            )}
 
                             <div className="form-section">
                                 <h4 style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>帳號資訊（唯讀）</h4>
