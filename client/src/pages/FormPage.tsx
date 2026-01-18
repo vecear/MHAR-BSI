@@ -368,7 +368,13 @@ export default function FormPage() {
         if (step >= 1 && step <= 4) {
             setCurrentStep(step);
             // Scroll to top of page when changing steps
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Use setTimeout to ensure DOM has updated before scrolling
+            setTimeout(() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                // Also try scrolling document element for better mobile compatibility
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+            }, 100);
         }
     };
 
