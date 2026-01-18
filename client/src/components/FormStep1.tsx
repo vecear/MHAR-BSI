@@ -545,6 +545,8 @@ export default function FormStep1({ formData, updateFormData, showIncomplete }: 
                                                                             value={vasopressor.concentration}
                                                                             onChange={e => handleVasopressorFieldChange(opt.id, 'concentration', e.target.value)}
                                                                             placeholder="數值"
+                                                                            inputMode="decimal"
+                                                                            pattern="[0-9]*"
                                                                         />
                                                                         {opt.id === 'Dopamine' && (
                                                                             <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '0.25rem', lineHeight: '1.3' }}>
@@ -563,6 +565,8 @@ export default function FormStep1({ formData, updateFormData, showIncomplete }: 
                                                                             value={vasopressor.rate}
                                                                             onChange={e => handleVasopressorFieldChange(opt.id, 'rate', e.target.value)}
                                                                             placeholder="數值"
+                                                                            inputMode="decimal"
+                                                                            pattern="[0-9]*"
                                                                         />
                                                                     </div>
                                                                     <div className="form-group" style={{ margin: 0 }}>
@@ -580,6 +584,8 @@ export default function FormStep1({ formData, updateFormData, showIncomplete }: 
                                                                             value={vasopressor.dose}
                                                                             onChange={e => handleVasopressorFieldChange(opt.id, 'dose', e.target.value)}
                                                                             readOnly={!!(vasopressor.concentration || vasopressor.rate)}
+                                                                            inputMode="decimal"
+                                                                            pattern="[0-9]*"
                                                                         />
                                                                         <div style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '0.25rem', lineHeight: '1.2' }}>
                                                                             {(vasopressor.concentration || vasopressor.rate)
@@ -617,6 +623,8 @@ export default function FormStep1({ formData, updateFormData, showIncomplete }: 
                                         }
                                         updateFormData(updates);
                                     }}
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                 />
                                 <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>×10³ / µL</span>
                             </div>
