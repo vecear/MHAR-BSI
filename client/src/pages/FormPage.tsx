@@ -355,6 +355,8 @@ export default function FormPage() {
 
         if (step >= 1 && step <= 4) {
             setCurrentStep(step);
+            // Scroll to top of page when changing steps
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     };
 
