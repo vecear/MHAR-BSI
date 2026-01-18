@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
-import { LogIn, FolderKanban } from 'lucide-react';
+import { LogIn, FolderKanban, Eye, EyeOff } from 'lucide-react';
 import { PROJECTS, DEFAULT_PROJECT_ID } from '../constants/projects';
 
 const HOSPITALS = [
@@ -16,6 +16,15 @@ const HOSPITALS = [
     '花蓮總院'
 ];
 
+const EMAIL_DOMAINS = [
+    '@gmail.com',
+    '@hotmail.com',
+    '@hotmail.com.tw',
+    '@yahoo.com',
+    '@yahoo.com.tw',
+    '@office365.ndmctsgh.edu.tw'
+];
+
 export default function Login() {
     const { login } = useAuth();
     const { showError } = useToast();
@@ -23,6 +32,43 @@ export default function Login() {
     const [password, setPassword] = useState('');
     const [projectId, setProjectId] = useState(DEFAULT_PROJECT_ID);
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
+    const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
+
+    const handleEmailChange = (value: string) => {
+        setEmail(value);
+
+        // Check if user is typing before @ or after @
+        const atIndex = value.indexOf('@');
+        if (atIndex === -1 && value.length > 0) {
+            // User hasn't typed @ yet, show suggestions with their username
+            const suggestions = EMAIL_DOMAINS.map(domain => value + domain);
+            setEmailSuggestions(suggestions);
+            setShowEmailSuggestions(true);
+        } else if (atIndex > 0) {
+            // User has typed @, show matching domains
+            const username = value.substring(0, atIndex);
+            const domainPart = value.substring(atIndex);
+            const matchingDomains = EMAIL_DOMAINS.filter(domain =>
+                domain.toLowerCase().startsWith(domainPart.toLowerCase())
+            );
+            if (matchingDomains.length > 0 && domainPart !== matchingDomains[0]) {
+                const suggestions = matchingDomains.map(domain => username + domain);
+                setEmailSuggestions(suggestions);
+                setShowEmailSuggestions(true);
+            } else {
+                setShowEmailSuggestions(false);
+            }
+        } else {
+            setShowEmailSuggestions(false);
+        }
+    };
+
+    const handleSuggestionClick = (suggestion: string) => {
+        setEmail(suggestion);
+        setShowEmailSuggestions(false);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -57,27 +103,100 @@ export default function Login() {
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
                         <label className="form-label required">Email</label>
-                        <input
-                            type="email"
-                            className="form-input"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="請輸入 Email"
-                            required
-                            autoFocus
-                        />
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type="email"
+                                className="form-input"
+                                value={email}
+                                onChange={(e) => handleEmailChange(e.target.value)}
+                                onFocus={() => {
+                                    if (email.length > 0) {
+                                        handleEmailChange(email);
+                                    }
+                                }}
+                                onBlur={() => {
+                                    // Delay hiding to allow click on suggestions
+                                    setTimeout(() => setShowEmailSuggestions(false), 200);
+                                }}
+                                placeholder="請輸入 Email"
+                                required
+                                autoFocus
+                                autoComplete="off"
+                            />
+                            {showEmailSuggestions && emailSuggestions.length > 0 && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: 0,
+                                    right: 0,
+                                    marginTop: '4px',
+                                    backgroundColor: '#fff',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '8px',
+                                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                                    maxHeight: '200px',
+                                    overflowY: 'auto',
+                                    zIndex: 1000
+                                }}>
+                                    {emailSuggestions.map((suggestion, index) => (
+                                        <div
+                                            key={index}
+                                            onClick={() => handleSuggestionClick(suggestion)}
+                                            style={{
+                                                padding: '0.75rem 1rem',
+                                                cursor: 'pointer',
+                                                borderBottom: index < emailSuggestions.length - 1 ? '1px solid var(--border-color)' : 'none',
+                                                transition: 'background-color 0.2s',
+                                                fontSize: '0.9rem'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                        >
+                                            {suggestion}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <div className="form-group">
                         <label className="form-label required">密碼</label>
-                        <input
-                            type="password"
-                            className="form-input"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="請輸入密碼"
-                            required
-                        />
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                className="form-input"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="請輸入密碼"
+                                style={{ paddingRight: '2.5rem' }}
+                                required
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '10px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    padding: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'var(--text-muted)',
+                                    transition: 'color 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+                                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                                aria-label={showPassword ? '隱藏密碼' : '顯示密碼'}
+                            >
+                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                        </div>
                     </div>
 
                     <div className="form-group">

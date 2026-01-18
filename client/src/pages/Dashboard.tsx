@@ -46,6 +46,7 @@ export default function Dashboard() {
     const [cultureEndDate, setCultureEndDate] = useState<string>('');
     const [filterHospital, setFilterHospital] = useState('');
     const [filterPathogens, setFilterPathogens] = useState<string[]>([]);
+    const [filterStatus, setFilterStatus] = useState<string[]>([]);
     const [filterMRN, setFilterMRN] = useState('');
     const [sortField, setSortField] = useState<string>('updated_at');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -101,6 +102,14 @@ export default function Dashboard() {
 
             const pathogen = (sub.form_data?.pathogen as string) || '';
             if (filterPathogens.length > 0 && !filterPathogens.includes(pathogen)) return false;
+
+            // Status filter
+            if (filterStatus.length > 0) {
+                const isComplete = ['complete', 'completed', '完成'].includes(sub.data_status?.toLowerCase() || '');
+                const statusValue = isComplete ? 'completed' : 'incomplete';
+                if (!filterStatus.includes(statusValue)) return false;
+            }
+
             if (filterMRN && !sub.medical_record_number.toLowerCase().includes(filterMRN.toLowerCase())) return false;
 
             return true;
@@ -128,10 +137,10 @@ export default function Dashboard() {
             if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [submissions, admissionStartDate, admissionEndDate, cultureStartDate, cultureEndDate, filterHospital, filterPathogens, filterMRN, sortField, sortDirection]);
+    }, [submissions, admissionStartDate, admissionEndDate, cultureStartDate, cultureEndDate, filterHospital, filterPathogens, filterStatus, filterMRN, sortField, sortDirection]);
 
     const hasActiveFilters = admissionStartDate || admissionEndDate || cultureStartDate || cultureEndDate ||
-        (!user?.hospital && filterHospital) || filterPathogens.length > 0 || filterMRN;
+        (!user?.hospital && filterHospital) || filterPathogens.length > 0 || filterStatus.length > 0 || filterMRN;
 
     const clearAllFilters = () => {
         setAdmissionStartDate('');
@@ -140,6 +149,7 @@ export default function Dashboard() {
         setCultureEndDate('');
         if (!user?.hospital) setFilterHospital('');
         setFilterPathogens([]);
+        setFilterStatus([]);
         setFilterMRN('');
     };
 
@@ -391,6 +401,44 @@ export default function Dashboard() {
                                             style={{ display: 'none' }}
                                         />
                                         <span>{p.label}</span>
+                                    </label>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Line 4: Status Tags */}
+                    <div className="filter-row filter-row-pathogens">
+                        <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>狀態：</label>
+                        <div className="pathogen-list">
+                            {[
+                                { id: 'completed', label: '已完成', bg: '#dcfce7', text: '#16a34a' },
+                                { id: 'incomplete', label: '未完成', bg: '#fef3c7', text: '#d97706' }
+                            ].map(s => {
+                                const isChecked = filterStatus.includes(s.id);
+                                return (
+                                    <label
+                                        key={s.id}
+                                        className={`pathogen-tag ${isChecked ? 'active' : ''}`}
+                                        style={{
+                                            backgroundColor: isChecked ? s.bg : 'var(--bg-secondary)',
+                                            color: isChecked ? s.text : 'var(--text-secondary)',
+                                            borderColor: isChecked ? s.text : 'var(--border-color)',
+                                        }}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={() => {
+                                                if (isChecked) {
+                                                    setFilterStatus(filterStatus.filter(x => x !== s.id));
+                                                } else {
+                                                    setFilterStatus([...filterStatus, s.id]);
+                                                }
+                                            }}
+                                            style={{ display: 'none' }}
+                                        />
+                                        <span>{s.label}</span>
                                     </label>
                                 );
                             })}

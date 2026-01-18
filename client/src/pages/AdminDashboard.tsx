@@ -45,6 +45,7 @@ export default function AdminDashboard() {
     const [cultureEndDate, setCultureEndDate] = useState('');
     const [filterHospital, setFilterHospital] = useState('');
     const [filterPathogens, setFilterPathogens] = useState<string[]>([]);
+    const [filterStatus, setFilterStatus] = useState<string[]>([]);
     const [filterMRN, setFilterMRN] = useState('');
     const [sortField, setSortField] = useState<string>('updated_at');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -91,6 +92,14 @@ export default function AdminDashboard() {
 
             const pathogen = (sub.form_data?.pathogen as string) || '';
             if (filterPathogens.length > 0 && !filterPathogens.includes(pathogen)) return false;
+
+            // Status filter
+            if (filterStatus.length > 0) {
+                const isComplete = ['complete', 'completed', '完成'].includes(sub.data_status?.toLowerCase() || '');
+                const statusValue = isComplete ? 'completed' : 'incomplete';
+                if (!filterStatus.includes(statusValue)) return false;
+            }
+
             if (filterMRN && !sub.medical_record_number.toLowerCase().includes(filterMRN.toLowerCase())) return false;
 
             return true;
@@ -119,10 +128,10 @@ export default function AdminDashboard() {
             if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [submissions, admissionStartDate, admissionEndDate, cultureStartDate, cultureEndDate, filterHospital, filterPathogens, filterMRN, sortField, sortDirection]);
+    }, [submissions, admissionStartDate, admissionEndDate, cultureStartDate, cultureEndDate, filterHospital, filterPathogens, filterStatus, filterMRN, sortField, sortDirection]);
 
     const hasActiveFilters = admissionStartDate || admissionEndDate || cultureStartDate || cultureEndDate ||
-        filterHospital || filterPathogens.length > 0 || filterMRN;
+        filterHospital || filterPathogens.length > 0 || filterStatus.length > 0 || filterMRN;
 
     const clearAllFilters = () => {
         setAdmissionStartDate('');
@@ -131,6 +140,7 @@ export default function AdminDashboard() {
         setCultureEndDate('');
         setFilterHospital('');
         setFilterPathogens([]);
+        setFilterStatus([]);
         setFilterMRN('');
     };
 
@@ -327,22 +337,17 @@ export default function AdminDashboard() {
                             {/* Line 3: Pathogen Tags */}
                             <div className="filter-row filter-row-pathogens">
                                 <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>菌種：</label>
-                                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                <div className="pathogen-list">
                                     {PATHOGEN_CONFIG.map(p => {
                                         const isChecked = filterPathogens.includes(p.id);
                                         return (
                                             <label
                                                 key={p.id}
+                                                className={`pathogen-tag ${isChecked ? 'active' : ''}`}
                                                 style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.35rem',
-                                                    cursor: 'pointer',
-                                                    padding: '0.25rem 0.5rem',
-                                                    borderRadius: '6px',
-                                                    backgroundColor: isChecked ? p.bg : 'transparent',
-                                                    border: isChecked ? `2px solid ${p.text}` : '2px solid transparent',
-                                                    transition: 'all 0.2s ease'
+                                                    backgroundColor: isChecked ? p.bg : 'var(--bg-secondary)',
+                                                    color: isChecked ? p.text : 'var(--text-secondary)',
+                                                    borderColor: isChecked ? p.text : 'var(--border-color)',
                                                 }}
                                             >
                                                 <input
@@ -355,11 +360,47 @@ export default function AdminDashboard() {
                                                             setFilterPathogens([...filterPathogens, p.id]);
                                                         }
                                                     }}
-                                                    style={{ accentColor: p.text, width: '16px', height: '16px' }}
+                                                    style={{ display: 'none' }}
                                                 />
-                                                <span style={{ color: p.text, fontWeight: 500, fontSize: '0.85rem' }}>
-                                                    {p.label}
-                                                </span>
+                                                <span>{p.label}</span>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Line 4: Status Tags */}
+                            <div className="filter-row filter-row-pathogens">
+                                <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>狀態：</label>
+                                <div className="pathogen-list">
+                                    {[
+                                        { id: 'completed', label: '已完成', bg: '#dcfce7', text: '#16a34a' },
+                                        { id: 'incomplete', label: '未完成', bg: '#fef3c7', text: '#d97706' }
+                                    ].map(s => {
+                                        const isChecked = filterStatus.includes(s.id);
+                                        return (
+                                            <label
+                                                key={s.id}
+                                                className={`pathogen-tag ${isChecked ? 'active' : ''}`}
+                                                style={{
+                                                    backgroundColor: isChecked ? s.bg : 'var(--bg-secondary)',
+                                                    color: isChecked ? s.text : 'var(--text-secondary)',
+                                                    borderColor: isChecked ? s.text : 'var(--border-color)',
+                                                }}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={() => {
+                                                        if (isChecked) {
+                                                            setFilterStatus(filterStatus.filter(x => x !== s.id));
+                                                        } else {
+                                                            setFilterStatus([...filterStatus, s.id]);
+                                                        }
+                                                    }}
+                                                    style={{ display: 'none' }}
+                                                />
+                                                <span>{s.label}</span>
                                             </label>
                                         );
                                     })}
