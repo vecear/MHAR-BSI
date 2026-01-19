@@ -2488,20 +2488,32 @@ input[type="datetime-local"] {
   }
 
   /* Force scrollbar visibility on mobile */
+  .navbar-scroll-container {
+    scrollbar-width: thin !important;
+    /* Firefox: thin scrollbar */
+    scrollbar-color: rgba(255, 255, 255, 0.5) rgba(255, 255, 255, 0.1) !important;
+    /* Firefox: thumb and track colors */
+  }
+
   .navbar-scroll-container::-webkit-scrollbar {
     -webkit-appearance: none;
-    height: 4px !important;
+    height: 6px !important;
     display: block !important;
   }
 
   .navbar-scroll-container::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+    border-radius: 3px;
   }
 
   .navbar-scroll-container::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.5);
-    border-radius: 4px;
+    border-radius: 3px;
+  }
+
+  /* Ensure scrollbar is ALWAYS visible (prevent auto-hide) */
+  .navbar-scroll-container::-webkit-scrollbar-thumb {
+    visibility: visible !important;
   }
 
   .navbar-brand {
