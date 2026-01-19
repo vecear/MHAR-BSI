@@ -671,6 +671,18 @@ input[type="datetime-local"] {
   border-bottom: 1px solid var(--border-color);
 }
 
+/* Statistics Grid - Desktop: 3 columns, Mobile: 1 column */
+.statistics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.statistics-card {
+  margin-bottom: 0 !important;
+}
+
 /* Layout */
 .container {
   width: 100%;
@@ -1305,6 +1317,19 @@ input[type="datetime-local"] {
   margin-right: 0.25rem;
 }
 
+/* Step incomplete indicator - blinking exclamation mark */
+.step-incomplete-indicator {
+  color: #ef4444;
+  font-weight: 700;
+  font-size: 1rem;
+  margin-left: 0.25rem;
+  animation: blink-incomplete 1.5s ease-in-out infinite;
+}
+
+.form-step.active .step-incomplete-indicator {
+  color: #ffffff;
+}
+
 /* Form Section */
 .form-section {
   margin-bottom: var(--spacing-xl);
@@ -1461,6 +1486,12 @@ input[type="datetime-local"] {
 
   .form-grid-3 {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Statistics grid - 2 columns on tablet */
+  .statistics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
   }
 
   /* Reduce card padding slightly */
@@ -1666,6 +1697,12 @@ input[type="datetime-local"] {
     display: flex;
   }
 
+
+  /* Statistics grid - 1 column on mobile */
+  .statistics-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 
   /* Cards */
   .card {
@@ -3153,6 +3190,42 @@ input[type="datetime-local"] {
   border-color: var(--color-primary);
 }
 
+/* Oxygen Device Options (Radio Buttons) */
+.sofa-device-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sofa-device-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  background: var(--bg-primary);
+}
+
+.sofa-device-option:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.sofa-device-option.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+}
+
+.sofa-device-option input {
+  display: none;
+}
+
 .sofa-calculated-fio2 {
   display: flex;
   align-items: center;
@@ -3330,6 +3403,42 @@ input[type="datetime-local"] {
 .sofa-device-select:focus {
   outline: none;
   border-color: var(--color-primary);
+}
+
+/* Oxygen Device Options (Radio Buttons) */
+.sofa-device-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sofa-device-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  background: var(--bg-primary);
+}
+
+.sofa-device-option:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.sofa-device-option.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+}
+
+.sofa-device-option input {
+  display: none;
 }
 
 .sofa-calculated-fio2 {
@@ -3525,6 +3634,42 @@ input[type="datetime-local"] {
 .sofa-device-select:focus {
   outline: none;
   border-color: var(--color-primary);
+}
+
+/* Oxygen Device Options (Radio Buttons) */
+.sofa-device-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sofa-device-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  background: var(--bg-primary);
+}
+
+.sofa-device-option:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.sofa-device-option.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+}
+
+.sofa-device-option input {
+  display: none;
 }
 
 .sofa-calculated-fio2 {

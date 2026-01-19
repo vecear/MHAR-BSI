@@ -358,6 +358,54 @@ export default function FormPage() {
         return true;
     };
 
+    // Check if a step has incomplete required fields
+    const isStepIncomplete = (step: number): boolean => {
+        if (!showIncomplete) return false;
+
+        switch (step) {
+            case 1: {
+                // Step 1 basic required fields
+                const step1Fields = [
+                    'name', 'sex', 'age', 'bw', 'hospital', 'pathogen',
+                    'positive_culture_date', 'type_of_infection',
+                    'thrombocytopenia', 'icu_at_onset', 'duration_before_bacteremia',
+                    'renal_function_admission', 'sofa_score', 'septic_shock', 'renal_function_bacteremia'
+                ] as const;
+
+                for (const field of step1Fields) {
+                    const value = formData[field];
+                    if (!value || (typeof value === 'string' && !value.trim())) return true;
+                }
+
+                // Check arrays
+                if (!formData.primary_source || formData.primary_source.length === 0) return true;
+                if (!formData.chronic_diseases || formData.chronic_diseases.length === 0) return true;
+                return false;
+            }
+            case 2:
+                // Step 2 (MIC Data) is optional
+                return false;
+            case 3:
+                // Step 3 (Antibiotic Use) is optional
+                return false;
+            case 4: {
+                // Step 4 Outcome fields
+                const step4Fields = [
+                    'infection_control', 'crude_mortality', 'poly_microbial',
+                    'hospital_stay_days', 'clinical_response_14days', 'negative_bc'
+                ] as const;
+
+                for (const field of step4Fields) {
+                    const value = formData[field];
+                    if (!value || (typeof value === 'string' && !value.trim())) return true;
+                }
+                return false;
+            }
+            default:
+                return false;
+        }
+    };
+
     const goToStep = (step: number) => {
         // Validation when moving forward
         if (step > currentStep) {
@@ -400,6 +448,9 @@ export default function FormPage() {
                             {currentStep > step.id ? <Check size={12} /> : step.id}
                         </span>
                         {step.name}
+                        {isStepIncomplete(step.id) && (
+                            <span className="step-incomplete-indicator">!</span>
+                        )}
                     </button>
                 ))}
             </div>

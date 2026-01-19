@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, FileText, Home, Settings, User, ChevronRight, ChevronDown, Trash2, AlertTriangle, Users, RefreshCw, Upload, Download, BookOpen, Bell, UserPlus } from 'lucide-react';
+import { LogOut, FileText, Home, Settings, User, ChevronRight, ChevronDown, Trash2, AlertTriangle, Users, RefreshCw, Upload, Download, BookOpen, Bell, UserPlus, TrendingUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { deleteRequestService, exportService, commentService, userService } from '../services/firestore';
 import { useTheme, THEMES } from '../context/ThemeContext';
@@ -213,6 +213,10 @@ export default function Layout() {
                         <Link to="/form" className={`navbar-link ${location.pathname.startsWith('/form') ? 'active' : ''}`}>
                             <FileText size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
                             新增表單
+                        </Link>
+                        <Link to="/statistics" className={`navbar-link ${location.pathname === '/statistics' ? 'active' : ''}`}>
+                            <TrendingUp size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                            紀錄統計
                         </Link>
                         {user?.role === 'admin' && (
                             <Link to="/admin/delete-requests" className={`navbar-link ${location.pathname === '/admin/delete-requests' ? 'active' : ''}`}>

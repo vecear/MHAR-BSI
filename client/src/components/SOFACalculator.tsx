@@ -432,17 +432,22 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
                                 {/* Oxygen Device Selector */}
                                 <div className="sofa-device-section">
                                     <span className="sofa-device-label">氧氣來源</span>
-                                    <select
-                                        className="sofa-device-select"
-                                        value={oxygenDevice}
-                                        onChange={(e) => handleDeviceChange(e.target.value as OxygenDevice)}
-                                    >
+                                    <div className="sofa-device-options">
                                         {OXYGEN_DEVICES.map(device => (
-                                            <option key={device.value} value={device.value}>
+                                            <label
+                                                key={device.value}
+                                                className={`sofa-device-option ${oxygenDevice === device.value ? 'selected' : ''}`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="oxygenDevice"
+                                                    checked={oxygenDevice === device.value}
+                                                    onChange={() => handleDeviceChange(device.value)}
+                                                />
                                                 {device.label}
-                                            </option>
+                                            </label>
                                         ))}
-                                    </select>
+                                    </div>
                                 </div>
 
                                 {/* Direct FiO2 Input (for Direct or Mechanical Ventilation) */}
@@ -546,7 +551,7 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
 
                         <OrganSection
                             title="肝臟 (Liver)"
-                            icon="🫀"
+                            icon="🧪"
                             options={LIVER_OPTIONS}
                             value={liver}
                             onChange={setLiver}
@@ -576,7 +581,7 @@ export default function SOFACalculator({ isOpen, onClose, onConfirm, currentScor
 
                         <OrganSection
                             title="腎臟 (Renal)"
-                            icon="🫘"
+                            icon="💦"
                             options={RENAL_OPTIONS}
                             value={renal}
                             onChange={setRenal}
