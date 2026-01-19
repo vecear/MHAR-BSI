@@ -252,223 +252,21 @@ export default function Statistics() {
             <div className="statistics-grid">
                 {/* Hospital Statistics */}
                 <div className="card statistics-card">
-                <h2 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: 600 }}>
-                    各醫院紀錄筆數
-                </h2>
-                <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={hospitalStats}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                        <XAxis
-                            dataKey="name"
-                            stroke="var(--text-secondary)"
-                            tick={{ fill: 'var(--text-primary)', fontSize: 11 }}
-                        />
-                        <YAxis
-                            stroke="var(--text-secondary)"
-                            tick={{ fill: 'var(--text-primary)', fontSize: 11 }}
-                        />
-                        <Tooltip
-                            contentStyle={{
-                                backgroundColor: 'var(--bg-card)',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: 'var(--border-radius)',
-                                color: 'var(--text-primary)',
-                                fontSize: '0.8rem'
-                            }}
-                            formatter={(value: number, name: string, props: any) => [
-                                `${value} 筆 (${props.payload.percentage}%)`,
-                                '紀錄數'
-                            ]}
-                        />
-                        <Legend
-                            wrapperStyle={{ color: 'var(--text-primary)', fontSize: '0.8rem' }}
-                        />
-                        <Bar
-                            dataKey="count"
-                            name="紀錄數"
-                            radius={[8, 8, 0, 0]}
-                        >
-                            {hospitalStats.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-                <div style={{ marginTop: '0.75rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
-                    {hospitalStats.map((stat, index) => (
-                        <div key={stat.name} style={{
-                            padding: '0.4rem',
-                            backgroundColor: 'var(--bg-secondary)',
-                            borderRadius: 'var(--border-radius)',
-                            borderLeft: `3px solid ${COLORS[index % COLORS.length]}`
-                        }}>
-                            <div style={{ fontWeight: 600, marginBottom: '0.15rem', fontSize: '0.65rem' }}>{stat.name}</div>
-                            <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>
-                                {stat.count} 筆 ({stat.percentage}%)
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Pathogen Statistics */}
-            <div className="card statistics-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>
-                        菌種紀錄
+                    <h2 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: 600 }}>
+                        各醫院紀錄筆數
                     </h2>
-                    {user?.role === 'admin' ? (
-                        <select
-                            value={pathogenHospitalFilter}
-                            onChange={(e) => setPathogenHospitalFilter(e.target.value)}
-                            style={{
-                                fontSize: '0.75rem',
-                                padding: '0.4rem 0.8rem',
-                                borderRadius: 'var(--border-radius)',
-                                border: '1px solid var(--border-color)',
-                                backgroundColor: 'var(--bg-card)',
-                                color: 'var(--text-primary)',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <option value="all">全部</option>
-                            {availableHospitals.map(hospital => (
-                                <option key={hospital} value={hospital}>{hospital}</option>
-                            ))}
-                        </select>
-                    ) : (
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button
-                                className={`btn ${pathogenScope === 'my_hospital' ? 'btn-primary' : 'btn-secondary'}`}
-                                onClick={() => setPathogenScope('my_hospital')}
-                                style={{ fontSize: '0.75rem', padding: '0.4rem 0.8rem' }}
-                            >
-                                我的醫院
-                            </button>
-                            <button
-                                className={`btn ${pathogenScope === 'all' ? 'btn-primary' : 'btn-secondary'}`}
-                                onClick={() => setPathogenScope('all')}
-                                style={{ fontSize: '0.75rem', padding: '0.4rem 0.8rem' }}
-                            >
-                                所有醫院
-                            </button>
-                        </div>
-                    )}
-                </div>
-                <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={pathogenStats}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                        <XAxis
-                            dataKey="name"
-                            stroke="var(--text-secondary)"
-                            tick={{ fill: 'var(--text-primary)', fontSize: 11 }}
-                        />
-                        <YAxis
-                            stroke="var(--text-secondary)"
-                            tick={{ fill: 'var(--text-primary)', fontSize: 11 }}
-                        />
-                        <Tooltip
-                            contentStyle={{
-                                backgroundColor: 'var(--bg-card)',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: 'var(--border-radius)',
-                                color: 'var(--text-primary)',
-                                fontSize: '0.8rem'
-                            }}
-                            formatter={(value: number, name: string, props: any) => [
-                                `${value} 筆 (${props.payload.percentage}%)`,
-                                '紀錄數'
-                            ]}
-                        />
-                        <Legend
-                            wrapperStyle={{ color: 'var(--text-primary)', fontSize: '0.8rem' }}
-                        />
-                        <Bar
-                            dataKey="count"
-                            name="紀錄數"
-                            radius={[8, 8, 0, 0]}
-                        >
-                            {pathogenStats.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-                <div style={{ marginTop: '0.75rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
-                    {pathogenStats.map((stat, index) => (
-                        <div key={stat.name} style={{
-                            padding: '0.4rem',
-                            backgroundColor: 'var(--bg-secondary)',
-                            borderRadius: 'var(--border-radius)',
-                            borderLeft: `3px solid ${COLORS[index % COLORS.length]}`
-                        }}>
-                            <div style={{ fontWeight: 600, marginBottom: '0.15rem', fontSize: '0.65rem' }}>{stat.name}</div>
-                            <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>
-                                {stat.count} 筆 ({stat.percentage}%)
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Completion Statistics */}
-            <div className="card statistics-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>
-                        {user?.role === 'admin' ? '紀錄完成度' : '我的紀錄完成度'}
-                    </h2>
-                    {user?.role === 'admin' && (
-                        <select
-                            value={completionHospitalFilter}
-                            onChange={(e) => setCompletionHospitalFilter(e.target.value)}
-                            style={{
-                                fontSize: '0.75rem',
-                                padding: '0.4rem 0.8rem',
-                                borderRadius: 'var(--border-radius)',
-                                border: '1px solid var(--border-color)',
-                                backgroundColor: 'var(--bg-card)',
-                                color: 'var(--text-primary)',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <option value="all">全部</option>
-                            {availableHospitals.map(hospital => (
-                                <option key={hospital} value={hospital}>{hospital}</option>
-                            ))}
-                        </select>
-                    )}
-                </div>
-                {completionStats.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '3rem 2rem' }}>
-                        <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>📊</div>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                            {user?.role === 'admin' && completionHospitalFilter !== 'all'
-                                ? `${completionHospitalFilter} 尚無紀錄`
-                                : user?.role !== 'admin'
-                                ? '您尚無紀錄'
-                                : '尚無紀錄'}
-                        </p>
-                    </div>
-                ) : (
-                    <>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center' }}>
                     <ResponsiveContainer width="100%" height={200}>
-                        <PieChart>
-                            <Pie
-                                data={completionStats}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                label={({ name, percentage }) => `${name} ${percentage}%`}
-                                outerRadius={75}
-                                fill="#8884d8"
-                                dataKey="count"
-                                style={{ fontSize: '0.8rem' }}
-                            >
-                                {completionStats.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={index === 0 ? '#10b981' : '#f59e0b'} />
-                                ))}
-                            </Pie>
+                        <BarChart data={hospitalStats}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                            <XAxis
+                                dataKey="name"
+                                stroke="var(--text-secondary)"
+                                tick={{ fill: 'var(--text-primary)', fontSize: 11 }}
+                            />
+                            <YAxis
+                                stroke="var(--text-secondary)"
+                                tick={{ fill: 'var(--text-primary)', fontSize: 11 }}
+                            />
                             <Tooltip
                                 contentStyle={{
                                     backgroundColor: 'var(--bg-card)',
@@ -477,32 +275,234 @@ export default function Statistics() {
                                     color: 'var(--text-primary)',
                                     fontSize: '0.8rem'
                                 }}
-                                formatter={(value: number, name: string, props: any) => [
+                                formatter={(value: any, _name: any, props: any) => [
                                     `${value} 筆 (${props.payload.percentage}%)`,
-                                    props.payload.name
+                                    '紀錄數'
                                 ]}
                             />
-                        </PieChart>
+                            <Legend
+                                wrapperStyle={{ color: 'var(--text-primary)', fontSize: '0.8rem' }}
+                            />
+                            <Bar
+                                dataKey="count"
+                                name="紀錄數"
+                                radius={[8, 8, 0, 0]}
+                            >
+                                {hospitalStats.map((_entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                            </Bar>
+                        </BarChart>
                     </ResponsiveContainer>
-                </div>
-                <div style={{ marginTop: '0.75rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
-                    {completionStats.map((stat, index) => (
-                        <div key={stat.name} style={{
-                            padding: '0.4rem',
-                            backgroundColor: 'var(--bg-secondary)',
-                            borderRadius: 'var(--border-radius)',
-                            borderLeft: `3px solid ${index === 0 ? '#10b981' : '#f59e0b'}`
-                        }}>
-                            <div style={{ fontWeight: 600, marginBottom: '0.15rem', fontSize: '0.65rem' }}>{stat.name}</div>
-                            <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>
-                                {stat.count} 筆 ({stat.percentage}%)
+                    <div style={{ marginTop: '0.75rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+                        {hospitalStats.map((stat, index) => (
+                            <div key={stat.name} style={{
+                                padding: '0.4rem',
+                                backgroundColor: 'var(--bg-secondary)',
+                                borderRadius: 'var(--border-radius)',
+                                borderLeft: `3px solid ${COLORS[index % COLORS.length]}`
+                            }}>
+                                <div style={{ fontWeight: 600, marginBottom: '0.15rem', fontSize: '0.65rem' }}>{stat.name}</div>
+                                <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>
+                                    {stat.count} 筆 ({stat.percentage}%)
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
-                    </>
-                )}
-            </div>
+
+                {/* Pathogen Statistics */}
+                <div className="card statistics-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>
+                            菌種紀錄
+                        </h2>
+                        {user?.role === 'admin' ? (
+                            <select
+                                value={pathogenHospitalFilter}
+                                onChange={(e) => setPathogenHospitalFilter(e.target.value)}
+                                style={{
+                                    fontSize: '0.75rem',
+                                    padding: '0.4rem 0.8rem',
+                                    borderRadius: 'var(--border-radius)',
+                                    border: '1px solid var(--border-color)',
+                                    backgroundColor: 'var(--bg-card)',
+                                    color: 'var(--text-primary)',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <option value="all">全部</option>
+                                {availableHospitals.map(hospital => (
+                                    <option key={hospital} value={hospital}>{hospital}</option>
+                                ))}
+                            </select>
+                        ) : (
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                    className={`btn ${pathogenScope === 'my_hospital' ? 'btn-primary' : 'btn-secondary'}`}
+                                    onClick={() => setPathogenScope('my_hospital')}
+                                    style={{ fontSize: '0.75rem', padding: '0.4rem 0.8rem' }}
+                                >
+                                    我的醫院
+                                </button>
+                                <button
+                                    className={`btn ${pathogenScope === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+                                    onClick={() => setPathogenScope('all')}
+                                    style={{ fontSize: '0.75rem', padding: '0.4rem 0.8rem' }}
+                                >
+                                    所有醫院
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    <ResponsiveContainer width="100%" height={200}>
+                        <BarChart data={pathogenStats}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                            <XAxis
+                                dataKey="name"
+                                stroke="var(--text-secondary)"
+                                tick={{ fill: 'var(--text-primary)', fontSize: 11 }}
+                            />
+                            <YAxis
+                                stroke="var(--text-secondary)"
+                                tick={{ fill: 'var(--text-primary)', fontSize: 11 }}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: 'var(--bg-card)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: 'var(--border-radius)',
+                                    color: 'var(--text-primary)',
+                                    fontSize: '0.8rem'
+                                }}
+                                formatter={(value: any, _name: any, props: any) => [
+                                    `${value} 筆 (${props.payload.percentage}%)`,
+                                    '紀錄數'
+                                ]}
+                            />
+                            <Legend
+                                wrapperStyle={{ color: 'var(--text-primary)', fontSize: '0.8rem' }}
+                            />
+                            <Bar
+                                dataKey="count"
+                                name="紀錄數"
+                                radius={[8, 8, 0, 0]}
+                            >
+                                {pathogenStats.map((_entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                    <div style={{ marginTop: '0.75rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+                        {pathogenStats.map((stat, index) => (
+                            <div key={stat.name} style={{
+                                padding: '0.4rem',
+                                backgroundColor: 'var(--bg-secondary)',
+                                borderRadius: 'var(--border-radius)',
+                                borderLeft: `3px solid ${COLORS[index % COLORS.length]}`
+                            }}>
+                                <div style={{ fontWeight: 600, marginBottom: '0.15rem', fontSize: '0.65rem' }}>{stat.name}</div>
+                                <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>
+                                    {stat.count} 筆 ({stat.percentage}%)
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Completion Statistics */}
+                <div className="card statistics-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>
+                            {user?.role === 'admin' ? '紀錄完成度' : '我的紀錄完成度'}
+                        </h2>
+                        {user?.role === 'admin' && (
+                            <select
+                                value={completionHospitalFilter}
+                                onChange={(e) => setCompletionHospitalFilter(e.target.value)}
+                                style={{
+                                    fontSize: '0.75rem',
+                                    padding: '0.4rem 0.8rem',
+                                    borderRadius: 'var(--border-radius)',
+                                    border: '1px solid var(--border-color)',
+                                    backgroundColor: 'var(--bg-card)',
+                                    color: 'var(--text-primary)',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <option value="all">全部</option>
+                                {availableHospitals.map(hospital => (
+                                    <option key={hospital} value={hospital}>{hospital}</option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
+                    {completionStats.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '3rem 2rem' }}>
+                            <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>📊</div>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                {user?.role === 'admin' && completionHospitalFilter !== 'all'
+                                    ? `${completionHospitalFilter} 尚無紀錄`
+                                    : user?.role !== 'admin'
+                                        ? '您尚無紀錄'
+                                        : '尚無紀錄'}
+                            </p>
+                        </div>
+                    ) : (
+                        <>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center' }}>
+                                <ResponsiveContainer width="100%" height={200}>
+                                    <PieChart>
+                                        <Pie
+                                            data={completionStats as any[]}
+                                            cx="50%"
+                                            cy="50%"
+                                            labelLine={false}
+                                            label={({ name, percentage }: any) => `${name} ${percentage}%`}
+                                            outerRadius={75}
+                                            fill="#8884d8"
+                                            dataKey="count"
+                                            style={{ fontSize: '0.8rem' }}
+                                        >
+                                            {completionStats.map((_entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={index === 0 ? '#10b981' : '#f59e0b'} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: 'var(--bg-card)',
+                                                border: '1px solid var(--border-color)',
+                                                borderRadius: 'var(--border-radius)',
+                                                color: 'var(--text-primary)',
+                                                fontSize: '0.8rem'
+                                            }}
+                                            formatter={(value: any, _name: any, props: any) => [
+                                                `${value} 筆 (${props.payload.percentage}%)`,
+                                                props.payload.name
+                                            ]}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div style={{ marginTop: '0.75rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+                                {completionStats.map((stat, index) => (
+                                    <div key={stat.name} style={{
+                                        padding: '0.4rem',
+                                        backgroundColor: 'var(--bg-secondary)',
+                                        borderRadius: 'var(--border-radius)',
+                                        borderLeft: `3px solid ${index === 0 ? '#10b981' : '#f59e0b'}`
+                                    }}>
+                                        <div style={{ fontWeight: 600, marginBottom: '0.15rem', fontSize: '0.65rem' }}>{stat.name}</div>
+                                        <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>
+                                            {stat.count} 筆 ({stat.percentage}%)
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </div>
             </div> {/* End of statistics-grid */}
         </div>
     );
