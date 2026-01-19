@@ -308,6 +308,7 @@ export default function FormStep3({ formData, updateFormData }: Props) {
                                                             dateFormat="yyyy/MM/dd"
                                                             isClearable={true}
                                                             wrapperClassName="w-full"
+                                                            openToDate={parseDate(formData.positive_culture_date) || new Date()}
                                                         />
                                                     </div>
                                                 </div>
@@ -355,6 +356,7 @@ export default function FormStep3({ formData, updateFormData }: Props) {
                                                                 dateFormat="yyyy/MM/dd"
                                                                 isClearable={true}
                                                                 wrapperClassName="w-full"
+                                                                openToDate={parseDate(formData.positive_culture_date) || new Date()}
                                                             />
                                                         </div>
                                                     </div>
