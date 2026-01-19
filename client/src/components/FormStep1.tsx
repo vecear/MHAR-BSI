@@ -187,14 +187,13 @@ export default function FormStep1({ formData, updateFormData, showIncomplete }: 
                             type="date"
                             className="form-input"
                             value={formData.admission_date}
-                            onChange={e => {
+                            onBlur={e => {
                                 const newDate = e.target.value;
-                                if (!formData.positive_culture_date) {
-                                    updateFormData({ admission_date: newDate, positive_culture_date: newDate });
-                                } else {
-                                    updateFormData({ admission_date: newDate });
+                                if (!formData.positive_culture_date && newDate) {
+                                    updateFormData({ positive_culture_date: newDate });
                                 }
                             }}
+                            onChange={e => updateFormData({ admission_date: e.target.value })}
                         />
                     </div>
                 </div>
